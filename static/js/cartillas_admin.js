@@ -75,8 +75,7 @@ function renderTable(list) {
           <button class="btn btn-ghost btn-sm" onclick="viewCartilla('${c.id}')">👁 Ver</button>
           <a href="/api/cartilla/${c.id}/pdf" class="btn btn-pdf btn-sm">📄 PDF</a>
           <a href="/api/cartilla/${c.id}/png" class="btn btn-png btn-sm">🖼 PNG</a>
-          <button class="btn btn-wa btn-sm" onclick="whatsappShare(\'${c.id}\')">📲 WhatsApp</button>
-          
+          <button class="btn btn-danger btn-sm" onclick="deleteCartilla('${c.id}')">🗑</button>
         </div>
       </td>
     </tr>`;
@@ -101,7 +100,6 @@ function filterTable() {
 
 // ── GENERAR AUTOMÁTICO ────────────────────────────
 async function generateCartillas() {
-  const code   = (document.getElementById('inp-code')?.value || '').trim();
   const nombre = document.getElementById('inp-nombre').value.trim() || 'Jugador';
   const count  = parseInt(document.getElementById('inp-count').value) || 1;
   showToast('⏳ Generando cartillas…');
@@ -109,17 +107,9 @@ async function generateCartillas() {
     const res  = await fetch('/api/cartilla/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, nombre, count, client_id: CLIENT_ID })
+      body: JSON.stringify({ nombre, count })
     });
     const data = await res.json();
-    if (!res.ok) {
-      if (data.error === 'invalid_code_or_game_in_progress') {
-        showToast('⛔ Código inválido o el bingo ya comenzó.');
-        return;
-      }
-      showToast('❌ No se pudo generar la cartilla');
-      return;
-    }
     await loadCartillas();
     showToast(`✅ ${data.cartillas.length} cartilla(s) generada(s)`);
     if (count === 1) viewCartilla(data.cartillas[0].id);
@@ -443,7 +433,6 @@ function combinations(arr, k) {
 }
 
 async function saveManualCartilla() {
-  const code   = (document.getElementById('inp-code')?.value || '').trim();
   const nombre = document.getElementById('inp-nombre').value.trim() || 'Jugador';
   if (selectedNums.size !== 15) { showToast('⚠️ Selecciona exactamente 15 números'); return; }
 
@@ -503,96 +492,7 @@ function showToast(msg) {
   toastJob = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── PRESENCIA / MÉTRICAS ───────────────────────────
-function getClientId() {
-  let cid = localStorage.getItem('bingo_client_id');
-  if (!cid) {
-    cid = 'c_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
-    localStorage.setItem('bingo_client_id', cid);
-  }
-  return cid;
-}
-
-async function pingPresence() {
-  try {
-    const res = await fetch('/api/presence/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: getClientId() })
-    });
-    const data = await res.json();
-    if (data?.online != null) {
-      const el = document.getElementById('st-online');
-      if (el) el.textContent = data.online;
-    }
-  } catch (_) {}
-}
-
-async function refreshMetrics() {
-  try {
-    const res = await fetch('/api/metrics');
-    const m   = await res.json();
-    if (m?.online != null) {
-      const el = document.getElementById('st-online');
-      if (el) el.textContent = m.online;
-    }
-  } catch (_) {}
-}
-
 // ── INIT ──────────────────────────────────────────
 buildPicker();
-// Seguridad extra: si el juego empezó, volver al juego.
-fetch('/api/state')
-  .then(r => r.json())
-  .then(s => {
-    if ((s.drawn || []).length > 0) {
-      window.location.href = '/?locked=1';
-      return;
-    }
-    loadCartillas();
-  })
-  .catch(() => loadCartillas());
-
+loadCartillas();
 setInterval(loadCartillas, 10000);
-pingPresence();
-refreshMetrics();
-setInterval(pingPresence, 12000);
-setInterval(refreshMetrics, 5000)// ── CLIENT ID (para presencia + filtrar "mis cartillas") ───────────────
-function getClientId() {
-  const k = 'bingo_client_id';
-  let v = localStorage.getItem(k);
-  if (!v) {
-    v = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
-    localStorage.setItem(k, v);
-  }
-  return v;
-}
-const CLIENT_ID = getClientId();
-
-
-// ── WHATSAPP ───────────────────────────────────────
-async function whatsappShare(cid) {
-  try {
-    const res = await fetch(`/api/cartilla/${cid}`);
-    if (!res.ok) { showToast('❌ No se pudo cargar la cartilla'); return; }
-    const c = await res.json();
-
-    const rows = (c.grid || []).map(row =>
-      row.map(x => (x === null ? '  ' : String(x).padStart(2,'0'))).join(' ')
-    );
-
-    const msg =
-      `🎱 *Bingo Pro*\n` +
-      `👤 Jugador: ${c.nombre}\n` +
-      `🆔 Cartilla: ${c.id}\n\n` +
-      rows.join('\n') + `\n\n` +
-      `✅ ¡Suerte!`;
-
-    const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
-    window.open(url, '_blank');
-  } catch (e) {
-    showToast('❌ Error al preparar WhatsApp');
-  }
-}
-
-;

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛠 Admin — Bingo Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/game.css">
+  <style>
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+    .grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    @media (max-width: 980px){.grid2{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > div{flex:1;min-width:210px}
+    .input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none}
+    .label{display:block;margin:10px 0 6px;color:var(--muted);font-size:.85rem}
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--accent);color:#041015;font-weight:900;cursor:pointer}
+    .btn-ghost{background:transparent;color:var(--text)}
+    .codeBox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .pill{padding:10px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-weight:900;letter-spacing:1px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border-bottom:1px solid var(--border);padding:10px;text-align:left;font-size:.9rem}
+    th{color:var(--muted);font-weight:700}
+    .tag{font-size:.78rem;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🛠 Admin</div>
+    <div class="nav-links">
+      <a class="nav-link" href="/">👀 Vista juego</a>
+      <a class="nav-link" href="/admin/cartillas">🧾 Cartillas</a>
+      <a class="nav-link" href="#" onclick="logout()">Salir</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid2">
+      <div class="card">
+        <h2 style="margin:0 0 6px 0;">Generar código para cliente</h2>
+        <div class="tag">El cliente usará este código para generar su cartilla (aleatoria o manual).</div>
+
+        <div class="row">
+          <div>
+            <label class="label">Número (teléfono o ticket)</label>
+            <input id="c-num" class="input" placeholder="Ej: 999888777">
+          </div>
+          <div>
+            <label class="label">Nombres</label>
+            <input id="c-nom" class="input" placeholder="Ej: Juan Carlos">
+          </div>
+          <div>
+            <label class="label">Apellidos</label>
+            <input id="c-ape" class="input" placeholder="Ej: Pérez López">
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn" onclick="createVoucher()">🎫 Generar código</button>
+          <button class="btn btn-ghost" onclick="refresh()">🔄 Actualizar</button>
+        </div>
+
+        <div class="codeBox" id="codeBox" style="display:none;">
+          <div class="pill" id="lastCode">—</div>
+          <button class="btn btn-ghost" onclick="copyCode()">📋 Copiar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 6px 0;">Estado del juego</h2>
+        <div class="tag">Cuando salga la primera bolilla, se bloquea la generación de cartillas.</div>
+        <div style="margin-top:10px;">
+          <div>Bolillas sorteadas: <strong id="st-drawn">0</strong></div>
+          <div>Restantes: <strong id="st-rem">90</strong></div>
+          <div>Última: <strong id="st-last">—</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <h2 style="margin:0 0 6px 0;">Códigos generados</h2>
+      <div class="tag">Puedes ver si ya fue usado.</div>
+      <table>
+        <thead>
+          <tr><th>Código</th><th>Cliente</th><th>Estado</th><th>Creado</th></tr>
+        </thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let toastJob=null;
+    function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastJob);toastJob=setTimeout(()=>t.classList.remove('show'),2800);}
+    async function refresh(){
+      const [vRes,sRes]=await Promise.all([fetch('/api/admin/vouchers'),fetch('/api/state')]);
+      const v=await vRes.json(); const s=await sRes.json();
+      document.getElementById('st-drawn').textContent = (s.drawn||[]).length;
+      document.getElementById('st-rem').textContent = s.remaining ?? '—';
+      document.getElementById('st-last').textContent = s.last ?? '—';
+
+      const tb=document.getElementById('tb');
+      const list=v.vouchers||[];
+      tb.innerHTML = list.map(x=>{
+        const who = [x.numero,x.nombres,x.apellidos].filter(Boolean).join(' — ');
+        const st = x.used ? '✅ Usado' : '🟢 Disponible';
+        const dt = (x.created||'').replace('T',' ').slice(0,16);
+        return `<tr><td style="font-weight:900;letter-spacing:.5px">${x.code}</td><td>${who}</td><td>${st}</td><td style="color:var(--muted)">${dt}</td></tr>`;
+      }).join('') || `<tr><td colspan="4" style="color:var(--muted);padding:18px;">No hay códigos aún.</td></tr>`;
+    }
+
+    async function createVoucher(){
+      const numero=document.getElementById('c-num').value.trim();
+      const nombres=document.getElementById('c-nom').value.trim();
+      const apellidos=document.getElementById('c-ape').value.trim();
+      const res=await fetch('/api/admin/voucher', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({numero,nombres,apellidos})});
+      const data=await res.json();
+      if(!res.ok){ showToast('❌ ' + (data.error||'No se pudo')); return; }
+      document.getElementById('lastCode').textContent = data.voucher.code;
+      document.getElementById('codeBox').style.display='flex';
+      showToast('✅ Código generado');
+      refresh();
+    }
+
+    function copyCode(){
+      const code=document.getElementById('lastCode').textContent.trim();
+      navigator.clipboard.writeText(code).then(()=>showToast('📋 Código copiado'));
+    }
+
+    async function logout(){
+      await fetch('/api/admin/logout', {method:'POST'});
+      location.href='/admin/login';
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

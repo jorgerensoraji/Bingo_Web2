@@ -16,7 +16,7 @@ from io import BytesIO
 from pathlib import Path
 
 import edge_tts
-from flask import Flask, jsonify, render_template, request, send_file, redirect, url_for
+from flask import Flask, jsonify, render_template, request, send_file, session, redirect, url_for
 from num2words import num2words
 
 # PDF / Image
@@ -32,9 +32,20 @@ import qrcode
 
 app = Flask(__name__)
 
-# ─── Config ───────────────────────────────────────────────────────────────────
-# Cambia esta clave en producción (variable de entorno ADMIN_KEY)
-ADMIN_KEY = os.environ.get("ADMIN_KEY", "admin")
+# ─── Seguridad Admin (login por sesión) ───────────────────────────────────────
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+
+ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
+ADMIN_PASS = os.environ.get("ADMIN_PASS", "admin")
+
+def is_admin() -> bool:
+    return bool(session.get("is_admin"))
+
+def admin_required():
+    if not is_admin():
+        return jsonify({"error":"unauthorized"}), 401
+    return None
+
 
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
@@ -44,30 +55,69 @@ TTS_DIR       = Path(tempfile.gettempdir()) / "bingo_web_tts"
 CARTILLAS_DIR.mkdir(exist_ok=True)
 TTS_DIR.mkdir(exist_ok=True)
 
-# ─── Admin auth ──────────────────────────────────────────────────────────────
-def _get_admin_key() -> str:
-    # Acepta clave por header o query param (para facilidad de pruebas).
-    return request.headers.get("X-Admin-Key") or request.args.get("key") or ""
 
-def require_admin() -> bool:
-    return _get_admin_key() == ADMIN_KEY
+# ─── Códigos de compra (vouchers) ────────────────────────────────────────────
+VOUCHERS_FILE = CARTILLAS_DIR / "_vouchers.json"
+vouchers_lock = threading.Lock()
+
+def _load_vouchers() -> list[dict]:
+    if not VOUCHERS_FILE.exists():
+        return []
+    try:
+        return json.loads(VOUCHERS_FILE.read_text(encoding="utf-8"))
+    except:
+        return []
+
+def _save_vouchers(vs: list[dict]) -> None:
+    VOUCHERS_FILE.write_text(json.dumps(vs, ensure_ascii=False, indent=2), encoding="utf-8")
+
+def _gen_voucher_code() -> str:
+    # Código corto, fácil de dictar: 6 alfanum sin confusos
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(random.choice(alphabet) for _ in range(6))
+
+def _find_voucher(vs: list[dict], code: str) -> dict | None:
+    code = (code or "").strip().upper()
+    for v in vs:
+        if v.get("code","").upper() == code:
+            return v
+    return None
+
+def validate_voucher_code(code: str) -> tuple[bool, str]:
+    """Retorna (ok, error_code). error_code: bad_code, used_code, no_active"""
+    code = (code or "").strip().upper()
+    if not code:
+        return False, "bad_code"
+    with vouchers_lock:
+        vs = _load_vouchers()
+        v = _find_voucher(vs, code)
+        if not v:
+            return False, "bad_code"
+        if v.get("used"):
+            return False, "used_code"
+    return True, ""
+
+def mark_voucher_used(code: str, cartilla_ids: list[str]) -> None:
+    code = (code or "").strip().upper()
+    with vouchers_lock:
+        vs = _load_vouchers()
+        v = _find_voucher(vs, code)
+        if not v:
+            return
+        v["used"] = True
+        v["used_at"] = datetime.now().isoformat()
+        v["cartillas"] = cartilla_ids
+        _save_vouchers(vs)
+
 
 # ─── Estado del juego ─────────────────────────────────────────────────────────
 class GameState:
     def __init__(self):
         self.reset()
-
-    def _new_session_code(self) -> str:
-        # Código simple de 6 dígitos para que los jugadores puedan generar cartillas.
-        return "".join(random.choice("0123456789") for _ in range(6))
-
-    def reset(self, new_code: bool = True):
+    def reset(self):
         self.available = list(range(1, 91))
         self.drawn: list[int] = []
         self.last = None
-        if new_code or not hasattr(self, "session_code"):
-            self.session_code = self._new_session_code()
-
     def draw(self):
         if not self.available:
             return None
@@ -79,27 +129,6 @@ class GameState:
 
 game      = GameState()
 game_lock = threading.Lock()
-
-# ─── Presencia (jugadores en línea) ───────────────────────────────────────────
-# Mantiene un registro liviano (sin login) usando un client_id en localStorage.
-presence_lock = threading.Lock()
-presence_last_seen: dict[str, float] = {}
-
-def _presence_gc(now_ts: float, ttl_seconds: int = 35) -> None:
-    """Elimina clientes inactivos."""
-    dead = [cid for cid, ts in presence_last_seen.items() if (now_ts - ts) > ttl_seconds]
-    for cid in dead:
-        presence_last_seen.pop(cid, None)
-
-def get_online_count(now_ts: float | None = None) -> int:
-    now_ts = now_ts or datetime.now().timestamp()
-    with presence_lock:
-        _presence_gc(now_ts)
-        return len(presence_last_seen)
-
-def get_sold_count() -> int:
-    # “Compraron el bingo” lo interpretamos como “cartillas creadas/guardadas”.
-    return len(load_all_cartillas())
 
 # ─── TTS ──────────────────────────────────────────────────────────────────────
 async def _tts_save(text, voice, path):
@@ -164,7 +193,7 @@ def generate_cartilla_grid():
 
     raise RuntimeError("No se pudo generar cartilla válida")
 
-def save_cartilla(nombre: str, grid: list, client_id: str | None = None) -> dict:
+def save_cartilla(nombre: str, grid: list) -> dict:
     """Guarda cartilla en JSON y retorna sus datos."""
     cid  = str(uuid.uuid4())[:8].upper()
     data = {
@@ -172,7 +201,6 @@ def save_cartilla(nombre: str, grid: list, client_id: str | None = None) -> dict
         "nombre":  nombre,
         "grid":    grid,
         "created": datetime.now().isoformat(),
-        "client_id": client_id or "",
     }
     (CARTILLAS_DIR / f"{cid}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     return data
@@ -447,50 +475,59 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
 # ── Páginas ──────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    # Vista jugadores (solo lectura + generar cartilla)
-    return render_template("cartillas.html")
+    # Vista del juego (los jugadores solo miran; el admin controla desde /admin)
+    return render_template("index.html")
+
+@app.route("/cartillas")
+def cartillas_player_page():
+    # Página de jugadores para generar su cartilla con código
+    return render_template("cartillas_player.html")
+
+@app.route("/admin/login")
+def admin_login_page():
+    if is_admin():
+        return redirect("/admin")
+    return render_template("admin_login.html")
 
 @app.route("/admin")
 def admin_page():
-    # Vista administrador: botones de control del juego + ver código de cartilla.
-    if not require_admin():
-        return ("Acceso denegado (admin key requerida). Usa /admin?key=TU_CLAVE", 403)
-    return render_template("index.html")
+    if not is_admin():
+        return redirect("/admin/login")
+    return render_template("admin.html")
+
+@app.route("/admin/cartillas")
+def admin_cartillas_page():
+    if not is_admin():
+        return redirect("/admin/login")
+    return render_template("cartillas_admin.html")
 
 
-@app.route("/cartillas")
-def cartillas_page():
-    # Compatibilidad: /cartillas ahora apunta a la vista de jugadores
-    return redirect(url_for("index"))
+# ── API Admin (login) ─────────────────────────────────────────────────────────
+@app.route("/api/admin/login", methods=["POST"])
+def api_admin_login():
+    data = request.get_json() or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "")
+    if username == ADMIN_USER and password == ADMIN_PASS:
+        session["is_admin"] = True
+        session["admin_user"] = username
+        return jsonify({"status":"ok"})
+    return jsonify({"error":"invalid_credentials"}), 401
 
+@app.route("/api/admin/logout", methods=["POST"])
+def api_admin_logout():
+    session.clear()
+    return jsonify({"status":"ok"})
 
-# ── API Admin ────────────────────────────────────────────────────────────────
-@app.route("/api/admin/session", methods=["GET"])
-def api_admin_session():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
-    with game_lock:
-        return jsonify({
-            "session_code": game.session_code,
-            "in_progress": len(game.drawn) > 0,
-            "drawn_count": len(game.drawn)
-        })
-
-@app.route("/api/admin/new_round", methods=["POST"])
-def api_admin_new_round():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
-    # Nueva jugada: reinicia bolillas + genera nuevo código + limpia cartillas vendidas
-    with game_lock:
-        game.reset(new_code=True)
-    delete_all_cartillas()
-    return jsonify({"status":"ok","session_code":game.session_code})
+@app.route("/api/me")
+def api_me():
+    return jsonify({"is_admin": is_admin()})
 
 # ── API Juego ─────────────────────────────────────────────────────────────────
 @app.route("/api/draw", methods=["POST"])
 def api_draw():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
+    chk = admin_required()
+    if chk: return chk
     with game_lock:
         if not game.available:
             return jsonify({"status":"finished","drawn":game.drawn})
@@ -511,8 +548,6 @@ def api_draw():
 
 @app.route("/api/speak", methods=["POST"])
 def api_speak():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
     data  = request.get_json() or {}
     text  = data.get("text","")
     voice = data.get("voice","es-MX-DaliaNeural")
@@ -524,8 +559,8 @@ def api_speak():
 
 @app.route("/api/repeat", methods=["POST"])
 def api_repeat():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
+    chk = admin_required()
+    if chk: return chk
     data  = request.get_json() or {}
     voice = data.get("voice","es-MX-DaliaNeural")
     with game_lock:
@@ -539,84 +574,116 @@ def api_repeat():
 
 @app.route("/api/reset", methods=["POST"])
 def api_reset():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
+    chk = admin_required()
+    if chk: return chk
     with game_lock:
-        game.reset(new_code=True)
+        game.reset()
     return jsonify({"status":"ok"})
 
 @app.route("/api/state")
 def api_state():
     with game_lock:
-        return jsonify({"drawn":game.drawn,"remaining":len(game.available),"last":game.last, "in_progress": len(game.drawn)>0, "drawn_count": len(game.drawn)})
+        return jsonify({"drawn":game.drawn,"remaining":len(game.available),"last":game.last})
 
-# ── API Métricas / Presencia ─────────────────────────────────────────────────
-@app.route("/api/presence/ping", methods=["POST"])
-def api_presence_ping():
-    """Heartbeat del cliente para contar 'jugadores en línea'."""
+
+# ── API Admin: Vouchers ───────────────────────────────────────────────────────
+@app.route("/api/admin/voucher", methods=["POST"])
+def api_admin_create_voucher():
+    chk = admin_required()
+    if chk: return chk
+
     data = request.get_json() or {}
-    cid  = (data.get("client_id") or "").strip()[:64]
-    if not cid:
-        return jsonify({"error": "client_id requerido"}), 400
+    numero   = (data.get("numero") or "").strip()[:30]
+    nombres  = (data.get("nombres") or "").strip()[:60]
+    apellidos= (data.get("apellidos") or "").strip()[:60]
 
-    now_ts = datetime.now().timestamp()
-    with presence_lock:
-        presence_last_seen[cid] = now_ts
-        _presence_gc(now_ts)
-        online = len(presence_last_seen)
+    with vouchers_lock:
+        vs = _load_vouchers()
+        # Evitar duplicado (muy raro) regenerando si existe
+        code = _gen_voucher_code()
+        while _find_voucher(vs, code):
+            code = _gen_voucher_code()
+        v = {
+            "code": code,
+            "numero": numero,
+            "nombres": nombres,
+            "apellidos": apellidos,
+            "created": datetime.now().isoformat(),
+            "used": False,
+        }
+        vs.insert(0, v)
+        _save_vouchers(vs)
 
-    return jsonify({"status": "ok", "online": online})
+    return jsonify({"status":"ok","voucher": v})
 
-@app.route("/api/metrics")
-def api_metrics():
-    """Resumen rápido: online + cartillas (vendidas)."""
-    return jsonify({
-        "online": get_online_count(),
-        "sold": get_sold_count(),
-    })
+@app.route("/api/admin/vouchers")
+def api_admin_list_vouchers():
+    chk = admin_required()
+    if chk: return chk
+    with vouchers_lock:
+        vs = _load_vouchers()
+    return jsonify({"vouchers": vs})
+
+@app.route("/api/voucher/check", methods=["POST"])
+def api_voucher_check():
+    data = request.get_json() or {}
+    code = (data.get("code") or "").strip().upper()
+    ok, err = validate_voucher_code(code)
+    if not ok:
+        return jsonify({"ok": False, "error": err}), 400
+    return jsonify({"ok": True})
 
 # ── API Cartillas ─────────────────────────────────────────────────────────────
 @app.route("/api/cartilla/save_manual", methods=["POST"])
 def api_save_manual():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
     data   = request.get_json() or {}
     nombre = (data.get("nombre","") or "Jugador").strip()[:40]
+    code   = (data.get("code","") or "").strip().upper()
     grid   = data.get("grid")
+
+    with game_lock:
+        if len(game.drawn) > 0:
+            return jsonify({"error":"game_started"}), 403
+
+    ok, err = validate_voucher_code(code)
+    if not ok:
+        return jsonify({"error": err}), 403
     if not grid or len(grid) != 3 or any(len(r)!=9 for r in grid):
         return jsonify({"error":"grid inválido"}), 400
     # Validar 15 números en total
     nums = [n for row in grid for n in row if n is not None]
     if len(nums) != 15:
         return jsonify({"error":f"Se requieren 15 números, recibidos: {len(nums)}"}), 400
-    cartilla = save_cartilla(nombre, grid, client_id=client_id)
+    cartilla = save_cartilla(nombre, grid)
+    mark_voucher_used(code, [cartilla["id"]])
     return jsonify({"status":"ok", "cartilla": cartilla})
 
 @app.route("/api/cartilla/generate", methods=["POST"])
 def api_generate():
     data    = request.get_json() or {}
-    code    = (data.get("code","") or "").strip()
-    with game_lock:
-        ok = (code == game.session_code) and (len(game.drawn) == 0)
-    if not ok:
-        return jsonify({"error":"invalid_code_or_game_in_progress"}), 403
     nombre  = (data.get("nombre","") or "Jugador").strip()[:40]
-    client_id = (data.get("client_id","") or "").strip()[:64]
+    code    = (data.get("code","") or "").strip().upper()
     count   = min(int(data.get("count",1)), 20)  # máx 20 a la vez
+
+    with game_lock:
+        if len(game.drawn) > 0:
+            return jsonify({"error":"game_started"}), 403
+
+    ok, err = validate_voucher_code(code)
+    if not ok:
+        return jsonify({"error": err}), 403
     results = []
     for _ in range(count):
         grid    = generate_cartilla_grid()
         cartilla = save_cartilla(nombre, grid)
         results.append(cartilla)
+
+    mark_voucher_used(code, [c["id"] for c in results])
     return jsonify({"status":"ok","cartillas":results})
 
 @app.route("/api/cartilla/list")
 def api_list():
-    client_id = (request.args.get("client_id") or "").strip()
-    all_c = load_all_cartillas()
-    if client_id:
-        all_c = [c for c in all_c if (c.get("client_id") == client_id)]
-    return jsonify({"cartillas": all_c})
+    return jsonify({"cartillas": load_all_cartillas()})
 
 @app.route("/api/cartilla/<cid>")
 def api_get(cid):
@@ -626,16 +693,12 @@ def api_get(cid):
 
 @app.route("/api/cartilla/<cid>/delete", methods=["DELETE"])
 def api_delete(cid):
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
     f = CARTILLAS_DIR / f"{cid.upper()}.json"
     if f.exists(): f.unlink()
     return jsonify({"status":"ok"})
 
 @app.route("/api/cartilla/delete_all", methods=["DELETE"])
 def api_delete_all():
-    if not require_admin():
-        return jsonify({"error":"admin_only"}), 403
     for f in CARTILLAS_DIR.glob("*.json"):
         f.unlink()
     return jsonify({"status":"ok"})

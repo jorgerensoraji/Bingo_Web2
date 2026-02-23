@@ -13,12 +13,13 @@
 <nav>
   <a href="/" class="logo">🎱 Bingo Pro</a>
   <div class="nav-links">
-    <span class="nav-hint">Vista Jugadores</span>
+    <a href="/" class="nav-link">🎮 Juego</a>
+    <a href="/cartillas" class="nav-link active">🎴 Cartillas</a>
   </div>
 </nav>
 
 <div class="container">
-  <h1>🎴 Generar mi Cartilla</h1>
+  <h1>🎴 Cartillas de Bingo</h1>
   <p class="subtitle">Genera, administra, exporta y verifica cartillas en tiempo real</p>
 
   <div class="top-row">
@@ -28,12 +29,7 @@
       <div class="panel-title">Generar Cartillas</div>
       <div class="tabs">
         <button class="tab-btn active" id="tab-auto-btn" onclick="switchTab('auto')">🎲 Automática</button>
-        </div>
-
-      <div class="form-group">
-        <label>Código del administrador</label>
-        <input type="text" id="inp-code" placeholder="Ej: 123456" inputmode="numeric" maxlength="6">
-        <small class="hint">Pídele este código al administrador. Solo funciona antes de que empiece el sorteo.</small>
+        <button class="tab-btn"        id="tab-manual-btn" onclick="switchTab('manual')">✋ Manual</button>
       </div>
       <div class="form-group">
         <label>Nombre del jugador</label>
@@ -70,7 +66,6 @@
       <div class="panel-title">Estado del Juego</div>
       <div class="stats-grid">
         <div class="stat-card"><div class="val" id="st-cartillas">0</div><div class="lbl">Cartillas</div></div>
-        <div class="stat-card"><div class="val" id="st-online">0</div><div class="lbl">En línea</div></div>
         <div class="stat-card"><div class="val" id="st-drawn">0</div><div class="lbl">Sorteadas</div></div>
         <div class="stat-card"><div class="val" id="st-bingos" style="color:var(--accent);">0</div><div class="lbl">Bingos 🎉</div></div>
         <div class="stat-card"><div class="val" id="st-lineas" style="color:var(--warning);">0</div><div class="lbl">Líneas</div></div>
@@ -126,6 +121,6 @@
 </div>
 
 <div id="toast"></div>
-<script src="/static/js/cartillas.js"></script>
+<script src="/static/js/cartillas_admin.js"></script>
 </body>
 </html>

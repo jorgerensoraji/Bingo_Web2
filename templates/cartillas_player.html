@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎴 Mi Cartilla — Bingo Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/cartillas.css">
+  <style>
+    .player-wrap{max-width:1050px;margin:0 auto;padding:22px;}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;}
+    .gridPreview{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:10px;}
+    .pCell{border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;background:var(--card);font-weight:800}
+    .pCell.empty{opacity:.35}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > div{flex:1;min-width:220px}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .hint{color:var(--muted);font-size:.85rem;margin-top:6px}
+    .mylist{margin-top:14px}
+    .myitem{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);background:var(--card);padding:10px 12px;border-radius:14px;margin-top:10px}
+    .myitem .meta{display:flex;flex-direction:column}
+    .myitem .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:999}
+    .overlay.show{display:flex}
+    .overlay .modal{width:min(520px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px}
+    .overlay .modal h2{margin:0 0 8px 0}
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">🎱 Bingo Pro</a>
+    <div class="nav-links">
+      <a href="/" class="nav-link">🎮 Juego</a>
+      <a href="/cartillas" class="nav-link active">🎴 Mi Cartilla</a>
+      <a href="/admin" class="nav-link">🔒 Admin</a>
+    </div>
+  </nav>
+
+  <div class="player-wrap">
+    <div class="card">
+      <h1 style="font-family:'Bebas Neue',sans-serif;letter-spacing:1px;margin:0 0 8px 0;">Generar cartilla</h1>
+      <div class="row">
+        <div>
+          <label class="label">Código del administrador</label>
+          <input id="inp-code" class="input" maxlength="10" placeholder="Ej: A1B2C3 o 483921">
+          <div class="hint">El administrador te da este código para autorizar tu compra.</div>
+        </div>
+        <div>
+          <label class="label">Nombre y apellidos</label>
+          <input id="inp-name" class="input" maxlength="60" placeholder="Ej: Juan Pérez López">
+          <div class="hint">Este nombre saldrá impreso en tu cartilla.</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="generateAuto()">🎲 Generar aleatoria</button>
+        <button class="btn btn-ghost" onclick="toggleManual()">🧩 Escoger manual</button>
+        <button class="btn btn-ghost" onclick="goToGame()">👀 Ver juego</button>
+      </div>
+
+      <div id="manual-area" style="display:none;margin-top:14px;">
+        <div class="hint">Selecciona 15 números respetando columnas (1-9, 10-19, ... 80-90). Luego guarda.</div>
+        <div id="picker"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="saveManual()">💾 Guardar manual</button>
+          <button class="btn btn-ghost" onclick="clearManual()">🧹 Limpiar</button>
+        </div>
+      </div>
+
+      <div class="mylist">
+        <h3 style="margin-top:16px;">Mis cartillas</h3>
+        <div id="mylist"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <div id="started-overlay" class="overlay">
+    <div class="modal">
+      <h2>⛔ El juego ya empezó</h2>
+      <p style="color:var(--muted);margin-top:6px;">
+        Ya se sorteó al menos una bolilla, por lo que ya no se pueden generar cartillas.
+      </p>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn" onclick="goToGame()">👀 Ir al juego</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/cartillas_player.js"></script>
+</body>
+</html>

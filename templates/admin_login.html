@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔒 Admin Login — Bingo Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/game.css">
+  <style>
+    .center{min-height:calc(100vh - 70px);display:flex;align-items:center;justify-content:center;padding:22px}
+    .panel{width:min(520px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px}
+    .panel h1{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;margin:0 0 6px 0}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > div{flex:1;min-width:220px}
+    .input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none}
+    .label{display:block;margin:10px 0 6px;color:var(--muted);font-size:.85rem}
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--accent);color:#041015;font-weight:900;cursor:pointer}
+    .btn-ghost{background:transparent;color:var(--text)}
+    .hint{color:var(--muted);font-size:.85rem;margin-top:8px}
+    .err{color:var(--danger);margin-top:10px;display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🎱 Bingo Pro</div>
+    <div class="nav-links">
+      <a class="nav-link" href="/">🎮 Juego</a>
+      <a class="nav-link" href="/cartillas">🎴 Mi Cartilla</a>
+    </div>
+  </header>
+
+  <div class="center">
+    <div class="panel">
+      <h1>Acceso administrador</h1>
+      <div class="hint">Ingresa tu usuario y contraseña.</div>
+
+      <label class="label">Usuario</label>
+      <input id="u" class="input" placeholder="admin">
+
+      <label class="label">Contraseña</label>
+      <input id="p" class="input" type="password" placeholder="••••••••">
+
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn" onclick="login()">Ingresar</button>
+        <a class="btn btn-ghost" href="/" style="text-decoration:none;display:inline-flex;align-items:center;">Cancelar</a>
+      </div>
+
+      <div id="err" class="err">❌ Usuario o contraseña incorrectos</div>
+    </div>
+  </div>
+
+  <script>
+    async function login(){
+      const username = document.getElementById('u').value.trim();
+      const password = document.getElementById('p').value;
+      const res = await fetch('/api/admin/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({username,password})
+      });
+      const data = await res.json();
+      if(!res.ok){ document.getElementById('err').style.display='block'; return; }
+      location.href = '/admin';
+    }
+    document.addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+  </script>
+</body>
+</html>

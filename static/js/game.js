@@ -4,15 +4,6 @@
    Made by Renso Ramirez
 ═══════════════════════════════════════════════════ */
 
-// ── ADMIN KEY (para proteger botones) ─────────────────────
-const ADMIN_KEY = new URLSearchParams(window.location.search).get('key') || '';
-
-function adminFetch(url, options = {}) {
-  const headers = options.headers ? { ...options.headers } : {};
-  headers['X-Admin-Key'] = ADMIN_KEY;
-  return fetch(url, { ...options, headers });
-}
-
 // ── COLORES DE GRUPOS ──────────────────────────────
 const GROUP_COLORS = [
   { fg:'#5dade2', bg:'#0a1e2e' },
@@ -40,6 +31,22 @@ const BALL_COLORS = [
 ];
 
 // ── ESTADO ────────────────────────────────────────
+
+// ── ROL (admin / jugador) ─────────────────────────────
+let IS_ADMIN = false;
+async function detectRole(){
+  try{
+    const me = await (await fetch('/api/me')).json();
+    IS_ADMIN = !!me.is_admin;
+    if(!IS_ADMIN){
+      ['btn-draw','btn-repeat','btn-new','btn-auto'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.disabled = true;
+      });
+    }
+  }catch(e){}
+}
+
 let drawn          = [];
 let lastNumber     = null;
 let isDrawing      = false;
@@ -85,6 +92,8 @@ function initGrid() {
 
 // ── DRAW ──────────────────────────────────────────
 async function drawNumber() {
+  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede sortear'); return; }
+
   if (isDrawing) return;
   isDrawing = true;
   setDrawBtnState(false);
@@ -119,7 +128,7 @@ function runAnimation() {
 
 async function fetchDraw() {
   try {
-    const res  = await adminFetch('/api/draw', { method: 'POST' });
+    const res  = await fetch('/api/draw', { method: 'POST' });
     const data = await res.json();
 
     if (data.status === 'finished') {
@@ -134,9 +143,6 @@ async function fetchDraw() {
     const num = data.number;
     lastNumber = num;
     drawn      = data.drawn;
-
-    // Bloquear acceso a “Cartillas” cuando la partida ya empezó.
-    setCartillasLocked(drawn.length > 0);
 
     updateDisplay(num, data.words);
     markCell(num);
@@ -235,7 +241,7 @@ function getVoice() {
 function speak(text, onEnd) {
   stopAudio();
   const vol = parseInt(document.getElementById('vol-slider').value) / 100;
-  adminFetch('/api/speak', {
+  fetch('/api/speak', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, voice: getVoice() })
@@ -270,7 +276,7 @@ function repeatLast() {
   if (!lastNumber) { showToast('Todavía no se sorteó ninguna bolilla'); return; }
   if (autoRunning) { autoPaused = true; updateAutoCd('⏸ Pausado'); }
 
-  adminFetch('/api/repeat', {
+  fetch('/api/repeat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ voice: getVoice() })
@@ -341,10 +347,12 @@ function updateAutoCd(text) {
 
 // ── NUEVO JUEGO ───────────────────────────────────
 async function newGame() {
+  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede reiniciar'); return; }
+
   if (!confirm('¿Iniciar un nuevo juego? Se perderá el progreso actual.')) return;
   stopAuto();
   stopAudio();
-  await adminFetch('/api/reset', { method: 'POST' });
+  await fetch('/api/reset', { method: 'POST' });
 
   drawn          = [];
   lastNumber     = null;
@@ -366,9 +374,6 @@ async function newGame() {
   document.getElementById('recent-nums').innerHTML       = '';
   document.getElementById('hist-list').innerHTML         = '';
   updateStats(0, 90);
-
-  // Jugada nueva: volver a permitir entrar a Cartillas.
-  setCartillasLocked(false);
 
   for (let i = 1; i <= 90; i++) {
     const cell = document.getElementById(`cell-${i}`);
@@ -459,65 +464,6 @@ function setDrawBtnState(enabled) {
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
-// ── BLOQUEO DE CARTILLAS ───────────────────────────
-function preventCartillasNav(e) {
-  e.preventDefault();
-  showToast('⛔ Cartillas bloqueadas mientras el bingo está en curso. Usa “Nuevo Juego”.');
-}
-function setCartillasLocked(locked) {
-  const link = document.getElementById('nav-cartillas');
-  if (!link) return;
-  if (locked) {
-    link.classList.add('disabled');
-    link.title = 'Cartillas bloqueadas: el juego ya está en curso';
-    link.addEventListener('click', preventCartillasNav, { passive: false });
-  } else {
-    link.classList.remove('disabled');
-    link.title = '';
-    link.removeEventListener('click', preventCartillasNav);
-  }
-}
-
-// ── PRESENCIA / MÉTRICAS ───────────────────────────
-function getClientId() {
-  let cid = localStorage.getItem('bingo_client_id');
-  if (!cid) {
-    cid = 'c_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
-    localStorage.setItem('bingo_client_id', cid);
-  }
-  return cid;
-}
-
-async function pingPresence() {
-  try {
-    const res = await fetch('/api/presence/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: getClientId() })
-    });
-    const data = await res.json();
-    if (data?.online != null) {
-      const el = document.getElementById('stat-online');
-      if (el) el.textContent = data.online;
-    }
-  } catch (_) {}
-}
-
-async function refreshMetrics() {
-  try {
-    const res = await fetch('/api/metrics');
-    const m   = await res.json();
-    if (m?.online != null) {
-      const el = document.getElementById('stat-online');
-      if (el) el.textContent = m.online;
-    }
-    if (m?.sold != null) {
-      const el = document.getElementById('stat-sold');
-      if (el) el.textContent = m.sold;
-    }
-  } catch (_) {}
-}
-
 let toastJob = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -541,62 +487,4 @@ document.addEventListener('keydown', e => {
 // ── INIT ──────────────────────────────────────────
 document.getElementById('server-url').textContent = window.location.href;
 initGrid();
-
-// Aviso si el servidor redirigió por bloqueo (cuando intentan entrar a /cartillas)
-try {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('locked') === '1') {
-    showToast('⛔ Cartillas bloqueadas: el juego ya estaba en curso.');
-  }
-} catch(_) {}
-
-// Si el juego ya está en curso en el servidor, bloquear “Cartillas” (por ejemplo tras un refresh).
-fetch('/api/state')
-  .then(r => r.json())
-  .then(s => setCartillasLocked((s.drawn || []).length > 0))
-  .catch(() => setCartillasLocked(false));
-
-// Presencia + métricas
-pingPresence();
-refreshMetrics();
-setInterval(pingPresence, 12000);
-setInterval(refreshMetrics, 5000)
-// ── ADMIN SESSION CODE ─────────────────────────────
-async function refreshAdminSession() {
-  if (!ADMIN_KEY) {
-    // Sin clave: deshabilitar botones para evitar confusión.
-    document.querySelectorAll('button').forEach(b => {
-      if (b.id !== 'btn-copy-code') b.disabled = true;
-    });
-    const codeEl = document.getElementById('stat-code');
-    if (codeEl) codeEl.textContent = '— (falta ?key=...)';
-    return;
-  }
-  try {
-    const res = await adminFetch('/api/admin/session');
-    const data = await res.json();
-    if (!res.ok) { throw new Error('admin'); }
-    const codeEl = document.getElementById('stat-code');
-    if (codeEl) codeEl.textContent = data.session_code || '—';
-  } catch (e) {
-    const codeEl = document.getElementById('stat-code');
-    if (codeEl) codeEl.textContent = '—';
-  }
-}
-
-function bindCopyCode() {
-  const btn = document.getElementById('btn-copy-code');
-  if (!btn) return;
-  btn.addEventListener('click', async () => {
-    const code = document.getElementById('stat-code')?.textContent?.trim() || '';
-    if (!code || code.startsWith('—')) { showToast('⛔ No hay código para copiar'); return; }
-    try {
-      await navigator.clipboard.writeText(code);
-      showToast('📋 Código copiado');
-    } catch {
-      showToast('❌ No se pudo copiar');
-    }
-  });
-}
-
-;
+detectRole();
