@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎱 Bingo Pro — Voz Latina</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="logo">🎱 Bingo Pro <span>MADE BY RENSO RAMIREZ</span></div>
+  </div>
+  <div class="header-right">
+    <div class="nav-links">
+      <a href="/admin" class="nav-link active">👑 Admin</a>
+      <a href="/" class="nav-link">👥 Jugadores</a>
+    </div>
+    <div id="connection-info">Abre en cualquier dispositivo:<br><strong id="server-url">cargando…</strong></div>
+    <div id="timer">⏱ 00:00</div>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat">Sorteadas: <strong id="stat-drawn">0</strong></div>
+  <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
+  <div class="stat">En línea: <strong id="stat-online">0</strong></div>
+  <div class="stat">Cartillas: <strong id="stat-sold">0</strong></div>
+  <div class="stat">Código: <strong id="stat-code">—</strong> <button class="btn btn-mini" id="btn-copy-code" title="Copiar">📋</button></div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+  <div class="stat"><strong id="stat-pct">0%</strong></div>
+  <div class="shortcuts">[Space] Sortear &nbsp; [R] Repetir &nbsp; [A] Auto &nbsp; [Esc] Silenciar &nbsp; [N] Nuevo</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT COLUMN -->
+  <div class="left-col">
+
+    <!-- Number Display -->
+    <div class="number-display">
+      <div id="ball-wrapper">
+        <div id="ball">
+          <div id="big-number">?</div>
+        </div>
+      </div>
+      <div class="number-info">
+        <div class="number-label">Bolilla</div>
+        <div id="words-display">—</div>
+        <div id="group-tag"></div>
+        <div id="auto-cd"></div>
+        <div id="auto-bar-wrap"><div id="auto-bar"></div></div>
+      </div>
+    </div>
+
+    <!-- Recent Strip -->
+    <div class="recent-strip">
+      <span class="recent-label">Últimas:</span>
+      <div id="recent-nums" style="display:flex;gap:10px;"></div>
+    </div>
+
+    <!-- Number Grid -->
+    <div class="grid-section">
+      <div class="section-title">Números Sorteados</div>
+      <div class="group-headers" id="group-headers"></div>
+      <div class="num-grid" id="num-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <!-- Controls -->
+    <div class="panel">
+      <div class="panel-title">Controles</div>
+      <button class="btn btn-draw" id="btn-draw" onclick="drawNumber()">🎱 SORTEAR [Space]</button>
+      <div class="auto-row">
+        <button class="btn btn-auto" id="btn-auto" onclick="toggleAuto()">⏲ Auto [A]</button>
+        <input class="spinbox" type="number" id="auto-interval" min="3" max="60" value="10"> s
+      </div>
+      <div id="auto-bar-wrap2" style="display:none;margin-bottom:8px;">
+        <div style="height:4px;background:var(--sub);border-radius:2px;overflow:hidden;">
+          <div id="auto-bar2" style="height:100%;background:var(--warning);width:0%;transition:width 1s linear;border-radius:2px;"></div>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="repeatLast()">🔁 Repetir [R]</button>
+        <button class="btn btn-sm" onclick="stopAudio()">🔇 Silenciar</button>
+      </div>
+      <button class="btn btn-new" onclick="newGame()">🔄 Nuevo Juego [N]</button>
+      <div class="slider-label"><span>Velocidad animación</span><span id="speed-val">55</span></div>
+      <input type="range" min="0" max="100" value="55" id="speed-slider"
+             oninput="document.getElementById('speed-val').textContent=this.value">
+    </div>
+
+    <!-- Voice & Audio -->
+    <div class="panel">
+      <div class="panel-title">Voz & Audio</div>
+      <select id="voice-select">
+        <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
+        <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
+        <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
+        <option value="es-AR-TomasNeural">🇦🇷 Tomás (Argentina)</option>
+        <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
+        <option value="es-ES-AlvaroNeural">🇪🇸 Álvaro (España)</option>
+        <option value="es-CO-SalomeNeural">🇨🇴 Salomé (Colombia)</option>
+        <option value="es-CL-CatalinaNeural">🇨🇱 Catalina (Chile)</option>
+      </select>
+      <div class="slider-label">
+        <span>🔊 Volumen</span><span id="vol-val">85%</span>
+      </div>
+      <input type="range" min="0" max="100" value="85" id="vol-slider"
+             oninput="document.getElementById('vol-val').textContent=this.value+'%'">
+    </div>
+
+    <!-- History -->
+    <div class="panel hist-panel">
+      <div class="panel-title">Historial</div>
+      <div class="hist-btns">
+        <button class="hist-btn" onclick="copyHistory()">📋 Copiar</button>
+        <button class="hist-btn" onclick="exportHistory()">📤 Exportar</button>
+        <button class="hist-btn" onclick="clearHistory()">🧹 Limpiar</button>
+      </div>
+      <div id="hist-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- GAME OVER -->
+<div id="gameover">
+  <h1>🎉 ¡BINGO!</h1>
+  <p id="gameover-info">Se sortearon las 90 bolillas.</p>
+  <button class="btn btn-draw" onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
+</div>
+
+<script src="/static/js/game.js"></script>
+</body>
+</html>

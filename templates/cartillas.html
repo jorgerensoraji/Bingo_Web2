@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎴 Cartillas — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/cartillas.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="logo">🎱 Bingo Pro</a>
+  <div class="nav-links">
+    <span class="nav-hint">Vista Jugadores</span>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>🎴 Generar mi Cartilla</h1>
+  <p class="subtitle">Genera, administra, exporta y verifica cartillas en tiempo real</p>
+
+  <div class="top-row">
+
+    <!-- Panel Generar -->
+    <div class="panel">
+      <div class="panel-title">Generar Cartillas</div>
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-auto-btn" onclick="switchTab('auto')">🎲 Automática</button>
+        </div>
+
+      <div class="form-group">
+        <label>Código del administrador</label>
+        <input type="text" id="inp-code" placeholder="Ej: 123456" inputmode="numeric" maxlength="6">
+        <small class="hint">Pídele este código al administrador. Solo funciona antes de que empiece el sorteo.</small>
+      </div>
+      <div class="form-group">
+        <label>Nombre del jugador</label>
+        <input type="text" id="inp-nombre" placeholder="Ej: Ana García" maxlength="40">
+      </div>
+      <!-- TAB AUTO -->
+      <div class="tab-panel active" id="tab-auto">
+        <div class="form-group">
+          <label>Cantidad a generar (máx 20)</label>
+          <input type="number" id="inp-count" value="1" min="1" max="20">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="generateCartillas()">✨ Generar aleatoriamente</button>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="generateBatch()">📦 Generar para lista de jugadores</button>
+      </div>
+      <!-- TAB MANUAL -->
+      <div class="tab-panel" id="tab-manual">
+        <div class="picker-info">Elige exactamente <strong>15 números</strong> — máximo 2 por columna</div>
+        <div class="picker-count" id="picker-count-display">Seleccionados: <span>0</span> / 15</div>
+        <div class="picker-rules" id="picker-rules">Selecciona tus números y aquí verás si la cartilla es válida.</div>
+        <div class="picker-wrap" id="picker-wrap"></div>
+        <button class="btn btn-primary btn-full" id="btn-save-manual" onclick="saveManualCartilla()" disabled>💾 Guardar mi cartilla</button>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="clearPicker()">🗑 Limpiar selección</button>
+      </div>
+      <hr style="border-color:var(--border);margin:14px 0;">
+      <div class="panel-title" style="border:none;margin-bottom:10px;">Verificación en Vivo</div>
+      <button class="btn btn-success btn-full" onclick="checkAll()">🔍 Verificar todas las cartillas</button>
+      <button class="btn btn-ghost btn-full btn-sm" style="margin-top:6px;" onclick="loadCartillas()">🔄 Actualizar lista</button>
+      <hr style="border-color:var(--border);margin:14px 0;">
+      <button class="btn btn-danger btn-sm" style="width:100%;" onclick="deleteAll()">🗑️ Eliminar todas las cartillas</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="panel">
+      <div class="panel-title">Estado del Juego</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="val" id="st-cartillas">0</div><div class="lbl">Cartillas</div></div>
+        <div class="stat-card"><div class="val" id="st-online">0</div><div class="lbl">En línea</div></div>
+        <div class="stat-card"><div class="val" id="st-drawn">0</div><div class="lbl">Sorteadas</div></div>
+        <div class="stat-card"><div class="val" id="st-bingos" style="color:var(--accent);">0</div><div class="lbl">Bingos 🎉</div></div>
+        <div class="stat-card"><div class="val" id="st-lineas" style="color:var(--warning);">0</div><div class="lbl">Líneas</div></div>
+      </div>
+      <div class="panel-title" style="margin-top:10px;">Ganadores detectados</div>
+      <div id="winners-list" style="color:var(--muted);font-size:.85rem;">
+        Presiona "Verificar todas" para detectar ganadores.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tabla -->
+  <div class="panel">
+    <div class="panel-title">Todas las Cartillas</div>
+    <div class="toolbar">
+      <input class="search-input" type="text" id="search-input" placeholder="🔍 Buscar por nombre o ID…" oninput="filterTable()">
+      <select id="filter-status" onchange="filterTable()">
+        <option value="all">Todos los estados</option>
+        <option value="bingo">🎉 Bingo completo</option>
+        <option value="linea">⭐ Línea</option>
+        <option value="none">Sin premio</option>
+      </select>
+      <span style="color:var(--muted);font-size:.8rem;" id="count-label">0 cartillas</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Creada</th><th>Estado</th><th>Marcadas</th><th>Acciones</th></tr></thead>
+        <tbody id="cartilla-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cartilla -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal"><button class="modal-close" onclick="closeModal()">✕</button><div id="modal-body"></div></div>
+</div>
+
+<!-- Modal Batch -->
+<div class="modal-overlay" id="modal-batch" onclick="if(event.target===this)closeBatch()">
+  <div class="modal" style="max-width:500px;">
+    <button class="modal-close" onclick="closeBatch()">✕</button>
+    <h2 style="font-family:'Bebas Neue',sans-serif;color:var(--accent);font-size:1.8rem;margin-bottom:16px;">📦 Generación por lote</h2>
+    <div class="form-group">
+      <label>Nombres (uno por línea — 1 cartilla por jugador)</label>
+      <textarea id="batch-names" rows="10" placeholder="Ana García&#10;Carlos López&#10;María Rodríguez&#10;…"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="generateBatchSubmit()">✨ Generar cartillas</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/static/js/cartillas.js"></script>
+</body>
+</html>

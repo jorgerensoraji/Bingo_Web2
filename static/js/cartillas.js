@@ -1,0 +1,598 @@
+/* ═══════════════════════════════════════════════════
+   BINGO PRO — cartillas.js
+   Lógica de la página de cartillas
+   Made by Renso Ramirez
+═══════════════════════════════════════════════════ */
+
+// ── COLORES ───────────────────────────────────────
+const GC = [
+  {fg:'#5dade2',bg:'#0a1e2e'},{fg:'#f4d03f',bg:'#1e1500'},{fg:'#f1948a',bg:'#2a0805'},
+  {fg:'#e59866',bg:'#2a1000'},{fg:'#58d68d',bg:'#051e0f'},{fg:'#a569bd',bg:'#160525'},
+  {fg:'#48c9b0',bg:'#032420'},{fg:'#7fb3d3',bg:'#061320'},{fg:'#95a5a6',bg:'#0e1315'},
+];
+const COL_LABELS = ['1-9','10-19','20-29','30-39','40-49','50-59','60-69','70-79','80-90'];
+
+// ── ESTADO ────────────────────────────────────────
+let allCartillas = [];
+let checkResults = {};
+let drawnNums    = [];
+
+// ── CARGAR CARTILLAS ──────────────────────────────
+async function loadCartillas() {
+  try {
+    const [cRes, sRes] = await Promise.all([
+      fetch('/api/cartilla/list'),
+      fetch('/api/state')
+    ]);
+    const cData = await cRes.json();
+    const sData = await sRes.json();
+    allCartillas = cData.cartillas || [];
+    drawnNums    = sData.drawn    || [];
+    document.getElementById('st-drawn').textContent     = drawnNums.length;
+    document.getElementById('st-cartillas').textContent = allCartillas.length;
+    renderTable(allCartillas);
+  } catch(e) {
+    showToast('❌ Error al cargar cartillas');
+  }
+}
+
+// ── RENDER TABLA ──────────────────────────────────
+function renderTable(list) {
+  const tbody = document.getElementById('cartilla-tbody');
+  document.getElementById('count-label').textContent =
+    `${list.length} cartilla${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="6"
+      style="text-align:center;color:var(--muted);padding:30px;">
+      No hay cartillas generadas todavía.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(c => {
+    const r      = checkResults[c.id] || {};
+    const bingo  = r.bingo;
+    const linea  = r.linea && !r.bingo;
+    const marked = r.marked ?? '—';
+    const total  = r.total  ?? 15;
+    const badge  = bingo
+      ? `<span class="badge badge-bingo">🎉 BINGO</span>`
+      : linea
+        ? `<span class="badge badge-linea">⭐ LÍNEA</span>`
+        : `<span class="badge badge-none">—</span>`;
+    const dateStr = c.created ? c.created.slice(0,16).replace('T',' ') : '—';
+
+    return `<tr data-id="${c.id}"
+                data-nombre="${c.nombre.toLowerCase()}"
+                data-status="${bingo ? 'bingo' : linea ? 'linea' : 'none'}">
+      <td><span class="id-badge">${c.id}</span></td>
+      <td style="font-weight:600;">${escHtml(c.nombre)}</td>
+      <td style="color:var(--muted);font-size:.78rem;">${dateStr}</td>
+      <td>${badge}</td>
+      <td><span class="num-marked">${marked}</span> / ${total}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm" onclick="viewCartilla('${c.id}')">👁 Ver</button>
+          <a href="/api/cartilla/${c.id}/pdf" class="btn btn-pdf btn-sm">📄 PDF</a>
+          <a href="/api/cartilla/${c.id}/png" class="btn btn-png btn-sm">🖼 PNG</a>
+          <button class="btn btn-wa btn-sm" onclick="whatsappShare(\'${c.id}\')">📲 WhatsApp</button>
+          
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FILTRO ────────────────────────────────────────
+function filterTable() {
+  const q      = document.getElementById('search-input').value.toLowerCase();
+  const status = document.getElementById('filter-status').value;
+  const rows   = document.querySelectorAll('#cartilla-tbody tr[data-id]');
+  let visible  = 0;
+  rows.forEach(row => {
+    const matchQ = !q || row.dataset.nombre.includes(q) || row.dataset.id.toLowerCase().includes(q);
+    const matchS = status === 'all' || row.dataset.status === status;
+    row.style.display = matchQ && matchS ? '' : 'none';
+    if (matchQ && matchS) visible++;
+  });
+  document.getElementById('count-label').textContent =
+    `${visible} cartilla${visible !== 1 ? 's' : ''}`;
+}
+
+// ── GENERAR AUTOMÁTICO ────────────────────────────
+async function generateCartillas() {
+  const code   = (document.getElementById('inp-code')?.value || '').trim();
+  const nombre = document.getElementById('inp-nombre').value.trim() || 'Jugador';
+  const count  = parseInt(document.getElementById('inp-count').value) || 1;
+  showToast('⏳ Generando cartillas…');
+  try {
+    const res  = await fetch('/api/cartilla/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, nombre, count, client_id: CLIENT_ID })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.error === 'invalid_code_or_game_in_progress') {
+        showToast('⛔ Código inválido o el bingo ya comenzó.');
+        return;
+      }
+      showToast('❌ No se pudo generar la cartilla');
+      return;
+    }
+    await loadCartillas();
+    showToast(`✅ ${data.cartillas.length} cartilla(s) generada(s)`);
+    if (count === 1) viewCartilla(data.cartillas[0].id);
+  } catch(e) {
+    showToast('❌ Error al generar');
+  }
+}
+
+// ── GENERACIÓN POR LOTE ───────────────────────────
+function generateBatch() {
+  document.getElementById('modal-batch').classList.add('show');
+}
+function closeBatch() {
+  document.getElementById('modal-batch').classList.remove('show');
+}
+async function generateBatchSubmit() {
+  const names = document.getElementById('batch-names').value
+    .split('\n').map(n => n.trim()).filter(Boolean);
+  if (!names.length) { showToast('Escribe al menos un nombre'); return; }
+  showToast(`⏳ Generando ${names.length} cartillas…`);
+  closeBatch();
+  for (const nombre of names) {
+    await fetch('/api/cartilla/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, count: 1 })
+    });
+  }
+  await loadCartillas();
+  showToast(`✅ ${names.length} cartillas generadas`);
+}
+
+// ── ELIMINAR ──────────────────────────────────────
+async function deleteCartilla(cid) {
+  if (!confirm('¿Eliminar esta cartilla?')) return;
+  await fetch(`/api/cartilla/${cid}/delete`, { method: 'DELETE' });
+  await loadCartillas();
+  showToast('🗑️ Cartilla eliminada');
+}
+async function deleteAll() {
+  if (!confirm('¿Eliminar TODAS las cartillas? Esta acción no se puede deshacer.')) return;
+  await fetch('/api/cartilla/delete_all', { method: 'DELETE' });
+  checkResults = {};
+  await loadCartillas();
+  showToast('🗑️ Todas las cartillas eliminadas');
+}
+
+// ── VER CARTILLA (MODAL) ──────────────────────────
+async function viewCartilla(cid) {
+  try {
+    const [cRes, sRes, chkRes] = await Promise.all([
+      fetch(`/api/cartilla/${cid}`),
+      fetch('/api/state'),
+      fetch(`/api/cartilla/${cid}/check`)
+    ]);
+    const c   = await cRes.json();
+    const s   = await sRes.json();
+    const chk = await chkRes.json();
+    const drawn = new Set(s.drawn || []);
+
+    const bingo = chk.bingo;
+    const linea = chk.linea && !chk.bingo;
+
+    let alertHtml = '';
+    if (bingo) {
+      alertHtml = `<div class="winner-alert show">
+        <h2>🎉 ¡BINGO COMPLETO!</h2>
+        <p style="color:var(--muted);">Esta cartilla tiene todos sus números sorteados.</p>
+      </div>`;
+    } else if (linea) {
+      alertHtml = `<div class="linea-alert show">
+        <strong>⭐ ¡LÍNEA!</strong> La fila ${chk.linea_row + 1} está completa.
+      </div>`;
+    }
+
+    const headerHtml = COL_LABELS.map((lbl, ci) =>
+      `<div class="c-col-label" style="color:${GC[ci].fg};background:${GC[ci].bg};">${lbl}</div>`
+    ).join('');
+
+    let cellsHtml = '';
+    for (let ri = 0; ri < 3; ri++) {
+      for (let ci = 0; ci < 9; ci++) {
+        const num = c.grid[ri][ci];
+        const g   = GC[ci];
+        if (num === null) {
+          cellsHtml += `<div class="c-cell empty"></div>`;
+        } else if (drawn.has(num)) {
+          cellsHtml += `<div class="c-cell marked"
+            style="color:${g.fg};background:${g.bg};border-color:${g.fg};">
+            <span style="background:${g.fg};color:#060d12;width:80%;height:80%;
+              display:flex;align-items:center;justify-content:center;
+              border-radius:50%;font-size:.9rem;">${num}</span>
+          </div>`;
+        } else {
+          cellsHtml += `<div class="c-cell filled"
+            style="color:${g.fg}44;background:rgba(17,31,46,.8);">${num}</div>`;
+        }
+      }
+    }
+
+    document.getElementById('modal-body').innerHTML = `
+      ${alertHtml}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;
+                  flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2rem;
+                     color:var(--accent);letter-spacing:2px;">${escHtml(c.nombre)}</h2>
+          <p style="color:var(--muted);font-size:.85rem;">
+            Cartilla <strong style="color:var(--text);">#${c.id}</strong>
+            &nbsp;·&nbsp; Generada: ${c.created?.slice(0,16).replace('T',' ')}
+          </p>
+          <p style="color:var(--muted);font-size:.85rem;margin-top:4px;">
+            Marcadas: <strong style="color:var(--accent);">${chk.marked} / ${chk.total}</strong>
+            &nbsp;·&nbsp; Sorteadas en juego: <strong>${s.drawn?.length || 0}</strong>
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="/api/cartilla/${cid}/pdf" class="btn btn-pdf btn-sm">📄 Descargar PDF</a>
+          <a href="/api/cartilla/${cid}/png" class="btn btn-png btn-sm">🖼️ Descargar PNG</a>
+        </div>
+      </div>
+      <div class="cartilla-preview">
+        <div class="c-header-row">${headerHtml}</div>
+        <div class="c-grid">${cellsHtml}</div>
+      </div>
+      <div style="margin-top:14px;font-size:.78rem;color:var(--muted);text-align:center;">
+        ✅ Números marcados en verde · Pendientes en gris
+      </div>
+    `;
+    document.getElementById('modal-overlay').classList.add('show');
+  } catch(e) {
+    showToast('❌ Error al cargar cartilla');
+  }
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ── VERIFICAR TODAS ───────────────────────────────
+async function checkAll() {
+  showToast('🔍 Verificando…');
+  try {
+    const res  = await fetch('/api/cartilla/check_all');
+    const data = await res.json();
+    checkResults = {};
+    let bingos = 0, lineas = 0;
+    const winners = [];
+
+    data.results.forEach(r => {
+      checkResults[r.id] = r;
+      if (r.bingo)       { bingos++; winners.push({...r, type:'bingo'}); }
+      else if (r.linea)  { lineas++; winners.push({...r, type:'linea'}); }
+    });
+
+    document.getElementById('st-bingos').textContent = bingos;
+    document.getElementById('st-lineas').textContent = lineas;
+    document.getElementById('st-drawn').textContent  = data.drawn_count;
+
+    const wList = document.getElementById('winners-list');
+    if (winners.length) {
+      wList.innerHTML = winners.map(w => `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+          padding:8px 12px;margin-bottom:6px;border-radius:8px;
+          background:${w.type==='bingo'?'rgba(0,229,180,.08)':'rgba(246,195,67,.08)'};
+          border:1px solid ${w.type==='bingo'?'var(--accent)':'var(--warning)'};">
+          <span>
+            <strong>${w.type==='bingo' ? '🎉 BINGO' : '⭐ LÍNEA'}</strong>
+            &nbsp; ${escHtml(w.nombre)}
+          </span>
+          <span style="color:var(--muted);font-size:.78rem;">
+            #${w.id} · ${w.marked}/${w.total}
+          </span>
+        </div>`
+      ).join('');
+    } else {
+      wList.innerHTML = `<p style="color:var(--muted);font-size:.85rem;">
+        Ninguna cartilla tiene premio todavía. Sorteadas: ${data.drawn_count}/90</p>`;
+    }
+
+    renderTable(allCartillas);
+    showToast(`✅ Verificado: ${bingos} bingo(s), ${lineas} línea(s)`);
+  } catch(e) {
+    showToast('❌ Error al verificar');
+  }
+}
+
+// ── TABS ──────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('tab-auto').classList.toggle('active',   tab === 'auto');
+  document.getElementById('tab-manual').classList.toggle('active', tab === 'manual');
+  document.getElementById('tab-auto-btn').classList.toggle('active',   tab === 'auto');
+  document.getElementById('tab-manual-btn').classList.toggle('active', tab === 'manual');
+}
+
+// ── MANUAL PICKER ─────────────────────────────────
+const COL_RANGES_MANUAL = [
+  [1,2,3,4,5,6,7,8,9],
+  [10,11,12,13,14,15,16,17,18,19],
+  [20,21,22,23,24,25,26,27,28,29],
+  [30,31,32,33,34,35,36,37,38,39],
+  [40,41,42,43,44,45,46,47,48,49],
+  [50,51,52,53,54,55,56,57,58,59],
+  [60,61,62,63,64,65,66,67,68,69],
+  [70,71,72,73,74,75,76,77,78,79],
+  [80,81,82,83,84,85,86,87,88,89,90],
+];
+let selectedNums = new Set();
+
+function buildPicker() {
+  const wrap = document.getElementById('picker-wrap');
+  wrap.innerHTML = `<div class="picker-grid">${
+    COL_RANGES_MANUAL.map((nums, ci) => `
+      <div class="picker-col">
+        <div class="picker-col-label" style="color:${GC[ci].fg};background:${GC[ci].bg};">
+          ${COL_LABELS[ci]}
+        </div>
+        ${nums.map(n => `
+          <div class="p-num" id="pn-${n}"
+               style="color:${GC[ci].fg};"
+               onclick="toggleNum(${n},${ci})">
+            ${n}
+          </div>`).join('')}
+      </div>`).join('')
+  }</div>`;
+}
+
+function toggleNum(n, ci) {
+  const el = document.getElementById(`pn-${n}`);
+  if (selectedNums.has(n)) {
+    selectedNums.delete(n);
+    el.classList.remove('selected');
+    el.style.background  = 'var(--card)';
+    el.style.borderColor = '';
+  } else {
+    if (selectedNums.size >= 15) {
+      showToast('⚠️ Ya tienes 15 números seleccionados');
+      return;
+    }
+    selectedNums.add(n);
+    el.classList.add('selected');
+    el.style.background  = GC[ci].bg;
+    el.style.borderColor = GC[ci].fg;
+  }
+  updatePickerUI();
+}
+
+function clearPicker() {
+  selectedNums.forEach(n => {
+    const el = document.getElementById(`pn-${n}`);
+    if (el) {
+      el.classList.remove('selected');
+      el.style.background  = 'var(--card)';
+      el.style.borderColor = '';
+    }
+  });
+  selectedNums.clear();
+  updatePickerUI();
+}
+
+function updatePickerUI() {
+  const count = selectedNums.size;
+  const disp  = document.getElementById('picker-count-display');
+  disp.innerHTML = `Seleccionados: <span>${count}</span> / 15`;
+  disp.className = `picker-count${count > 15 ? ' warn' : ''}`;
+
+  const colCounts = COL_RANGES_MANUAL.map(range =>
+    range.filter(n => selectedNums.has(n)).length
+  );
+  const errors = [], ok = [];
+
+  if (count < 15) errors.push(`⏳ Faltan ${15 - count} número(s)`);
+  else ok.push('✅ Total: 15 números');
+
+  colCounts.forEach((c, i) => {
+    if (c > 2) errors.push(`❌ Col ${COL_LABELS[i]}: máx 2 (tienes ${c})`);
+  });
+
+  if (count === 15 && errors.length === 0) {
+    const valid = validateManualGrid(colCounts);
+    if (!valid) errors.push('❌ No se pueden formar 3 filas de 5 con esta distribución');
+    else ok.push('✅ Las 3 filas de 5 se pueden formar');
+  }
+
+  const rules = document.getElementById('picker-rules');
+  const allOk = count === 15 && errors.length === 0;
+  rules.innerHTML = [...ok, ...errors].map(r =>
+    `<div class="${r.startsWith('✅') ? 'rule-ok' : r.startsWith('⏳') ? 'rule-warn' : 'rule-err'}">${r}</div>`
+  ).join('') || 'Selecciona tus números.';
+
+  document.getElementById('btn-save-manual').disabled = !allOk;
+}
+
+function validateManualGrid(colCounts) {
+  const rows = [[], [], []];
+  const cols = colCounts.map((c, i) => ({ count:c, col:i })).filter(x => x.count > 0);
+
+  function fill(ci) {
+    if (ci === cols.length) return rows.every(r => r.length === 5);
+    const { count, col } = cols[ci];
+    const available = rows.map((r, i) => ({ ri:i, len:r.length })).filter(x => x.len < 5);
+    if (available.length < count) return false;
+    const combos = combinations(available.map(x => x.ri), count);
+    for (const combo of combos) {
+      combo.forEach(ri => rows[ri].push(col));
+      if (fill(ci + 1)) return true;
+      combo.forEach(ri => rows[ri].pop());
+    }
+    return false;
+  }
+  return fill(0);
+}
+
+function combinations(arr, k) {
+  if (k === 0) return [[]];
+  if (k > arr.length) return [];
+  const [first, ...rest] = arr;
+  return [
+    ...combinations(rest, k - 1).map(c => [first, ...c]),
+    ...combinations(rest, k),
+  ];
+}
+
+async function saveManualCartilla() {
+  const code   = (document.getElementById('inp-code')?.value || '').trim();
+  const nombre = document.getElementById('inp-nombre').value.trim() || 'Jugador';
+  if (selectedNums.size !== 15) { showToast('⚠️ Selecciona exactamente 15 números'); return; }
+
+  const colCounts = COL_RANGES_MANUAL.map(range =>
+    range.filter(n => selectedNums.has(n)).length
+  );
+  const rows = [[], [], []];
+  const cols = colCounts.map((c, i) => ({
+    count: c, col: i,
+    nums: COL_RANGES_MANUAL[i].filter(n => selectedNums.has(n))
+  })).filter(x => x.count > 0);
+
+  function buildRows(ci) {
+    if (ci === cols.length) return rows.every(r => r.length === 5);
+    const { count, col, nums: cnums } = cols[ci];
+    const available = rows.map((r, i) => i).filter(i => rows[i].length < 5);
+    const combos = combinations(available, count);
+    for (const combo of combos) {
+      combo.sort().forEach((ri, i) => rows[ri].push({ col, num: cnums[i] }));
+      if (buildRows(ci + 1)) return true;
+      combo.sort().forEach((ri, i) => rows[ri].pop());
+    }
+    return false;
+  }
+  buildRows(0);
+
+  const grid = Array.from({ length:3 }, () => Array(9).fill(null));
+  rows.forEach((row, ri) => row.forEach(({ col, num }) => { grid[ri][col] = num; }));
+
+  showToast('⏳ Guardando cartilla…');
+  try {
+    const res  = await fetch('/api/cartilla/save_manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, grid })
+    });
+    const data = await res.json();
+    clearPicker();
+    await loadCartillas();
+    showToast('✅ Cartilla guardada correctamente');
+    viewCartilla(data.cartilla.id);
+  } catch(e) {
+    showToast('❌ Error al guardar cartilla');
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+let toastJob = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastJob);
+  toastJob = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── PRESENCIA / MÉTRICAS ───────────────────────────
+function getClientId() {
+  let cid = localStorage.getItem('bingo_client_id');
+  if (!cid) {
+    cid = 'c_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    localStorage.setItem('bingo_client_id', cid);
+  }
+  return cid;
+}
+
+async function pingPresence() {
+  try {
+    const res = await fetch('/api/presence/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: getClientId() })
+    });
+    const data = await res.json();
+    if (data?.online != null) {
+      const el = document.getElementById('st-online');
+      if (el) el.textContent = data.online;
+    }
+  } catch (_) {}
+}
+
+async function refreshMetrics() {
+  try {
+    const res = await fetch('/api/metrics');
+    const m   = await res.json();
+    if (m?.online != null) {
+      const el = document.getElementById('st-online');
+      if (el) el.textContent = m.online;
+    }
+  } catch (_) {}
+}
+
+// ── INIT ──────────────────────────────────────────
+buildPicker();
+// Seguridad extra: si el juego empezó, volver al juego.
+fetch('/api/state')
+  .then(r => r.json())
+  .then(s => {
+    if ((s.drawn || []).length > 0) {
+      window.location.href = '/?locked=1';
+      return;
+    }
+    loadCartillas();
+  })
+  .catch(() => loadCartillas());
+
+setInterval(loadCartillas, 10000);
+pingPresence();
+refreshMetrics();
+setInterval(pingPresence, 12000);
+setInterval(refreshMetrics, 5000)// ── CLIENT ID (para presencia + filtrar "mis cartillas") ───────────────
+function getClientId() {
+  const k = 'bingo_client_id';
+  let v = localStorage.getItem(k);
+  if (!v) {
+    v = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+    localStorage.setItem(k, v);
+  }
+  return v;
+}
+const CLIENT_ID = getClientId();
+
+
+// ── WHATSAPP ───────────────────────────────────────
+async function whatsappShare(cid) {
+  try {
+    const res = await fetch(`/api/cartilla/${cid}`);
+    if (!res.ok) { showToast('❌ No se pudo cargar la cartilla'); return; }
+    const c = await res.json();
+
+    const rows = (c.grid || []).map(row =>
+      row.map(x => (x === null ? '  ' : String(x).padStart(2,'0'))).join(' ')
+    );
+
+    const msg =
+      `🎱 *Bingo Pro*\n` +
+      `👤 Jugador: ${c.nombre}\n` +
+      `🆔 Cartilla: ${c.id}\n\n` +
+      rows.join('\n') + `\n\n` +
+      `✅ ¡Suerte!`;
+
+    const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+    window.open(url, '_blank');
+  } catch (e) {
+    showToast('❌ Error al preparar WhatsApp');
+  }
+}
+
+;
