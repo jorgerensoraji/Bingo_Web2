@@ -2,12 +2,6 @@
 """
 BINGO PRO WEB v3.0 — Servidor Flask
 Sistema completo: Juego + Cartillas + PDF + PNG + Auto-verificación
-
-Instalar:
-    py -3.12 -m pip install flask edge-tts num2words reportlab pillow qrcode
-
-Ejecutar:
-    py -3.12 app.py
 """
 
 import asyncio, json, os, random, socket, tempfile, threading, uuid
@@ -16,16 +10,11 @@ from io import BytesIO
 from pathlib import Path
 
 import edge_tts
-from flask import Flask, jsonify, render_template, request, send_file, session, redirect, url_for
+from flask import Flask, jsonify, render_template, request, send_file, session, redirect
 from num2words import num2words
 
-# PDF / Image
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas as rl_canvas
 from PIL import Image, ImageDraw, ImageFont
 import qrcode
@@ -46,15 +35,12 @@ def admin_required():
         return jsonify({"error":"unauthorized"}), 401
     return None
 
-
-
 # ─── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR      = Path(__file__).parent
 CARTILLAS_DIR = BASE_DIR / "cartillas_data"
 TTS_DIR       = Path(tempfile.gettempdir()) / "bingo_web_tts"
 CARTILLAS_DIR.mkdir(exist_ok=True)
 TTS_DIR.mkdir(exist_ok=True)
-
 
 # ─── Códigos de compra (vouchers) ────────────────────────────────────────────
 VOUCHERS_FILE = CARTILLAS_DIR / "_vouchers.json"
@@ -72,11 +58,10 @@ def _save_vouchers(vs: list[dict]) -> None:
     VOUCHERS_FILE.write_text(json.dumps(vs, ensure_ascii=False, indent=2), encoding="utf-8")
 
 def _gen_voucher_code() -> str:
-    # Código corto, fácil de dictar: 6 alfanum sin confusos
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     return "".join(random.choice(alphabet) for _ in range(6))
 
-def _find_voucher(vs: list[dict], code: str) -> dict | None:
+def _find_voucher(vs: list[dict], code: str):
     code = (code or "").strip().upper()
     for v in vs:
         if v.get("code","").upper() == code:
@@ -84,7 +69,6 @@ def _find_voucher(vs: list[dict], code: str) -> dict | None:
     return None
 
 def validate_voucher_code(code: str) -> tuple[bool, str]:
-    """Retorna (ok, error_code). error_code: bad_code, used_code, no_active"""
     code = (code or "").strip().upper()
     if not code:
         return False, "bad_code"
@@ -108,7 +92,6 @@ def mark_voucher_used(code: str, cartilla_ids: list[str]) -> None:
         v["used_at"] = datetime.now().isoformat()
         v["cartillas"] = cartilla_ids
         _save_vouchers(vs)
-
 
 # ─── Estado del juego ─────────────────────────────────────────────────────────
 class GameState:
@@ -146,36 +129,33 @@ def get_local_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]; s.close(); return ip
-    except: return "127.0.0.1"
+    except:
+        return "127.0.0.1"
 
-# ─── Generador de cartillas (formato 90 bolillas: 3 filas x 9 columnas) ───────
+# ─── Generador de cartillas ───────────────────────────────────────────────────
 COL_RANGES = [
-    list(range(1,  10)),   # col 0:  1-9
-    list(range(10, 20)),   # col 1: 10-19
-    list(range(20, 30)),   # col 2: 20-29
-    list(range(30, 40)),   # col 3: 30-39
-    list(range(40, 50)),   # col 4: 40-49
-    list(range(50, 60)),   # col 5: 50-59
-    list(range(60, 70)),   # col 6: 60-69
-    list(range(70, 80)),   # col 7: 70-79
-    list(range(80, 91)),   # col 8: 80-90
+    list(range(1,  10)),
+    list(range(10, 20)),
+    list(range(20, 30)),
+    list(range(30, 40)),
+    list(range(40, 50)),
+    list(range(50, 60)),
+    list(range(60, 70)),
+    list(range(70, 80)),
+    list(range(80, 91)),
 ]
 
 def generate_cartilla_grid():
-    """Genera una cartilla válida de 90 bolillas: 3x9, 5 números por fila."""
     for _ in range(1000):
-        # Asignar cuántos números por columna (total debe ser 15)
-        col_counts = [1] * 9            # 9 columnas × 1 = 9
+        col_counts = [1] * 9
         extras = random.sample(range(9), 6)
         for e in extras:
-            col_counts[e] = 2           # 9 + 6 = 15 ✓
+            col_counts[e] = 2
 
-        # Asignar qué filas reciben números en cada columna
         col_rows = []
         for c in range(9):
             col_rows.append(random.sample([0, 1, 2], col_counts[c]))
 
-        # Verificar 5 números por fila
         row_counts = [0, 0, 0]
         for c in range(9):
             for r in col_rows[c]:
@@ -183,7 +163,6 @@ def generate_cartilla_grid():
         if row_counts != [5, 5, 5]:
             continue
 
-        # Llenar la grilla con números reales
         grid = [[None]*9 for _ in range(3)]
         for c in range(9):
             nums = sorted(random.sample(COL_RANGES[c], col_counts[c]))
@@ -194,7 +173,6 @@ def generate_cartilla_grid():
     raise RuntimeError("No se pudo generar cartilla válida")
 
 def save_cartilla(nombre: str, grid: list) -> dict:
-    """Guarda cartilla en JSON y retorna sus datos."""
     cid  = str(uuid.uuid4())[:8].upper()
     data = {
         "id":      cid,
@@ -210,15 +188,16 @@ def load_all_cartillas() -> list:
     for f in sorted(CARTILLAS_DIR.glob("*.json")):
         try:
             cartillas.append(json.loads(f.read_text(encoding="utf-8")))
-        except: pass
+        except:
+            pass
     return cartillas
 
-def load_cartilla(cid: str) -> dict | None:
+def load_cartilla(cid: str):
     f = CARTILLAS_DIR / f"{cid}.json"
-    if not f.exists(): return None
+    if not f.exists():
+        return None
     return json.loads(f.read_text(encoding="utf-8"))
 
-# ─── Verificar ganador ────────────────────────────────────────────────────────
 def check_winner(grid: list, drawn: list) -> dict:
     drawn_set = set(drawn)
     nums      = [n for row in grid for n in row if n is not None]
@@ -238,7 +217,7 @@ def check_winner(grid: list, drawn: list) -> dict:
             break
     return result
 
-# ─── Generador de PDF ─────────────────────────────────────────────────────────
+# ─── PDF / PNG ───────────────────────────────────────────────────────────────
 GROUP_COLORS_HEX = [
     "#5dade2","#f4d03f","#f1948a","#e59866",
     "#58d68d","#a569bd","#48c9b0","#7fb3d3","#95a5a6",
@@ -256,11 +235,9 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
     c = rl_canvas.Canvas(buf, pagesize=A4)
     cw, ch = W, H
 
-    # Fondo oscuro
     c.setFillColorRGB(0.04, 0.07, 0.10)
     c.rect(0, 0, cw, ch, fill=1, stroke=0)
 
-    # Título
     c.setFillColorRGB(0, 0.85, 0.70)
     c.setFont("Helvetica-Bold", 28)
     c.drawCentredString(cw/2, ch - 2.2*cm, "🎱  BINGO PRO")
@@ -275,19 +252,16 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
     c.drawCentredString(cw/2, ch - 3.6*cm,
         f"Generada: {cartilla['created'][:16].replace('T',' ')}")
 
-    # Encabezados de columna
     grid  = cartilla["grid"]
     col_w = (cw - 4*cm) / 9
     row_h = 1.8*cm
     x0    = 2*cm
     y0    = ch - 5.5*cm
 
-    col_labels = ["1-9","10-19","20-29","30-39","40-49",
-                  "51-60","60-69","70-79","80-90"]
+    col_labels = ["1-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-90"]
     for ci in range(9):
         r, g, b = hex_to_rgb01(GROUP_COLORS_HEX[ci])
         cx = x0 + ci * col_w
-        # Fondo encabezado
         c.setFillColorRGB(r*0.3, g*0.3, b*0.3)
         c.roundRect(cx+1, y0+2, col_w-2, 0.7*cm, 4, fill=1, stroke=0)
         c.setFillColorRGB(r, g, b)
@@ -296,7 +270,6 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
 
     y0 -= 0.8*cm
 
-    # Celdas de la cartilla
     for ri in range(3):
         for ci in range(9):
             num   = grid[ri][ci]
@@ -305,15 +278,12 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
             r2, g2, b2 = hex_to_rgb01(GROUP_COLORS_HEX[ci])
 
             if num is None:
-                # Celda vacía
                 c.setFillColorRGB(0.07, 0.12, 0.16)
                 c.setStrokeColorRGB(0.10, 0.18, 0.24)
             elif num in drawn_set:
-                # Número marcado
                 c.setFillColorRGB(r2*0.5, g2*0.5, b2*0.5)
                 c.setStrokeColorRGB(r2, g2, b2)
             else:
-                # Número sin marcar
                 c.setFillColorRGB(0.07, 0.16, 0.22)
                 c.setStrokeColorRGB(0.15, 0.28, 0.38)
 
@@ -321,8 +291,6 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
 
             if num is not None:
                 if num in drawn_set:
-                    c.setFillColorRGB(1, 1, 1)
-                    # Círculo de fondo
                     c.setFillColorRGB(r2, g2, b2)
                     r_circ = min(col_w, row_h)*0.36
                     c.circle(cx + col_w/2, cy - row_h/2 + 2, r_circ, fill=1, stroke=0)
@@ -333,7 +301,6 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
                 c.setFont("Helvetica-Bold", 18)
                 c.drawCentredString(cx + col_w/2, cy - row_h/2 - 5, str(num))
 
-    # QR con ID de cartilla
     qr      = qrcode.make(f"BINGO-{cartilla['id']}")
     qr_buf  = BytesIO()
     qr.save(qr_buf, format="PNG")
@@ -348,7 +315,6 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
     c.setFont("Helvetica", 7)
     c.drawCentredString(cw - 3*cm + qr_size/2, 1.2*cm, f"ID: {cartilla['id']}")
 
-    # Instrucciones / pie
     c.setFillColorRGB(0.25, 0.40, 0.52)
     c.setFont("Helvetica", 9)
     c.drawCentredString(cw/2, 2.0*cm, "Made by Renso Ramirez  •  Bingo Pro Web v3.0")
@@ -359,7 +325,6 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
     buf.seek(0)
     return buf
 
-# ─── Generador de PNG ─────────────────────────────────────────────────────────
 def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
     drawn_set = set(drawn or [])
     grid      = cartilla["grid"]
@@ -375,7 +340,6 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
     img  = Image.new("RGB", (W, H), (10, 18, 26))
     draw = ImageDraw.Draw(img)
 
-    # ── Header ──
     draw.text((W//2, PAD+8),    "🎱 BINGO PRO",
               fill=(0,210,170), anchor="mt",
               font=ImageFont.truetype("arial.ttf", 32) if os.name=="nt" else ImageFont.load_default())
@@ -393,7 +357,6 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
 
     y_start = PAD + HEADER_H
 
-    # ── Encabezados columna ──
     col_labels = ["1-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-90"]
     for ci in range(COLS):
         cx   = PAD + ci*CELL_W
@@ -407,7 +370,6 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
                   fill=(r,g,b), anchor="mm",
                   font=ImageFont.truetype("arialbd.ttf", 11) if os.name=="nt" else ImageFont.load_default())
 
-    # ── Celdas ──
     for ri in range(ROWS):
         for ci in range(COLS):
             num   = grid[ri][ci]
@@ -435,7 +397,6 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
 
             if num is not None:
                 if num in drawn_set:
-                    # Círculo de resaltado
                     margin = 12
                     draw.ellipse(
                         [cx+margin, cy+margin, cx+CELL_W-margin, cy+CELL_H-margin],
@@ -454,7 +415,6 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
                     str(num), fill=txt_color, anchor="mm", font=fnt
                 )
 
-    # ── Footer ──
     fy = y_start + ROWS*CELL_H + 12
     draw.text((W//2, fy),    f"ID: {cartilla['id']}",
               fill=(100,150,180), anchor="mt",
@@ -468,19 +428,14 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
     buf.seek(0)
     return buf
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# RUTAS FLASK
-# ═══════════════════════════════════════════════════════════════════════════════
-
 # ── Páginas ──────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    # Vista del juego (los jugadores solo miran; el admin controla desde /admin)
-    return render_template("index.html")
+    # ✅ FIX: usar la misma sesión que el login setea
+    return render_template("index.html", is_admin=is_admin())
 
 @app.route("/cartillas")
 def cartillas_player_page():
-    # Página de jugadores para generar su cartilla con código
     return render_template("cartillas_player.html")
 
 @app.route("/admin/login")
@@ -501,8 +456,7 @@ def admin_cartillas_page():
         return redirect("/admin/login")
     return render_template("cartillas_admin.html")
 
-
-# ── API Admin (login) ─────────────────────────────────────────────────────────
+# ── API Admin ────────────────────────────────────────────────────────────────
 @app.route("/api/admin/login", methods=["POST"])
 def api_admin_login():
     data = request.get_json() or {}
@@ -519,27 +473,26 @@ def api_admin_logout():
     session.clear()
     return jsonify({"status":"ok"})
 
-@app.route("/api/me")
-def api_me():
-    return jsonify({"is_admin": is_admin()})
-
-# ── API Juego ─────────────────────────────────────────────────────────────────
+# ── API Juego ────────────────────────────────────────────────────────────────
 @app.route("/api/draw", methods=["POST"])
 def api_draw():
     chk = admin_required()
     if chk: return chk
+
     with game_lock:
         if not game.available:
             return jsonify({"status":"finished","drawn":game.drawn})
         num   = game.draw()
         words = num2words(num, lang="es")
         count = len(game.drawn)
+
         if count == 1:
             phrase = f"Primera bolilla, número {words}"
         elif count == 90:
             phrase = f"Última bolilla, número {words}. ¡Juego completo!"
         else:
             phrase = f"La siguiente bolilla es el número {words}"
+
         return jsonify({
             "status":"ok","number":num,"words":words,
             "phrase":phrase,"drawn":game.drawn,
@@ -561,12 +514,16 @@ def api_speak():
 def api_repeat():
     chk = admin_required()
     if chk: return chk
+
     data  = request.get_json() or {}
     voice = data.get("voice","es-MX-DaliaNeural")
+
     with game_lock:
-        if game.last is None: return jsonify({"error":"no number"}),400
+        if game.last is None:
+            return jsonify({"error":"no number"}),400
         words  = num2words(game.last, lang="es")
         phrase = f"Repito, bolilla número {words}"
+
     try:
         return send_file(make_audio(phrase, voice), mimetype="audio/mpeg")
     except Exception as e:
@@ -585,7 +542,6 @@ def api_state():
     with game_lock:
         return jsonify({"drawn":game.drawn,"remaining":len(game.available),"last":game.last})
 
-
 # ── API Admin: Vouchers ───────────────────────────────────────────────────────
 @app.route("/api/admin/voucher", methods=["POST"])
 def api_admin_create_voucher():
@@ -599,7 +555,6 @@ def api_admin_create_voucher():
 
     with vouchers_lock:
         vs = _load_vouchers()
-        # Evitar duplicado (muy raro) regenerando si existe
         code = _gen_voucher_code()
         while _find_voucher(vs, code):
             code = _gen_voucher_code()
@@ -648,12 +603,14 @@ def api_save_manual():
     ok, err = validate_voucher_code(code)
     if not ok:
         return jsonify({"error": err}), 403
+
     if not grid or len(grid) != 3 or any(len(r)!=9 for r in grid):
         return jsonify({"error":"grid inválido"}), 400
-    # Validar 15 números en total
+
     nums = [n for row in grid for n in row if n is not None]
     if len(nums) != 15:
         return jsonify({"error":f"Se requieren 15 números, recibidos: {len(nums)}"}), 400
+
     cartilla = save_cartilla(nombre, grid)
     mark_voucher_used(code, [cartilla["id"]])
     return jsonify({"status":"ok", "cartilla": cartilla})
@@ -663,7 +620,7 @@ def api_generate():
     data    = request.get_json() or {}
     nombre  = (data.get("nombre","") or "Jugador").strip()[:40]
     code    = (data.get("code","") or "").strip().upper()
-    count   = min(int(data.get("count",1)), 20)  # máx 20 a la vez
+    count   = min(int(data.get("count",1)), 20)
 
     with game_lock:
         if len(game.drawn) > 0:
@@ -672,6 +629,7 @@ def api_generate():
     ok, err = validate_voucher_code(code)
     if not ok:
         return jsonify({"error": err}), 403
+
     results = []
     for _ in range(count):
         grid    = generate_cartilla_grid()
@@ -691,33 +649,21 @@ def api_get(cid):
     if not c: return jsonify({"error":"not found"}),404
     return jsonify(c)
 
-@app.route("/api/cartilla/<cid>/delete", methods=["DELETE"])
-def api_delete(cid):
-    f = CARTILLAS_DIR / f"{cid.upper()}.json"
-    if f.exists(): f.unlink()
-    return jsonify({"status":"ok"})
-
-@app.route("/api/cartilla/delete_all", methods=["DELETE"])
-def api_delete_all():
-    for f in CARTILLAS_DIR.glob("*.json"):
-        f.unlink()
-    return jsonify({"status":"ok"})
-
 @app.route("/api/cartilla/<cid>/check")
 def api_check(cid):
     c = load_cartilla(cid.upper())
     if not c: return jsonify({"error":"not found"}),404
     with game_lock:
-        drawn = list(game.drawn)
-    return jsonify(check_winner(c["grid"], drawn))
+        drawn2 = list(game.drawn)
+    return jsonify(check_winner(c["grid"], drawn2))
 
 @app.route("/api/cartilla/<cid>/pdf")
 def api_pdf(cid):
     c = load_cartilla(cid.upper())
     if not c: return jsonify({"error":"not found"}),404
     with game_lock:
-        drawn = list(game.drawn)
-    buf  = cartilla_to_pdf(c, drawn)
+        drawn2 = list(game.drawn)
+    buf  = cartilla_to_pdf(c, drawn2)
     name = f"cartilla_{cid}_{c['nombre'].replace(' ','_')}.pdf"
     return send_file(buf, mimetype="application/pdf",
                      as_attachment=True, download_name=name)
@@ -727,28 +673,11 @@ def api_png(cid):
     c = load_cartilla(cid.upper())
     if not c: return jsonify({"error":"not found"}),404
     with game_lock:
-        drawn = list(game.drawn)
-    buf  = cartilla_to_png(c, drawn)
+        drawn2 = list(game.drawn)
+    buf  = cartilla_to_png(c, drawn2)
     name = f"cartilla_{cid}_{c['nombre'].replace(' ','_')}.png"
     return send_file(buf, mimetype="image/png",
                      as_attachment=True, download_name=name)
-
-@app.route("/api/cartilla/check_all")
-def api_check_all():
-    with game_lock:
-        drawn = list(game.drawn)
-    results = []
-    for c in load_all_cartillas():
-        r = check_winner(c["grid"], drawn)
-        results.append({
-            "id":      c["id"],
-            "nombre":  c["nombre"],
-            "bingo":   r["bingo"],
-            "linea":   r["linea"],
-            "marked":  r["marked"],
-            "total":   r["total"],
-        })
-    return jsonify({"results": results, "drawn_count": len(drawn)})
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

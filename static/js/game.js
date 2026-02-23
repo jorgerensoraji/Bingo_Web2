@@ -4,6 +4,13 @@
    Made by Renso Ramirez
 ═══════════════════════════════════════════════════ */
 
+/*
+  IMPORTANTE:
+  - IS_ADMIN VIENE DESDE index.html (Flask):
+      <script>const IS_ADMIN = true/false;</script>
+  - NO se redefine aquí. (Antes lo redefinías y eso causaba bugs)
+*/
+
 // ── COLORES DE GRUPOS ──────────────────────────────
 const GROUP_COLORS = [
   { fg:'#5dade2', bg:'#0a1e2e' },
@@ -31,22 +38,6 @@ const BALL_COLORS = [
 ];
 
 // ── ESTADO ────────────────────────────────────────
-
-// ── ROL (admin / jugador) ─────────────────────────────
-let IS_ADMIN = false;
-async function detectRole(){
-  try{
-    const me = await (await fetch('/api/me')).json();
-    IS_ADMIN = !!me.is_admin;
-    if(!IS_ADMIN){
-      ['btn-draw','btn-repeat','btn-new','btn-auto'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el) el.disabled = true;
-      });
-    }
-  }catch(e){}
-}
-
 let drawn          = [];
 let lastNumber     = null;
 let isDrawing      = false;
@@ -59,6 +50,36 @@ let startTime      = null;
 let clockJob       = null;
 let currentAudio   = null;
 let elapsedSeconds = 0;
+
+// ───────────────────────────────────────────────────
+// 🔒 BLOQUEO TOTAL DE CONTROLES PARA JUGADORES
+// ───────────────────────────────────────────────────
+function applyRoleSecurity(){
+  if (typeof IS_ADMIN === 'undefined') {
+    // Si por alguna razón no viene del HTML, asumimos jugador.
+    window.IS_ADMIN = false;
+  }
+
+  if (!IS_ADMIN) {
+    // Desactivar cualquier control marcado como admin-only
+    document.querySelectorAll(".admin-only").forEach(el => {
+      el.disabled = true;
+      el.style.opacity = "0.4";
+      el.style.pointerEvents = "none";
+      el.setAttribute("aria-disabled", "true");
+      el.tabIndex = -1;
+    });
+
+    // Bloquear atajos del teclado (para que no puedan sortear por Space, etc.)
+    window.addEventListener("keydown", (e) => {
+      const blocked = [" ", "r", "R", "a", "A", "n", "N"];
+      if (blocked.includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
+}
 
 // ── INIT GRID ─────────────────────────────────────
 function initGrid() {
@@ -130,6 +151,13 @@ async function fetchDraw() {
   try {
     const res  = await fetch('/api/draw', { method: 'POST' });
     const data = await res.json();
+
+    if (!res.ok) {
+      showToast('❌ No autorizado / error');
+      isDrawing = false;
+      setDrawBtnState(true);
+      return;
+    }
 
     if (data.status === 'finished') {
       showGameOver();
@@ -273,6 +301,8 @@ function stopAudio() {
 
 // ── REPETIR ───────────────────────────────────────
 function repeatLast() {
+  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede repetir'); return; }
+
   if (!lastNumber) { showToast('Todavía no se sorteó ninguna bolilla'); return; }
   if (autoRunning) { autoPaused = true; updateAutoCd('⏸ Pausado'); }
 
@@ -281,8 +311,16 @@ function repeatLast() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ voice: getVoice() })
   })
-  .then(r => r.blob())
+  .then(async r => {
+    if(!r.ok){
+      autoPaused = false;
+      showToast('❌ No autorizado / error');
+      return null;
+    }
+    return r.blob();
+  })
   .then(blob => {
+    if(!blob) return;
     stopAudio();
     const url = URL.createObjectURL(blob);
     const vol = parseInt(document.getElementById('vol-slider').value) / 100;
@@ -300,6 +338,7 @@ function repeatLast() {
 
 // ── AUTO SORTEO ───────────────────────────────────
 function toggleAuto() {
+  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede usar Auto'); return; }
   autoRunning ? stopAuto() : startAuto();
 }
 
@@ -352,7 +391,12 @@ async function newGame() {
   if (!confirm('¿Iniciar un nuevo juego? Se perderá el progreso actual.')) return;
   stopAuto();
   stopAudio();
-  await fetch('/api/reset', { method: 'POST' });
+
+  const r = await fetch('/api/reset', { method: 'POST' });
+  if(!r.ok){
+    showToast('❌ No autorizado / error');
+    return;
+  }
 
   drawn          = [];
   lastNumber     = null;
@@ -460,7 +504,8 @@ function launchConfetti() {
 
 // ── HELPERS ───────────────────────────────────────
 function setDrawBtnState(enabled) {
-  document.getElementById('btn-draw').disabled = !enabled;
+  const b = document.getElementById('btn-draw');
+  if (b) b.disabled = !enabled;
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
@@ -473,18 +518,11 @@ function showToast(msg) {
   toastJob = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── TECLADO ───────────────────────────────────────
-document.addEventListener('keydown', e => {
-  const tag = document.activeElement.tagName;
-  if (tag === 'INPUT' || tag === 'SELECT') return;
-  if (e.code === 'Space')                    { e.preventDefault(); drawNumber(); }
-  if (e.key  === 'r' || e.key === 'R')       repeatLast();
-  if (e.key  === 'a' || e.key === 'A')       toggleAuto();
-  if (e.key  === 'n' || e.key === 'N')       newGame();
-  if (e.key  === 'Escape')                   stopAudio();
-});
-
 // ── INIT ──────────────────────────────────────────
 document.getElementById('server-url').textContent = window.location.href;
 initGrid();
-detectRole();
+
+// Aplica bloqueo visual/teclado a jugadores
+document.addEventListener("DOMContentLoaded", () => {
+  applyRoleSecurity();
+});
