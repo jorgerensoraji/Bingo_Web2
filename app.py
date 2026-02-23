@@ -35,8 +35,8 @@ app = Flask(__name__)
 # ─── Seguridad Admin (login por sesión) ───────────────────────────────────────
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 
-ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
-ADMIN_PASS = os.environ.get("ADMIN_PASS", "admin")
+ADMIN_USER = os.environ.get("ADMIN_USER", "jorgerensoraji")
+ADMIN_PASS = os.environ.get("ADMIN_PASS", "Humildes1!@#$%")
 
 def is_admin() -> bool:
     return bool(session.get("is_admin"))
