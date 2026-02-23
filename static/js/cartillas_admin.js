@@ -1,7 +1,6 @@
 /* ═══════════════════════════════════════════════════
-   BINGO PRO — cartillas.js
-   Lógica de la página de cartillas
-   Made by Renso Ramirez
+   BINGO PRO — cartillas_admin.js  v4.0
+   Made by Renso Ramirez  |  Fixed & Enhanced by Claude
 ═══════════════════════════════════════════════════ */
 
 // ── COLORES ───────────────────────────────────────
@@ -11,23 +10,35 @@ const GC = [
   {fg:'#48c9b0',bg:'#032420'},{fg:'#7fb3d3',bg:'#061320'},{fg:'#95a5a6',bg:'#0e1315'},
 ];
 const COL_LABELS = ['1-9','10-19','20-29','30-39','40-49','50-59','60-69','70-79','80-90'];
+const COL_RANGES_MANUAL = [
+  [1,2,3,4,5,6,7,8,9],
+  [10,11,12,13,14,15,16,17,18,19],
+  [20,21,22,23,24,25,26,27,28,29],
+  [30,31,32,33,34,35,36,37,38,39],
+  [40,41,42,43,44,45,46,47,48,49],
+  [50,51,52,53,54,55,56,57,58,59],
+  [60,61,62,63,64,65,66,67,68,69],
+  [70,71,72,73,74,75,76,77,78,79],
+  [80,81,82,83,84,85,86,87,88,89,90],
+];
 
 // ── ESTADO ────────────────────────────────────────
 let allCartillas = [];
 let checkResults = {};
 let drawnNums    = [];
+let selectedNums = new Set();
 
 // ── CARGAR CARTILLAS ──────────────────────────────
 async function loadCartillas() {
   try {
     const [cRes, sRes] = await Promise.all([
       fetch('/api/cartilla/list'),
-      fetch('/api/state')
+      fetch('/api/state'),
     ]);
     const cData = await cRes.json();
     const sData = await sRes.json();
     allCartillas = cData.cartillas || [];
-    drawnNums    = sData.drawn    || [];
+    drawnNums    = sData.drawn     || [];
     document.getElementById('st-drawn').textContent     = drawnNums.length;
     document.getElementById('st-cartillas').textContent = allCartillas.length;
     renderTable(allCartillas);
@@ -63,7 +74,7 @@ function renderTable(list) {
     const dateStr = c.created ? c.created.slice(0,16).replace('T',' ') : '—';
 
     return `<tr data-id="${c.id}"
-                data-nombre="${c.nombre.toLowerCase()}"
+                data-nombre="${escHtml(c.nombre).toLowerCase()}"
                 data-status="${bingo ? 'bingo' : linea ? 'linea' : 'none'}">
       <td><span class="id-badge">${c.id}</span></td>
       <td style="font-weight:600;">${escHtml(c.nombre)}</td>
@@ -73,8 +84,8 @@ function renderTable(list) {
       <td>
         <div class="actions">
           <button class="btn btn-ghost btn-sm" onclick="viewCartilla('${c.id}')">👁 Ver</button>
-          <a href="/api/cartilla/${c.id}/pdf" class="btn btn-pdf btn-sm">📄 PDF</a>
-          <a href="/api/cartilla/${c.id}/png" class="btn btn-png btn-sm">🖼 PNG</a>
+          <a href="/api/cartilla/${c.id}/pdf" class="btn btn-pdf btn-sm" target="_blank">📄 PDF</a>
+          <a href="/api/cartilla/${c.id}/png" class="btn btn-png btn-sm" target="_blank">🖼 PNG</a>
           <button class="btn btn-danger btn-sm" onclick="deleteCartilla('${c.id}')">🗑</button>
         </div>
       </td>
@@ -105,11 +116,12 @@ async function generateCartillas() {
   showToast('⏳ Generando cartillas…');
   try {
     const res  = await fetch('/api/cartilla/generate', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, count })
+      body:    JSON.stringify({ nombre, count }),  // No code needed — admin bypass
     });
     const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || 'Error al generar')); return; }
     await loadCartillas();
     showToast(`✅ ${data.cartillas.length} cartilla(s) generada(s)`);
     if (count === 1) viewCartilla(data.cartillas[0].id);
@@ -118,57 +130,74 @@ async function generateCartillas() {
   }
 }
 
-// ── GENERACIÓN POR LOTE ───────────────────────────
+// ── BATCH ─────────────────────────────────────────
 function generateBatch() {
   document.getElementById('modal-batch').classList.add('show');
 }
 function closeBatch() {
   document.getElementById('modal-batch').classList.remove('show');
 }
+
 async function generateBatchSubmit() {
   const names = document.getElementById('batch-names').value
     .split('\n').map(n => n.trim()).filter(Boolean);
   if (!names.length) { showToast('Escribe al menos un nombre'); return; }
   showToast(`⏳ Generando ${names.length} cartillas…`);
   closeBatch();
+  let success = 0;
   for (const nombre of names) {
-    await fetch('/api/cartilla/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, count: 1 })
-    });
+    try {
+      const res = await fetch('/api/cartilla/generate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ nombre, count: 1 }),
+      });
+      if (res.ok) success++;
+    } catch(e) { /* skip */ }
   }
   await loadCartillas();
-  showToast(`✅ ${names.length} cartillas generadas`);
+  showToast(`✅ ${success} cartilla(s) generada(s)`);
 }
 
 // ── ELIMINAR ──────────────────────────────────────
 async function deleteCartilla(cid) {
-  if (!confirm('¿Eliminar esta cartilla?')) return;
-  await fetch(`/api/cartilla/${cid}/delete`, { method: 'DELETE' });
-  await loadCartillas();
-  showToast('🗑️ Cartilla eliminada');
-}
-async function deleteAll() {
-  if (!confirm('¿Eliminar TODAS las cartillas? Esta acción no se puede deshacer.')) return;
-  await fetch('/api/cartilla/delete_all', { method: 'DELETE' });
-  checkResults = {};
-  await loadCartillas();
-  showToast('🗑️ Todas las cartillas eliminadas');
+  if (!confirm(`¿Eliminar cartilla ${cid}?`)) return;
+  try {
+    const res = await fetch(`/api/cartilla/${cid}/delete`, { method: 'DELETE' });
+    if (!res.ok) { showToast('❌ No autorizado'); return; }
+    delete checkResults[cid];
+    await loadCartillas();
+    showToast('🗑️ Cartilla eliminada');
+  } catch(e) {
+    showToast('❌ Error al eliminar');
+  }
 }
 
-// ── VER CARTILLA (MODAL) ──────────────────────────
+async function deleteAll() {
+  if (!confirm('¿Eliminar TODAS las cartillas? Esta acción no se puede deshacer.')) return;
+  try {
+    const res = await fetch('/api/cartilla/delete_all', { method: 'DELETE' });
+    if (!res.ok) { showToast('❌ No autorizado'); return; }
+    checkResults = {};
+    await loadCartillas();
+    showToast('🗑️ Todas las cartillas eliminadas');
+  } catch(e) {
+    showToast('❌ Error al eliminar');
+  }
+}
+
+// ── VER CARTILLA ──────────────────────────────────
 async function viewCartilla(cid) {
   try {
     const [cRes, sRes, chkRes] = await Promise.all([
       fetch(`/api/cartilla/${cid}`),
       fetch('/api/state'),
-      fetch(`/api/cartilla/${cid}/check`)
+      fetch(`/api/cartilla/${cid}/check`),
     ]);
     const c   = await cRes.json();
     const s   = await sRes.json();
     const chk = await chkRes.json();
-    const drawn = new Set(s.drawn || []);
+    const drawnSet = new Set(s.drawn || []);
 
     const bingo = chk.bingo;
     const linea = chk.linea && !chk.bingo;
@@ -177,11 +206,11 @@ async function viewCartilla(cid) {
     if (bingo) {
       alertHtml = `<div class="winner-alert show">
         <h2>🎉 ¡BINGO COMPLETO!</h2>
-        <p style="color:var(--muted);">Esta cartilla tiene todos sus números sorteados.</p>
+        <p style="color:var(--muted);">Todos los números de esta cartilla fueron sorteados.</p>
       </div>`;
     } else if (linea) {
       alertHtml = `<div class="linea-alert show">
-        <strong>⭐ ¡LÍNEA!</strong> La fila ${chk.linea_row + 1} está completa.
+        <strong>⭐ ¡LÍNEA!</strong> La fila ${(chk.linea_row ?? 0) + 1} está completa.
       </div>`;
     }
 
@@ -196,7 +225,7 @@ async function viewCartilla(cid) {
         const g   = GC[ci];
         if (num === null) {
           cellsHtml += `<div class="c-cell empty"></div>`;
-        } else if (drawn.has(num)) {
+        } else if (drawnSet.has(num)) {
           cellsHtml += `<div class="c-cell marked"
             style="color:${g.fg};background:${g.bg};border-color:${g.fg};">
             <span style="background:${g.fg};color:#060d12;width:80%;height:80%;
@@ -227,8 +256,8 @@ async function viewCartilla(cid) {
           </p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <a href="/api/cartilla/${cid}/pdf" class="btn btn-pdf btn-sm">📄 Descargar PDF</a>
-          <a href="/api/cartilla/${cid}/png" class="btn btn-png btn-sm">🖼️ Descargar PNG</a>
+          <a href="/api/cartilla/${cid}/pdf" class="btn btn-pdf btn-sm" target="_blank">📄 PDF</a>
+          <a href="/api/cartilla/${cid}/png" class="btn btn-png btn-sm" target="_blank">🖼 PNG</a>
         </div>
       </div>
       <div class="cartilla-preview">
@@ -236,7 +265,7 @@ async function viewCartilla(cid) {
         <div class="c-grid">${cellsHtml}</div>
       </div>
       <div style="margin-top:14px;font-size:.78rem;color:var(--muted);text-align:center;">
-        ✅ Números marcados en verde · Pendientes en gris
+        ✅ Marcados en verde · ⬜ Pendientes en gris
       </div>
     `;
     document.getElementById('modal-overlay').classList.add('show');
@@ -244,6 +273,7 @@ async function viewCartilla(cid) {
     showToast('❌ Error al cargar cartilla');
   }
 }
+
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('show');
 }
@@ -254,19 +284,22 @@ async function checkAll() {
   try {
     const res  = await fetch('/api/cartilla/check_all');
     const data = await res.json();
+
+    if (!res.ok) { showToast('❌ Error al verificar'); return; }
+
     checkResults = {};
     let bingos = 0, lineas = 0;
     const winners = [];
 
-    data.results.forEach(r => {
+    (data.results || []).forEach(r => {
       checkResults[r.id] = r;
-      if (r.bingo)       { bingos++; winners.push({...r, type:'bingo'}); }
-      else if (r.linea)  { lineas++; winners.push({...r, type:'linea'}); }
+      if (r.bingo)      { bingos++; winners.push({...r, type:'bingo'}); }
+      else if (r.linea) { lineas++; winners.push({...r, type:'linea'}); }
     });
 
     document.getElementById('st-bingos').textContent = bingos;
     document.getElementById('st-lineas').textContent = lineas;
-    document.getElementById('st-drawn').textContent  = data.drawn_count;
+    document.getElementById('st-drawn').textContent  = data.drawn_count || drawnNums.length;
 
     const wList = document.getElementById('winners-list');
     if (winners.length) {
@@ -279,14 +312,12 @@ async function checkAll() {
             <strong>${w.type==='bingo' ? '🎉 BINGO' : '⭐ LÍNEA'}</strong>
             &nbsp; ${escHtml(w.nombre)}
           </span>
-          <span style="color:var(--muted);font-size:.78rem;">
-            #${w.id} · ${w.marked}/${w.total}
-          </span>
+          <span style="color:var(--muted);font-size:.78rem;">#${w.id} · ${w.marked}/${w.total}</span>
         </div>`
       ).join('');
     } else {
       wList.innerHTML = `<p style="color:var(--muted);font-size:.85rem;">
-        Ninguna cartilla tiene premio todavía. Sorteadas: ${data.drawn_count}/90</p>`;
+        Ninguna cartilla tiene premio todavía. Sorteadas: ${data.drawn_count || 0}/90</p>`;
     }
 
     renderTable(allCartillas);
@@ -305,21 +336,9 @@ function switchTab(tab) {
 }
 
 // ── MANUAL PICKER ─────────────────────────────────
-const COL_RANGES_MANUAL = [
-  [1,2,3,4,5,6,7,8,9],
-  [10,11,12,13,14,15,16,17,18,19],
-  [20,21,22,23,24,25,26,27,28,29],
-  [30,31,32,33,34,35,36,37,38,39],
-  [40,41,42,43,44,45,46,47,48,49],
-  [50,51,52,53,54,55,56,57,58,59],
-  [60,61,62,63,64,65,66,67,68,69],
-  [70,71,72,73,74,75,76,77,78,79],
-  [80,81,82,83,84,85,86,87,88,89,90],
-];
-let selectedNums = new Set();
-
 function buildPicker() {
   const wrap = document.getElementById('picker-wrap');
+  if (!wrap) return;
   wrap.innerHTML = `<div class="picker-grid">${
     COL_RANGES_MANUAL.map((nums, ci) => `
       <div class="picker-col">
@@ -327,27 +346,22 @@ function buildPicker() {
           ${COL_LABELS[ci]}
         </div>
         ${nums.map(n => `
-          <div class="p-num" id="pn-${n}"
-               style="color:${GC[ci].fg};"
-               onclick="toggleNum(${n},${ci})">
-            ${n}
-          </div>`).join('')}
+          <div class="p-num" id="pn-${n}" style="color:${GC[ci].fg};"
+               onclick="toggleNum(${n},${ci})">${n}</div>`).join('')}
       </div>`).join('')
   }</div>`;
 }
 
 function toggleNum(n, ci) {
   const el = document.getElementById(`pn-${n}`);
+  if (!el) return;
   if (selectedNums.has(n)) {
     selectedNums.delete(n);
     el.classList.remove('selected');
     el.style.background  = 'var(--card)';
     el.style.borderColor = '';
   } else {
-    if (selectedNums.size >= 15) {
-      showToast('⚠️ Ya tienes 15 números seleccionados');
-      return;
-    }
+    if (selectedNums.size >= 15) { showToast('⚠️ Máximo 15 números'); return; }
     selectedNums.add(n);
     el.classList.add('selected');
     el.style.background  = GC[ci].bg;
@@ -359,11 +373,7 @@ function toggleNum(n, ci) {
 function clearPicker() {
   selectedNums.forEach(n => {
     const el = document.getElementById(`pn-${n}`);
-    if (el) {
-      el.classList.remove('selected');
-      el.style.background  = 'var(--card)';
-      el.style.borderColor = '';
-    }
+    if (el) { el.classList.remove('selected'); el.style.background = 'var(--card)'; el.style.borderColor = ''; }
   });
   selectedNums.clear();
   updatePickerUI();
@@ -372,8 +382,10 @@ function clearPicker() {
 function updatePickerUI() {
   const count = selectedNums.size;
   const disp  = document.getElementById('picker-count-display');
-  disp.innerHTML = `Seleccionados: <span>${count}</span> / 15`;
-  disp.className = `picker-count${count > 15 ? ' warn' : ''}`;
+  if (disp) {
+    disp.innerHTML  = `Seleccionados: <span>${count}</span> / 15`;
+    disp.className  = `picker-count${count > 15 ? ' warn' : ''}`;
+  }
 
   const colCounts = COL_RANGES_MANUAL.map(range =>
     range.filter(n => selectedNums.has(n)).length
@@ -381,7 +393,7 @@ function updatePickerUI() {
   const errors = [], ok = [];
 
   if (count < 15) errors.push(`⏳ Faltan ${15 - count} número(s)`);
-  else ok.push('✅ Total: 15 números');
+  else            ok.push('✅ Total: 15 números');
 
   colCounts.forEach((c, i) => {
     if (c > 2) errors.push(`❌ Col ${COL_LABELS[i]}: máx 2 (tienes ${c})`);
@@ -390,16 +402,19 @@ function updatePickerUI() {
   if (count === 15 && errors.length === 0) {
     const valid = validateManualGrid(colCounts);
     if (!valid) errors.push('❌ No se pueden formar 3 filas de 5 con esta distribución');
-    else ok.push('✅ Las 3 filas de 5 se pueden formar');
+    else        ok.push('✅ Las 3 filas de 5 se pueden formar');
   }
 
   const rules = document.getElementById('picker-rules');
-  const allOk = count === 15 && errors.length === 0;
-  rules.innerHTML = [...ok, ...errors].map(r =>
-    `<div class="${r.startsWith('✅') ? 'rule-ok' : r.startsWith('⏳') ? 'rule-warn' : 'rule-err'}">${r}</div>`
-  ).join('') || 'Selecciona tus números.';
+  if (rules) {
+    rules.innerHTML = [...ok, ...errors].map(r =>
+      `<div class="${r.startsWith('✅') ? 'rule-ok' : r.startsWith('⏳') ? 'rule-warn' : 'rule-err'}">${r}</div>`
+    ).join('') || 'Selecciona tus números.';
+  }
 
-  document.getElementById('btn-save-manual').disabled = !allOk;
+  const allOk = count === 15 && errors.length === 0;
+  const btn   = document.getElementById('btn-save-manual');
+  if (btn) btn.disabled = !allOk;
 }
 
 function validateManualGrid(colCounts) {
@@ -409,9 +424,9 @@ function validateManualGrid(colCounts) {
   function fill(ci) {
     if (ci === cols.length) return rows.every(r => r.length === 5);
     const { count, col } = cols[ci];
-    const available = rows.map((r, i) => ({ ri:i, len:r.length })).filter(x => x.len < 5);
+    const available = rows.map((r, i) => i).filter(i => rows[i].length < 5);
     if (available.length < count) return false;
-    const combos = combinations(available.map(x => x.ri), count);
+    const combos = combinations(available, count);
     for (const combo of combos) {
       combo.forEach(ri => rows[ri].push(col));
       if (fill(ci + 1)) return true;
@@ -448,12 +463,12 @@ async function saveManualCartilla() {
   function buildRows(ci) {
     if (ci === cols.length) return rows.every(r => r.length === 5);
     const { count, col, nums: cnums } = cols[ci];
-    const available = rows.map((r, i) => i).filter(i => rows[i].length < 5);
+    const available = [0,1,2].filter(i => rows[i].length < 5);
     const combos = combinations(available, count);
     for (const combo of combos) {
       combo.sort().forEach((ri, i) => rows[ri].push({ col, num: cnums[i] }));
       if (buildRows(ci + 1)) return true;
-      combo.sort().forEach((ri, i) => rows[ri].pop());
+      combo.sort().forEach((ri) => rows[ri].pop());
     }
     return false;
   }
@@ -465,11 +480,12 @@ async function saveManualCartilla() {
   showToast('⏳ Guardando cartilla…');
   try {
     const res  = await fetch('/api/cartilla/save_manual', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, grid })
+      body:    JSON.stringify({ nombre, grid }),  // No code needed — admin bypass
     });
     const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || 'Error al guardar')); return; }
     clearPicker();
     await loadCartillas();
     showToast('✅ Cartilla guardada correctamente');
@@ -481,11 +497,15 @@ async function saveManualCartilla() {
 
 // ── HELPERS ───────────────────────────────────────
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
 let toastJob = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastJob);

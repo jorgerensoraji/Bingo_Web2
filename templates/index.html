@@ -7,13 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/game.css">
 </head>
-
-<!--
-  ✅ IMPORTANTE:
-  - Este atributo lo rellena Flask/Jinja.
-  - Si abres el HTML sin Flask (doble click), se queda como texto y NO rompe nada.
--->
-<body data-is-admin="{{ 1 if is_admin else 0 }}">
+<body>
 
 <header>
   <div>
@@ -23,6 +17,12 @@
     <div class="nav-links">
       <a href="/" class="nav-link active">🎮 Juego</a>
       <a href="/cartillas" class="nav-link">🎴 Cartillas</a>
+      {% if is_admin %}
+      <a href="/admin" class="nav-link">🛠 Admin</a>
+      <a href="#" class="nav-link" onclick="logout()">🚪 Salir</a>
+      {% else %}
+      <a href="/admin/login" class="nav-link">🔒 Admin</a>
+      {% endif %}
     </div>
     <div id="connection-info">
       Abre en cualquier dispositivo:<br>
@@ -56,6 +56,7 @@
         <div id="words-display">—</div>
         <div id="group-tag"></div>
         <div id="auto-cd"></div>
+        <!-- FIX: IDs match game.js (auto-bar-wrap / auto-bar) -->
         <div id="auto-bar-wrap"><div id="auto-bar"></div></div>
       </div>
     </div>
@@ -76,23 +77,22 @@
   <!-- RIGHT -->
   <div class="right-col">
 
-    <!-- CONTROLES -->
     <div class="panel">
       <div class="panel-title">Controles</div>
 
       <button class="btn btn-draw admin-only" id="btn-draw" onclick="drawNumber()">🎱 SORTEAR</button>
 
       <div class="auto-row">
-        <button class="btn btn-auto admin-only" id="btn-auto" onclick="toggleAuto()">⏲ Auto</button>
+        <button class="btn btn-auto admin-only" id="btn-auto" onclick="toggleAuto()">⏲ Auto [A]</button>
         <input class="spinbox admin-only" type="number" id="auto-interval" min="3" max="60" value="10"> s
       </div>
 
       <div class="btn-row" style="margin-bottom:8px;">
-        <button class="btn btn-sm admin-only" onclick="repeatLast()">🔁 Repetir</button>
+        <button class="btn btn-sm admin-only" onclick="repeatLast()">🔁 Repetir [R]</button>
         <button class="btn btn-sm admin-only" onclick="stopAudio()">🔇 Silenciar</button>
       </div>
 
-      <button class="btn btn-new admin-only" onclick="newGame()">🔄 Nuevo Juego</button>
+      <button class="btn btn-new admin-only" onclick="newGame()">🔄 Nuevo Juego [N]</button>
 
       <div class="slider-label">
         <span>Velocidad animación</span>
@@ -103,26 +103,38 @@
              oninput="document.getElementById('speed-val').textContent=this.value">
     </div>
 
-    <!-- VOZ -->
     <div class="panel">
       <div class="panel-title">Voz & Audio</div>
       <select id="voice-select" class="admin-only">
-        <option value="es-MX-DaliaNeural">🇲🇽 Dalia</option>
-        <option value="es-MX-JorgeNeural">🇲🇽 Jorge</option>
-        <option value="es-AR-ElenaNeural">🇦🇷 Elena</option>
-        <option value="es-ES-ElviraNeural">🇪🇸 Elvira</option>
+        <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
+        <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
+        <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
+        <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
+        <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
       </select>
 
       <div class="slider-label">
         <span>🔊 Volumen</span>
         <span id="vol-val">85%</span>
       </div>
-
       <input type="range" min="0" max="100" value="85"
-             id="vol-slider"
-             class="admin-only"
+             id="vol-slider" class="admin-only"
              oninput="document.getElementById('vol-val').textContent=this.value+'%'">
     </div>
+
+    {% if not is_admin %}
+    <div class="panel" style="border-color:rgba(0,229,180,.2);">
+      <div class="panel-title">👁 Modo Espectador</div>
+      <p style="color:var(--muted);font-size:.82rem;line-height:1.6;">
+        Estás viendo el juego en <strong style="color:var(--accent);">tiempo real</strong>.<br>
+        Los números se actualizan automáticamente cada 3 segundos.<br><br>
+        ¿Eres el administrador?
+      </p>
+      <a href="/admin/login" class="btn btn-sm" style="text-decoration:none;text-align:center;margin-top:8px;display:block;">
+        🔒 Iniciar sesión como Admin
+      </a>
+    </div>
+    {% endif %}
 
   </div>
 </div>
@@ -133,16 +145,24 @@
   <h1>🎉 ¡BINGO!</h1>
   <p id="gameover-info">Se sortearon las 90 bolillas.</p>
   <button class="btn btn-draw admin-only" onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
+  <button class="btn btn-sm" style="margin-top:10px;" onclick="hideGameOver()">Cerrar</button>
 </div>
 
-<!-- ✅ Aquí definimos IS_ADMIN SIN Jinja dentro de JS -->
+<!-- Inyectado por Flask -->
 <script>
-  // Lee el atributo del <body>. Si no existe o no está renderizado, queda como jugador.
-  window.IS_ADMIN = document.body.dataset.isAdmin === "1";
+  const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
 </script>
 
-<!-- Tu lógica del juego -->
 <script src="/static/js/game.js"></script>
+
+{% if is_admin %}
+<script>
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.reload();
+}
+</script>
+{% endif %}
 
 </body>
 </html>

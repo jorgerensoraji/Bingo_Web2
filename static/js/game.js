@@ -1,17 +1,12 @@
 /* ═══════════════════════════════════════════════════
-   BINGO PRO — game.js
-   Lógica del juego principal
-   Made by Renso Ramirez
+   BINGO PRO — game.js  v4.0
+   Made by Renso Ramirez  |  Fixed & Enhanced by Claude
 ═══════════════════════════════════════════════════ */
 
-/*
-  IMPORTANTE:
-  - IS_ADMIN VIENE DESDE index.html (Flask):
-      <script>const IS_ADMIN = true/false;</script>
-  - NO se redefine aquí. (Antes lo redefinías y eso causaba bugs)
-*/
+// IS_ADMIN is injected by Flask in index.html:
+//   <script>const IS_ADMIN = true/false;</script>
 
-// ── COLORES DE GRUPOS ──────────────────────────────
+// ── COLORES ───────────────────────────────────────
 const GROUP_COLORS = [
   { fg:'#5dade2', bg:'#0a1e2e' },
   { fg:'#f4d03f', bg:'#1e1500' },
@@ -23,18 +18,11 @@ const GROUP_COLORS = [
   { fg:'#7fb3d3', bg:'#061320' },
   { fg:'#95a5a6', bg:'#0e1315' },
 ];
-const GROUP_LABELS = ['1–10','11–20','21–30','31–40','41–50','51–60','61–70','71–80','81–90'];
-
-const BALL_COLORS = [
-  ['#1a4a7a','#0a1e2e'],
-  ['#7a6010','#2e2504'],
-  ['#7a2020','#3d0a08'],
-  ['#7a3810','#3d1800'],
-  ['#0f5a28','#0a2e16'],
-  ['#4a1a6a','#22083d'],
-  ['#0a5a4a','#073832'],
-  ['#1a3a5a','#0a1f2e'],
-  ['#2a3540','#151d23'],
+const GROUP_LABELS = ['1–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–90'];
+const BALL_COLORS  = [
+  ['#1a4a7a','#0a1e2e'], ['#7a6010','#2e2504'], ['#7a2020','#3d0a08'],
+  ['#7a3810','#3d1800'], ['#0f5a28','#0a2e16'], ['#4a1a6a','#22083d'],
+  ['#0a5a4a','#073832'], ['#1a3a5a','#0a1f2e'], ['#2a3540','#151d23'],
 ];
 
 // ── ESTADO ────────────────────────────────────────
@@ -51,29 +39,21 @@ let clockJob       = null;
 let currentAudio   = null;
 let elapsedSeconds = 0;
 
-// ───────────────────────────────────────────────────
-// 🔒 BLOQUEO TOTAL DE CONTROLES PARA JUGADORES
-// ───────────────────────────────────────────────────
-function applyRoleSecurity(){
-  if (typeof IS_ADMIN === 'undefined') {
-    // Si por alguna razón no viene del HTML, asumimos jugador.
-    window.IS_ADMIN = false;
-  }
+// ── SEGURIDAD DE ROL ──────────────────────────────
+function applyRoleSecurity() {
+  if (typeof IS_ADMIN === 'undefined') window.IS_ADMIN = false;
 
   if (!IS_ADMIN) {
-    // Desactivar cualquier control marcado como admin-only
-    document.querySelectorAll(".admin-only").forEach(el => {
+    document.querySelectorAll('.admin-only').forEach(el => {
       el.disabled = true;
-      el.style.opacity = "0.4";
-      el.style.pointerEvents = "none";
-      el.setAttribute("aria-disabled", "true");
+      el.style.opacity       = '0.4';
+      el.style.pointerEvents = 'none';
+      el.setAttribute('aria-disabled', 'true');
       el.tabIndex = -1;
     });
 
-    // Bloquear atajos del teclado (para que no puedan sortear por Space, etc.)
-    window.addEventListener("keydown", (e) => {
-      const blocked = [" ", "r", "R", "a", "A", "n", "N"];
-      if (blocked.includes(e.key)) {
+    window.addEventListener('keydown', (e) => {
+      if ([' ','r','R','a','A','n','N'].includes(e.key)) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -85,13 +65,15 @@ function applyRoleSecurity(){
 function initGrid() {
   const headers = document.getElementById('group-headers');
   const grid    = document.getElementById('num-grid');
+  if (!headers || !grid) return;
+
   headers.innerHTML = '';
   grid.innerHTML    = '';
 
   GROUP_LABELS.forEach((lbl, g) => {
     const h = document.createElement('div');
-    h.className    = 'group-header';
-    h.textContent  = lbl;
+    h.className   = 'group-header';
+    h.textContent = lbl;
     h.style.color      = GROUP_COLORS[g].fg;
     h.style.background = GROUP_COLORS[g].bg;
     headers.appendChild(h);
@@ -100,10 +82,11 @@ function initGrid() {
   for (let col = 0; col < 9; col++) {
     for (let row = 0; row < 10; row++) {
       const num  = col * 10 + row + 1;
+      if (num > 90) continue;   // FIX: skip 91-99 ghost cells
       const cell = document.createElement('div');
-      cell.className      = 'num-cell';
-      cell.id             = `cell-${num}`;
-      cell.textContent    = num;
+      cell.className    = 'num-cell';
+      cell.id           = `cell-${num}`;
+      cell.textContent  = num;
       cell.style.gridColumn = col + 1;
       cell.style.gridRow    = row + 1;
       grid.appendChild(cell);
@@ -111,11 +94,10 @@ function initGrid() {
   }
 }
 
-// ── DRAW ──────────────────────────────────────────
+// ── SORTEAR ───────────────────────────────────────
 async function drawNumber() {
-  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede sortear'); return; }
-
-  if (isDrawing) return;
+  if (!IS_ADMIN) { showToast('🔒 Solo el admin puede sortear'); return; }
+  if (isDrawing)  return;
   isDrawing = true;
   setDrawBtnState(false);
   await runAnimation();
@@ -123,9 +105,9 @@ async function drawNumber() {
 
 function runAnimation() {
   return new Promise(resolve => {
-    const speed  = parseInt(document.getElementById('speed-slider').value);
-    const delay  = Math.max(14, 82 - speed * 0.68);
-    const steps  = 20;
+    const speed = parseInt(document.getElementById('speed-slider').value);
+    const delay = Math.max(14, 82 - speed * 0.68);
+    const steps = 20;
     const bigNum = document.getElementById('big-number');
     const ball   = document.getElementById('ball');
     bigNum.classList.add('animating');
@@ -176,7 +158,6 @@ async function fetchDraw() {
     markCell(num);
     updateRecent();
     updateStats(data.count, data.remaining);
-    addHistory(data.count, num, data.words);
     speak(data.phrase);
 
     isDrawing = false;
@@ -191,16 +172,15 @@ async function fetchDraw() {
 
 // ── DISPLAY ───────────────────────────────────────
 function updateDisplay(num, words) {
-  const g          = Math.min(Math.floor((num - 1) / 10), 8);
-  const { fg }     = GROUP_COLORS[g];
-  const ball       = document.getElementById('ball');
+  const g           = Math.min(Math.floor((num - 1) / 10), 8);
+  const { fg }      = GROUP_COLORS[g];
   const [mid, dark] = BALL_COLORS[g];
+  const ball        = document.getElementById('ball');
 
   ball.style.background = `radial-gradient(circle at 35% 32%,
     #ffffff44 0%, ${mid}99 30%, ${dark} 70%, #020508 100%)`;
-  ball.style.boxShadow = `
-    0 0 0 3px ${fg}55,
-    0 0 35px ${fg}33,
+  ball.style.boxShadow  = `
+    0 0 0 3px ${fg}55, 0 0 35px ${fg}33,
     inset 0 -8px 20px rgba(0,0,0,0.7),
     inset 0 8px 16px rgba(255,255,255,0.08)`;
 
@@ -209,18 +189,21 @@ function updateDisplay(num, words) {
   ball.classList.add('reveal');
   setTimeout(() => ball.classList.remove('reveal'), 600);
 
-  document.getElementById('big-number').textContent     = num;
-  document.getElementById('big-number').style.color     = fg;
-  document.getElementById('big-number').style.textShadow = `0 0 20px ${fg}88, 0 2px 4px rgba(0,0,0,0.8)`;
-  document.getElementById('words-display').textContent  = capitalize(words);
-  document.getElementById('group-tag').textContent      = `Grupo ${GROUP_LABELS[g]}`;
-  document.getElementById('group-tag').style.color      = fg;
+  const bigNum = document.getElementById('big-number');
+  bigNum.textContent  = num;
+  bigNum.style.color  = fg;
+  bigNum.style.textShadow = `0 0 20px ${fg}88, 0 2px 4px rgba(0,0,0,0.8)`;
+
+  document.getElementById('words-display').textContent = capitalize(words);
+  const gt = document.getElementById('group-tag');
+  gt.textContent = `Grupo ${GROUP_LABELS[g]}`;
+  gt.style.color = fg;
 }
 
 function markCell(num) {
   const cell = document.getElementById(`cell-${num}`);
   if (!cell) return;
-  const g         = Math.min(Math.floor((num - 1) / 10), 8);
+  const g          = Math.min(Math.floor((num - 1) / 10), 8);
   const { fg, bg } = GROUP_COLORS[g];
   cell.classList.add('drawn', 'just-drawn');
   cell.style.color       = fg;
@@ -231,6 +214,7 @@ function markCell(num) {
 
 function updateRecent() {
   const strip = document.getElementById('recent-nums');
+  if (!strip) return;
   strip.innerHTML = '';
   [...drawn].slice(-18).reverse().forEach(n => {
     const g  = Math.min(Math.floor((n - 1) / 10), 8);
@@ -246,19 +230,8 @@ function updateStats(count, remaining) {
   document.getElementById('stat-drawn').textContent = count;
   document.getElementById('stat-rem').textContent   = remaining;
   const pct = Math.round((count / 90) * 100);
-  document.getElementById('progress').style.width   = pct + '%';
-  document.getElementById('stat-pct').textContent   = pct + '%';
-}
-
-function addHistory(idx, num, words) {
-  const list = document.getElementById('hist-list');
-  const g    = Math.min(Math.floor((num - 1) / 10), 8);
-  const now  = new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  const div  = document.createElement('div');
-  div.className   = 'hist-entry';
-  div.style.color = GROUP_COLORS[g].fg;
-  div.textContent = `#${String(idx).padStart(2,'0')}  ${String(num).padStart(2,'0')}  —  ${words}  (${now})`;
-  list.insertBefore(div, list.firstChild);
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('stat-pct').textContent = pct + '%';
 }
 
 // ── AUDIO ─────────────────────────────────────────
@@ -270,9 +243,9 @@ function speak(text, onEnd) {
   stopAudio();
   const vol = parseInt(document.getElementById('vol-slider').value) / 100;
   fetch('/api/speak', {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voice: getVoice() })
+    body:    JSON.stringify({ text, voice: getVoice() })
   })
   .then(r => r.blob())
   .then(blob => {
@@ -285,42 +258,34 @@ function speak(text, onEnd) {
       if (onEnd) onEnd();
     };
   })
-  .catch(e => {
-    console.error('Audio error:', e);
-    if (onEnd) onEnd();
-  });
+  .catch(e => { console.error('Audio error:', e); if (onEnd) onEnd(); });
 }
 
 function stopAudio() {
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.src = '';
-    currentAudio = null;
+    currentAudio     = null;
   }
 }
 
 // ── REPETIR ───────────────────────────────────────
 function repeatLast() {
-  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede repetir'); return; }
-
-  if (!lastNumber) { showToast('Todavía no se sorteó ninguna bolilla'); return; }
-  if (autoRunning) { autoPaused = true; updateAutoCd('⏸ Pausado'); }
+  if (!IS_ADMIN)    { showToast('🔒 Solo el admin puede repetir'); return; }
+  if (!lastNumber)  { showToast('Todavía no se sorteó ninguna bolilla'); return; }
+  if (autoRunning)  { autoPaused = true; updateAutoCd('⏸ Pausado'); }
 
   fetch('/api/repeat', {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ voice: getVoice() })
+    body:    JSON.stringify({ voice: getVoice() })
   })
   .then(async r => {
-    if(!r.ok){
-      autoPaused = false;
-      showToast('❌ No autorizado / error');
-      return null;
-    }
+    if (!r.ok) { autoPaused = false; showToast('❌ No autorizado / error'); return null; }
     return r.blob();
   })
   .then(blob => {
-    if(!blob) return;
+    if (!blob) return;
     stopAudio();
     const url = URL.createObjectURL(blob);
     const vol = parseInt(document.getElementById('vol-slider').value) / 100;
@@ -338,7 +303,7 @@ function repeatLast() {
 
 // ── AUTO SORTEO ───────────────────────────────────
 function toggleAuto() {
-  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede usar Auto'); return; }
+  if (!IS_ADMIN) { showToast('🔒 Solo el admin puede usar Auto'); return; }
   autoRunning ? stopAuto() : startAuto();
 }
 
@@ -347,7 +312,10 @@ function startAuto() {
   autoCountdown = parseInt(document.getElementById('auto-interval').value) || 10;
   document.getElementById('btn-auto').textContent = '⏹ Detener [A]';
   document.getElementById('btn-auto').classList.add('active');
-  document.getElementById('auto-bar-wrap2').style.display = 'block';
+
+  // FIX: use correct IDs (auto-bar-wrap / auto-bar, not auto-bar-wrap2)
+  const wrap = document.getElementById('auto-bar-wrap');
+  if (wrap) wrap.style.display = 'block';
   tickAuto();
 }
 
@@ -357,14 +325,17 @@ function stopAuto() {
   clearTimeout(autoJob);
   document.getElementById('btn-auto').textContent = '⏲ Auto [A]';
   document.getElementById('btn-auto').classList.remove('active');
-  document.getElementById('auto-cd').textContent   = '';
-  document.getElementById('auto-bar2').style.width  = '0%';
-  document.getElementById('auto-bar-wrap2').style.display = 'none';
+  document.getElementById('auto-cd').textContent = '';
+
+  const bar  = document.getElementById('auto-bar');
+  const wrap = document.getElementById('auto-bar-wrap');
+  if (bar)  bar.style.width   = '0%';
+  if (wrap) wrap.style.display = 'none';
 }
 
 function tickAuto() {
   if (!autoRunning) return;
-  if (autoPaused) { autoJob = setTimeout(tickAuto, 1000); return; }
+  if (autoPaused)   { autoJob = setTimeout(tickAuto, 1000); return; }
 
   const total = parseInt(document.getElementById('auto-interval').value) || 10;
   if (autoCountdown <= 0) {
@@ -374,29 +345,28 @@ function tickAuto() {
   } else {
     updateAutoCd(`🔄 Auto en ${autoCountdown}s`);
     const pct = ((total - autoCountdown) / total) * 100;
-    document.getElementById('auto-bar2').style.width = pct + '%';
+    const bar = document.getElementById('auto-bar');
+    if (bar) bar.style.width = pct + '%';
     autoCountdown--;
   }
   autoJob = setTimeout(tickAuto, 1000);
 }
 
 function updateAutoCd(text) {
-  document.getElementById('auto-cd').textContent = text;
+  const el = document.getElementById('auto-cd');
+  if (el) el.textContent = text;
 }
 
 // ── NUEVO JUEGO ───────────────────────────────────
 async function newGame() {
-  if(!IS_ADMIN){ showToast('🔒 Solo el admin puede reiniciar'); return; }
-
+  if (!IS_ADMIN) { showToast('🔒 Solo el admin puede reiniciar'); return; }
   if (!confirm('¿Iniciar un nuevo juego? Se perderá el progreso actual.')) return;
+
   stopAuto();
   stopAudio();
 
   const r = await fetch('/api/reset', { method: 'POST' });
-  if(!r.ok){
-    showToast('❌ No autorizado / error');
-    return;
-  }
+  if (!r.ok) { showToast('❌ No autorizado / error'); return; }
 
   drawn          = [];
   lastNumber     = null;
@@ -405,18 +375,19 @@ async function newGame() {
   clearInterval(clockJob);
   document.getElementById('timer').textContent = '⏱ 00:00';
 
-  const ball = document.getElementById('ball');
-  document.getElementById('big-number').textContent      = '?';
-  document.getElementById('big-number').style.color      = 'var(--accent)';
-  document.getElementById('big-number').style.textShadow = '';
+  const ball   = document.getElementById('ball');
+  const bigNum = document.getElementById('big-number');
+  bigNum.textContent  = '?';
+  bigNum.style.color  = 'var(--accent)';
+  bigNum.style.textShadow = '';
   ball.style.background = '';
   ball.style.boxShadow  = '';
   ball.classList.remove('animating', 'reveal');
-  document.getElementById('words-display').textContent   = '—';
-  document.getElementById('group-tag').textContent       = '';
-  document.getElementById('auto-cd').textContent         = '';
-  document.getElementById('recent-nums').innerHTML       = '';
-  document.getElementById('hist-list').innerHTML         = '';
+
+  document.getElementById('words-display').textContent = '—';
+  document.getElementById('group-tag').textContent     = '';
+  document.getElementById('auto-cd').textContent       = '';
+  document.getElementById('recent-nums').innerHTML     = '';
   updateStats(0, 90);
 
   for (let i = 1; i <= 90; i++) {
@@ -428,64 +399,39 @@ async function newGame() {
       cell.style.borderColor = '';
     }
   }
+
+  showToast('✅ Nuevo juego iniciado');
 }
 
 // ── RELOJ ─────────────────────────────────────────
 function startClock() {
   clockJob = setInterval(() => {
     elapsedSeconds++;
-    const m  = Math.floor(elapsedSeconds / 60);
+    const h  = Math.floor(elapsedSeconds / 3600);
+    const m  = Math.floor((elapsedSeconds % 3600) / 60);
     const s  = elapsedSeconds % 60;
-    const h  = Math.floor(m / 60);
-    const mm = h ? String(m % 60).padStart(2,'0') : String(m).padStart(2,'0');
-    const ss = String(s).padStart(2,'0');
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
     document.getElementById('timer').textContent =
       h ? `⏱ ${h}:${mm}:${ss}` : `⏱ ${mm}:${ss}`;
   }, 1000);
-}
-
-// ── HISTORIAL ─────────────────────────────────────
-function copyHistory() {
-  if (!drawn.length) { showToast('No hay bolillas sorteadas'); return; }
-  navigator.clipboard.writeText(drawn.join(', ')).then(() => showToast('✅ Historial copiado'));
-}
-
-function exportHistory() {
-  if (!drawn.length) { showToast('No hay bolillas sorteadas'); return; }
-  const lines = [
-    '══════════════════════════════════════════',
-    '  BINGO PRO — Registro de Partida',
-    `  Fecha: ${new Date().toLocaleString('es')}`,
-    `  Sorteadas: ${drawn.length} / 90`,
-    '══════════════════════════════════════════',
-    '',
-    ...drawn.map((n, i) => `  ${String(i+1).padStart(2,'0')}.  ${String(n).padStart(2,'0')}`)
-  ].join('\n');
-  const a = document.createElement('a');
-  a.href     = 'data:text/plain;charset=utf-8,' + encodeURIComponent(lines);
-  a.download = `bingo_${new Date().toISOString().slice(0,10)}.txt`;
-  a.click();
-}
-
-function clearHistory() {
-  if (!drawn.length) return;
-  if (confirm('¿Limpiar el historial visual?')) {
-    document.getElementById('hist-list').innerHTML = '';
-  }
 }
 
 // ── GAME OVER ─────────────────────────────────────
 function showGameOver() {
   stopAuto();
   speak('¡Felicidades! Se han sorteado todas las bolillas. ¡Juego completo!');
+  const timer = document.getElementById('timer').textContent.replace('⏱ ', '');
   document.getElementById('gameover-info').textContent =
-    `¡Se sortearon las 90 bolillas en ${document.getElementById('timer').textContent.replace('⏱ ', '')}!`;
+    `¡Se sortearon las 90 bolillas en ${timer}!`;
   document.getElementById('gameover').classList.add('show');
   launchConfetti();
 }
+
 function hideGameOver() {
   document.getElementById('gameover').classList.remove('show');
 }
+
 function launchConfetti() {
   const colors = ['#00e5b4','#f6c343','#e74c3c','#2f80ed','#a569bd','#58d68d'];
   for (let i = 0; i < 80; i++) {
@@ -502,27 +448,79 @@ function launchConfetti() {
   }
 }
 
+// ── TECLADO ───────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (!IS_ADMIN) return;
+  // Don't fire if typing in an input
+  if (['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+  switch(e.key) {
+    case ' ':         e.preventDefault(); drawNumber();  break;
+    case 'r': case 'R': repeatLast();                    break;
+    case 'a': case 'A': toggleAuto();                    break;
+    case 'Escape':      stopAudio();                     break;
+    case 'n': case 'N': newGame();                       break;
+  }
+});
+
 // ── HELPERS ───────────────────────────────────────
 function setDrawBtnState(enabled) {
   const b = document.getElementById('btn-draw');
   if (b) b.disabled = !enabled;
 }
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+function capitalize(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
 
 let toastJob = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastJob);
   toastJob = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── INIT ──────────────────────────────────────────
-document.getElementById('server-url').textContent = window.location.href;
-initGrid();
+// ── SYNC ESTADO (para jugadores) ──────────────────
+async function syncState() {
+  try {
+    const res  = await fetch('/api/state');
+    const data = await res.json();
+    const serverDrawn = data.drawn || [];
 
-// Aplica bloqueo visual/teclado a jugadores
-document.addEventListener("DOMContentLoaded", () => {
+    // Mark any new cells that were drawn server-side
+    if (serverDrawn.length !== drawn.length) {
+      drawn = serverDrawn;
+      drawn.forEach(n => markCell(n));
+      updateRecent();
+      updateStats(drawn.length, data.remaining ?? (90 - drawn.length));
+      if (drawn.length > 0) {
+        const last = drawn[drawn.length - 1];
+        if (last !== lastNumber) {
+          lastNumber = last;
+          const g    = Math.min(Math.floor((last - 1) / 10), 8);
+          updateDisplay(last, '');
+          document.getElementById('words-display').textContent = `Último: ${last}`;
+        }
+      }
+      if (data.remaining === 0) showGameOver();
+    }
+  } catch(e) { /* silent */ }
+}
+
+// ── INIT ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const urlEl = document.getElementById('server-url');
+  if (urlEl) urlEl.textContent = window.location.href;
+
+  initGrid();
   applyRoleSecurity();
+
+  // Non-admin players: sync state every 3 seconds to follow the game live
+  if (!IS_ADMIN) {
+    syncState();
+    setInterval(syncState, 3000);
+  }
 });

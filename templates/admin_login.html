@@ -8,16 +8,17 @@
   <link rel="stylesheet" href="/static/css/game.css">
   <style>
     .center{min-height:calc(100vh - 70px);display:flex;align-items:center;justify-content:center;padding:22px}
-    .panel{width:min(520px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px}
-    .panel h1{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;margin:0 0 6px 0}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > div{flex:1;min-width:220px}
-    .input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none}
-    .label{display:block;margin:10px 0 6px;color:var(--muted);font-size:.85rem}
-    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--accent);color:#041015;font-weight:900;cursor:pointer}
-    .btn-ghost{background:transparent;color:var(--text)}
-    .hint{color:var(--muted);font-size:.85rem;margin-top:8px}
-    .err{color:var(--danger);margin-top:10px;display:none}
+    .login-panel{width:min(460px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px}
+    .login-panel h1{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;margin:0 0 4px;font-size:2rem;color:var(--accent);}
+    .input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none;font-family:'Outfit',sans-serif;font-size:.95rem;transition:border-color .2s;}
+    .input:focus{border-color:var(--accent);}
+    .label{display:block;margin:14px 0 6px;color:var(--muted);font-size:.8rem;letter-spacing:.5px;text-transform:uppercase;}
+    .err{color:var(--danger);margin-top:12px;font-size:.85rem;display:none;padding:10px 14px;background:rgba(231,76,60,.1);border-radius:8px;border:1px solid rgba(231,76,60,.3);}
+    .hint{color:var(--muted);font-size:.82rem;margin-top:6px;line-height:1.5;}
+    .btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+    .login-btn{flex:1;padding:12px;border:none;border-radius:12px;background:var(--accent);color:#041015;font-family:'Outfit',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;transition:filter .15s;}
+    .login-btn:hover{filter:brightness(1.1);}
+    .cancel-btn{flex:1;padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;}
   </style>
 </head>
 <body>
@@ -30,39 +31,54 @@
   </header>
 
   <div class="center">
-    <div class="panel">
-      <h1>Acceso administrador</h1>
-      <div class="hint">Ingresa tu usuario y contraseña.</div>
+    <div class="login-panel">
+      <h1>🔒 Acceso Admin</h1>
+      <div class="hint">Solo el organizador del juego puede acceder.</div>
 
       <label class="label">Usuario</label>
-      <input id="u" class="input" placeholder="admin">
+      <input id="u" class="input" placeholder="Ingresa tu usuario" autocomplete="username">
 
       <label class="label">Contraseña</label>
-      <input id="p" class="input" type="password" placeholder="••••••••">
+      <input id="p" class="input" type="password" placeholder="••••••••" autocomplete="current-password">
 
-      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn" onclick="login()">Ingresar</button>
-        <a class="btn btn-ghost" href="/" style="text-decoration:none;display:inline-flex;align-items:center;">Cancelar</a>
+      <div class="btn-row">
+        <button class="login-btn" onclick="login()">Ingresar →</button>
+        <a class="cancel-btn" href="/">Cancelar</a>
       </div>
 
-      <div id="err" class="err">❌ Usuario o contraseña incorrectos</div>
+      <div id="err" class="err">❌ Usuario o contraseña incorrectos. Inténtalo de nuevo.</div>
     </div>
   </div>
 
   <script>
-    async function login(){
+    async function login() {
       const username = document.getElementById('u').value.trim();
       const password = document.getElementById('p').value;
-      const res = await fetch('/api/admin/login', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({username,password})
+      document.getElementById('err').style.display = 'none';
+
+      if (!username || !password) {
+        document.getElementById('err').textContent = '⚠️ Ingresa usuario y contraseña.';
+        document.getElementById('err').style.display = 'block';
+        return;
+      }
+
+      const res  = await fetch('/api/admin/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username, password }),
       });
-      const data = await res.json();
-      if(!res.ok){ document.getElementById('err').style.display='block'; return; }
+      if (!res.ok) {
+        document.getElementById('err').textContent = '❌ Usuario o contraseña incorrectos.';
+        document.getElementById('err').style.display = 'block';
+        return;
+      }
       location.href = '/admin';
     }
-    document.addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+    // Auto-focus
+    document.getElementById('u').focus();
   </script>
 </body>
 </html>

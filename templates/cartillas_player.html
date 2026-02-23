@@ -8,22 +8,27 @@
   <link rel="stylesheet" href="/static/css/cartillas.css">
   <style>
     .player-wrap{max-width:1050px;margin:0 auto;padding:22px;}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;}
-    .gridPreview{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:10px;}
-    .pCell{border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;background:var(--card);font-weight:800}
-    .pCell.empty{opacity:.35}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;}
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > div{flex:1;min-width:220px}
-    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .hint{color:var(--muted);font-size:.85rem;margin-top:6px}
-    .mylist{margin-top:14px}
-    .myitem{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);background:var(--card);padding:10px 12px;border-radius:14px;margin-top:10px}
-    .myitem .meta{display:flex;flex-direction:column}
-    .myitem .actions{display:flex;gap:8px;flex-wrap:wrap}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:999}
-    .overlay.show{display:flex}
-    .overlay .modal{width:min(520px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px}
-    .overlay .modal h2{margin:0 0 8px 0}
+    .row>div{flex:1;min-width:220px}
+    .label{display:block;margin:10px 0 5px;color:var(--muted);font-size:.8rem;letter-spacing:.5px;text-transform:uppercase;}
+    .input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);
+           background:var(--card);color:var(--text);outline:none;font-family:'Outfit',sans-serif;
+           font-size:.9rem;transition:border-color .2s;}
+    .input:focus{border-color:var(--accent);}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .hint{color:var(--muted);font-size:.82rem;margin-top:5px;line-height:1.5;}
+    .mylist{margin-top:18px}
+    .myitem{display:flex;gap:10px;align-items:center;justify-content:space-between;
+            border:1px solid var(--border);background:var(--card);padding:12px 14px;
+            border-radius:14px;margin-top:10px;flex-wrap:wrap;}
+    .myitem .meta{display:flex;flex-direction:column;}
+    .myitem .actions{display:flex;gap:8px;flex-wrap:wrap;}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;
+             align-items:center;justify-content:center;z-index:999;}
+    .overlay.show{display:flex;}
+    .overlay .modal{width:min(520px,92vw);background:var(--panel);border:1px solid var(--border);
+                    border-radius:18px;padding:24px;}
   </style>
 </head>
 <body>
@@ -32,43 +37,55 @@
     <div class="nav-links">
       <a href="/" class="nav-link">🎮 Juego</a>
       <a href="/cartillas" class="nav-link active">🎴 Mi Cartilla</a>
-      <a href="/admin" class="nav-link">🔒 Admin</a>
     </div>
   </nav>
 
   <div class="player-wrap">
     <div class="card">
-      <h1 style="font-family:'Bebas Neue',sans-serif;letter-spacing:1px;margin:0 0 8px 0;">Generar cartilla</h1>
+      <h1 style="font-family:'Bebas Neue',sans-serif;letter-spacing:2px;margin:0 0 4px;
+                 color:var(--accent);font-size:2.2rem;">🎴 Mi Cartilla</h1>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">
+        El administrador te dará un código de un solo uso para generar tu cartilla.
+      </p>
+
       <div class="row">
         <div>
           <label class="label">Código del administrador</label>
-          <input id="inp-code" class="input" maxlength="10" placeholder="Ej: A1B2C3 o 483921">
-          <div class="hint">El administrador te da este código para autorizar tu compra.</div>
+          <input id="inp-code" class="input" maxlength="10" placeholder="Ej: A1B2C3"
+                 style="letter-spacing:2px;font-weight:900;text-transform:uppercase;">
+          <div class="hint">⚠️ Cada código es de <strong>un solo uso</strong>. Úsalo con cuidado.</div>
         </div>
         <div>
-          <label class="label">Nombre y apellidos</label>
+          <label class="label">Tu nombre completo</label>
           <input id="inp-name" class="input" maxlength="60" placeholder="Ej: Juan Pérez López">
           <div class="hint">Este nombre saldrá impreso en tu cartilla.</div>
         </div>
       </div>
 
       <div class="btn-row">
-        <button class="btn" onclick="generateAuto()">🎲 Generar aleatoria</button>
-        <button class="btn btn-ghost" onclick="toggleManual()">🧩 Escoger manual</button>
-        <button class="btn btn-ghost" onclick="goToGame()">👀 Ver juego</button>
+        <button class="btn btn-primary" onclick="generateAuto()">🎲 Generar cartilla aleatoria</button>
+        <button class="btn btn-ghost"   onclick="toggleManual()">🧩 Escoger mis números</button>
+        <button class="btn btn-ghost"   onclick="goToGame()">👁 Ver juego en vivo</button>
       </div>
 
-      <div id="manual-area" style="display:none;margin-top:14px;">
-        <div class="hint">Selecciona 15 números respetando columnas (1-9, 10-19, ... 80-90). Luego guarda.</div>
+      <div id="manual-area" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <h3 style="margin-bottom:8px;">Selector manual</h3>
+        <div class="hint" style="margin-bottom:10px;">
+          Selecciona <strong>15 números</strong>. Máximo 2 por columna.
+          Necesitas el código del admin igual que en el modo automático.
+        </div>
         <div id="picker"></div>
-        <div class="btn-row">
-          <button class="btn" onclick="saveManual()">💾 Guardar manual</button>
-          <button class="btn btn-ghost" onclick="clearManual()">🧹 Limpiar</button>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn btn-primary" onclick="saveManual()">💾 Guardar mi selección</button>
+          <button class="btn btn-ghost"   onclick="clearManual()">🧹 Limpiar</button>
         </div>
       </div>
 
       <div class="mylist">
-        <h3 style="margin-top:16px;">Mis cartillas</h3>
+        <h3 style="margin-top:6px;margin-bottom:4px;">Mis cartillas</h3>
+        <div class="hint" style="margin-bottom:10px;">
+          Guardadas localmente en este dispositivo. Guarda el ID o descarga tu cartilla.
+        </div>
         <div id="mylist"></div>
       </div>
     </div>
@@ -78,12 +95,13 @@
 
   <div id="started-overlay" class="overlay">
     <div class="modal">
-      <h2>⛔ El juego ya empezó</h2>
-      <p style="color:var(--muted);margin-top:6px;">
-        Ya se sorteó al menos una bolilla, por lo que ya no se pueden generar cartillas.
+      <h2 style="color:var(--danger);margin-bottom:8px;">⛔ Juego en curso</h2>
+      <p style="color:var(--muted);line-height:1.6;">
+        Ya se sorteó al menos una bolilla. No es posible generar nuevas cartillas.<br><br>
+        Serás redirigido al juego en unos segundos…
       </p>
-      <div class="btn-row" style="margin-top:12px;">
-        <button class="btn" onclick="goToGame()">👀 Ir al juego</button>
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn btn-primary" onclick="goToGame()">👁 Ir al juego ahora</button>
       </div>
     </div>
   </div>

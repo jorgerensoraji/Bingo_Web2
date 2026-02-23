@@ -8,42 +8,64 @@
   <link rel="stylesheet" href="/static/css/game.css">
   <style>
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
-    .grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
-    @media (max-width: 980px){.grid2{grid-template-columns:1fr}}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px}
+    .grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;}
+    .card h2{margin:0 0 4px;font-size:1.2rem;}
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > div{flex:1;min-width:210px}
-    .input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none}
-    .label{display:block;margin:10px 0 6px;color:var(--muted);font-size:.85rem}
-    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--accent);color:#041015;font-weight:900;cursor:pointer}
-    .btn-ghost{background:transparent;color:var(--text)}
-    .codeBox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
-    .pill{padding:10px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-weight:900;letter-spacing:1px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid var(--border);padding:10px;text-align:left;font-size:.9rem}
-    th{color:var(--muted);font-weight:700}
-    .tag{font-size:.78rem;color:var(--muted)}
+    .row>div{flex:1;min-width:200px}
+    .input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none;font-family:'Outfit',sans-serif;font-size:.9rem;transition:border-color .2s;}
+    .input:focus{border-color:var(--accent);}
+    .label{display:block;margin:10px 0 5px;color:var(--muted);font-size:.78rem;letter-spacing:.5px;text-transform:uppercase;}
+    .btn{padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--accent);color:#041015;font-weight:900;cursor:pointer;font-family:'Outfit',sans-serif;transition:filter .15s;}
+    .btn:hover{filter:brightness(1.1);}
+    .btn-ghost{background:transparent;color:var(--text);}
+    .btn-danger{background:var(--danger);color:white;border-color:var(--danger);}
+    .btn-sm{padding:5px 10px;font-size:.78rem;border-radius:7px;}
+    .code-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;}
+    .code-pill{font-family:'Courier New',monospace;font-size:1.4rem;font-weight:900;color:var(--accent);letter-spacing:3px;}
+    .tag{color:var(--muted);font-size:.82rem;margin-bottom:10px;line-height:1.5;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.85rem;}
+    th,td{border-bottom:1px solid var(--border);padding:9px 10px;text-align:left;}
+    th{color:var(--muted);font-size:.65rem;letter-spacing:2px;text-transform:uppercase;background:var(--card);}
+    tr:hover td{background:rgba(17,31,46,.5);}
+    .stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+    .stat-box{flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+    .stat-box .v{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--accent);}
+    .stat-box .l{font-size:.65rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+    .empty-row{text-align:center;color:var(--muted);padding:20px;}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+           background:var(--panel);border:1px solid var(--border);border-radius:12px;
+           padding:12px 24px;font-size:.9rem;z-index:1000;transition:transform .3s;
+           pointer-events:none;white-space:nowrap;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
   </style>
 </head>
 <body>
   <header>
-    <div class="logo">🛠 Admin</div>
+    <div class="logo">🛠 Admin Panel</div>
     <div class="nav-links">
-      <a class="nav-link" href="/">👀 Vista juego</a>
-      <a class="nav-link" href="/admin/cartillas">🧾 Cartillas</a>
-      <a class="nav-link" href="#" onclick="logout()">Salir</a>
+      <a class="nav-link" href="/">👀 Ver juego</a>
+      <a class="nav-link" href="/admin/cartillas">🎴 Cartillas</a>
+      <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
     </div>
   </header>
 
   <div class="wrap">
     <div class="grid2">
+
+      <!-- Generar código -->
       <div class="card">
-        <h2 style="margin:0 0 6px 0;">Generar código para cliente</h2>
-        <div class="tag">El cliente usará este código para generar su cartilla (aleatoria o manual).</div>
+        <h2>🎫 Generar código para jugador</h2>
+        <div class="tag">
+          El jugador usa este código para generar su cartilla en
+          <a href="/cartillas" style="color:var(--accent);">/cartillas</a>.
+          Cada código es de un solo uso.
+        </div>
 
         <div class="row">
           <div>
-            <label class="label">Número (teléfono o ticket)</label>
+            <label class="label">Número / Ticket</label>
             <input id="c-num" class="input" placeholder="Ej: 999888777">
           </div>
           <div>
@@ -59,31 +81,49 @@
         <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn" onclick="createVoucher()">🎫 Generar código</button>
           <button class="btn btn-ghost" onclick="refresh()">🔄 Actualizar</button>
+          <a class="btn btn-ghost" href="/admin/cartillas" style="text-decoration:none;">🎴 Ir a Cartillas</a>
         </div>
 
-        <div class="codeBox" id="codeBox" style="display:none;">
-          <div class="pill" id="lastCode">—</div>
+        <div class="code-box" id="codeBox" style="display:none;">
+          <div>
+            <div style="color:var(--muted);font-size:.75rem;margin-bottom:4px;">CÓDIGO GENERADO:</div>
+            <div class="code-pill" id="lastCode">—</div>
+          </div>
           <button class="btn btn-ghost" onclick="copyCode()">📋 Copiar</button>
+          <a id="wa-share" class="btn btn-ghost" href="#" target="_blank" rel="noopener"
+             style="text-decoration:none;">📲 WhatsApp</a>
         </div>
       </div>
 
+      <!-- Estado del juego -->
       <div class="card">
-        <h2 style="margin:0 0 6px 0;">Estado del juego</h2>
-        <div class="tag">Cuando salga la primera bolilla, se bloquea la generación de cartillas.</div>
-        <div style="margin-top:10px;">
-          <div>Bolillas sorteadas: <strong id="st-drawn">0</strong></div>
-          <div>Restantes: <strong id="st-rem">90</strong></div>
-          <div>Última: <strong id="st-last">—</strong></div>
+        <h2>📊 Estado del juego</h2>
+        <div class="tag">El juego se bloquea para nuevas cartillas cuando se saca la primera bolilla.</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="v" id="st-drawn">0</div><div class="l">Sorteadas</div></div>
+          <div class="stat-box"><div class="v" id="st-rem">90</div><div class="l">Restantes</div></div>
+          <div class="stat-box"><div class="v" id="st-last">—</div><div class="l">Última</div></div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="/" class="btn btn-ghost btn-sm" style="text-decoration:none;">👁 Ver juego en vivo</a>
         </div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px;">
-      <h2 style="margin:0 0 6px 0;">Códigos generados</h2>
-      <div class="tag">Puedes ver si ya fue usado.</div>
+    <!-- Tabla de códigos -->
+    <div class="card">
+      <h2>📋 Códigos generados</h2>
+      <div class="tag">Historial de todos los códigos. Verde = disponible, gris = ya usado.</div>
       <table>
         <thead>
-          <tr><th>Código</th><th>Cliente</th><th>Estado</th><th>Creado</th></tr>
+          <tr>
+            <th>Código</th>
+            <th>Cliente</th>
+            <th>Cartillas generadas</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody id="tb"></tbody>
       </table>
@@ -93,50 +133,125 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    let toastJob=null;
-    function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastJob);toastJob=setTimeout(()=>t.classList.remove('show'),2800);}
-    async function refresh(){
-      const [vRes,sRes]=await Promise.all([fetch('/api/admin/vouchers'),fetch('/api/state')]);
-      const v=await vRes.json(); const s=await sRes.json();
-      document.getElementById('st-drawn').textContent = (s.drawn||[]).length;
-      document.getElementById('st-rem').textContent = s.remaining ?? '—';
-      document.getElementById('st-last').textContent = s.last ?? '—';
-
-      const tb=document.getElementById('tb');
-      const list=v.vouchers||[];
-      tb.innerHTML = list.map(x=>{
-        const who = [x.numero,x.nombres,x.apellidos].filter(Boolean).join(' — ');
-        const st = x.used ? '✅ Usado' : '🟢 Disponible';
-        const dt = (x.created||'').replace('T',' ').slice(0,16);
-        return `<tr><td style="font-weight:900;letter-spacing:.5px">${x.code}</td><td>${who}</td><td>${st}</td><td style="color:var(--muted)">${dt}</td></tr>`;
-      }).join('') || `<tr><td colspan="4" style="color:var(--muted);padding:18px;">No hay códigos aún.</td></tr>`;
+    let toastJob = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastJob);
+      toastJob = setTimeout(() => t.classList.remove('show'), 2800);
     }
 
-    async function createVoucher(){
-      const numero=document.getElementById('c-num').value.trim();
-      const nombres=document.getElementById('c-nom').value.trim();
-      const apellidos=document.getElementById('c-ape').value.trim();
-      const res=await fetch('/api/admin/voucher', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({numero,nombres,apellidos})});
-      const data=await res.json();
-      if(!res.ok){ showToast('❌ ' + (data.error||'No se pudo')); return; }
-      document.getElementById('lastCode').textContent = data.voucher.code;
-      document.getElementById('codeBox').style.display='flex';
+    async function refresh() {
+      try {
+        const [vRes, sRes] = await Promise.all([
+          fetch('/api/admin/vouchers'),
+          fetch('/api/state'),
+        ]);
+        const v = await vRes.json();
+        const s = await sRes.json();
+
+        document.getElementById('st-drawn').textContent = (s.drawn || []).length;
+        document.getElementById('st-rem').textContent   = s.remaining ?? '—';
+        document.getElementById('st-last').textContent  = s.last ?? '—';
+
+        const tb   = document.getElementById('tb');
+        const list = v.vouchers || [];
+
+        if (!list.length) {
+          tb.innerHTML = `<tr><td colspan="6" class="empty-row">No hay códigos generados aún.</td></tr>`;
+          return;
+        }
+
+        tb.innerHTML = list.map(x => {
+          const who  = [x.numero, x.nombres, x.apellidos].filter(Boolean).join(' · ');
+          const used = x.used;
+          const dt   = (x.created || '').replace('T', ' ').slice(0, 16);
+          const cids = (x.cartillas || []).join(', ') || '—';
+          return `<tr>
+            <td><span style="font-family:'Courier New',monospace;font-weight:900;
+                             color:${used ? 'var(--muted)' : 'var(--accent)'};
+                             letter-spacing:1px;">${x.code}</span></td>
+            <td>${escHtml(who) || '<span style="color:var(--muted)">—</span>'}</td>
+            <td style="color:var(--muted);font-size:.78rem;">${escHtml(cids)}</td>
+            <td>${used
+              ? '<span style="color:var(--muted);">✅ Usado</span>'
+              : '<span style="color:var(--accent);">🟢 Disponible</span>'}</td>
+            <td style="color:var(--muted);font-size:.78rem;">${dt}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteVoucher('${x.code}')">🗑</button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch(e) {
+        showToast('❌ Error al cargar datos');
+      }
+    }
+
+    async function createVoucher() {
+      const numero    = document.getElementById('c-num').value.trim();
+      const nombres   = document.getElementById('c-nom').value.trim();
+      const apellidos = document.getElementById('c-ape').value.trim();
+
+      const res  = await fetch('/api/admin/voucher', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ numero, nombres, apellidos }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast('❌ ' + (data.error || 'No se pudo generar')); return; }
+
+      const code = data.voucher.code;
+      document.getElementById('lastCode').textContent = code;
+      document.getElementById('codeBox').style.display = 'flex';
+
+      const fullName = [nombres, apellidos].filter(Boolean).join(' ');
+      const msg      = encodeURIComponent(`¡Hola ${fullName}! Tu código para generar tu cartilla de Bingo es: *${code}*\n\nEntra a la página del juego y usa este código en la sección "Mi Cartilla".\n\n⚠️ Úsalo una sola vez.`);
+      document.getElementById('wa-share').href = `https://wa.me/?text=${msg}`;
+
       showToast('✅ Código generado');
+      refresh();
+
+      // Clear form
+      document.getElementById('c-num').value = '';
+      document.getElementById('c-nom').value = '';
+      document.getElementById('c-ape').value = '';
+    }
+
+    async function deleteVoucher(code) {
+      if (!confirm(`¿Eliminar código ${code}?`)) return;
+      const res = await fetch(`/api/admin/voucher/${code}/delete`, { method: 'DELETE' });
+      if (!res.ok) { showToast('❌ No se pudo eliminar'); return; }
+      showToast('🗑️ Código eliminado');
       refresh();
     }
 
-    function copyCode(){
-      const code=document.getElementById('lastCode').textContent.trim();
-      navigator.clipboard.writeText(code).then(()=>showToast('📋 Código copiado'));
+    function copyCode() {
+      const code = document.getElementById('lastCode').textContent.trim();
+      navigator.clipboard.writeText(code)
+        .then(() => showToast('📋 Código copiado al portapapeles'))
+        .catch(() => showToast('❌ No se pudo copiar'));
     }
 
-    async function logout(){
-      await fetch('/api/admin/logout', {method:'POST'});
-      location.href='/admin/login';
+    async function logout() {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      location.href = '/admin/login';
     }
 
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Init
     refresh();
     setInterval(refresh, 5000);
+
+    // Enter key on form
+    ['c-num','c-nom','c-ape'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') createVoucher();
+      });
+    });
   </script>
 </body>
 </html>
