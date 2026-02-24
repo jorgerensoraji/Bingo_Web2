@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎱 Bingo Pro — Panel de Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">🎱 Bingo Pro <span>ADMIN</span></div>
+  </div>
+  <div class="header-right">
+    <div class="nav-links">
+      <a href="/admin/game" class="nav-link active">🎮 Control</a>
+      <a href="/" class="nav-link" target="_blank">👁 Vista Jugadores</a>
+      <a href="/admin/cartillas" class="nav-link">🎴 Cartillas</a>
+      <a href="/admin" class="nav-link">🛠 Panel Admin</a>
+      <a href="#" class="nav-link" onclick="logout()">🚪 Salir</a>
+    </div>
+    <div id="connection-info">
+      URL para jugadores:<br>
+      <strong id="server-url">cargando…</strong>
+    </div>
+    <div id="timer">⏱ 00:00</div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">Sorteadas: <strong id="stat-drawn">0</strong></div>
+  <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+  <div class="stat"><strong id="stat-pct">0%</strong></div>
+  <div class="shortcuts">[Space] Sortear &nbsp;[R] Repetir &nbsp;[A] Auto &nbsp;[Esc] Silenciar &nbsp;[N] Nuevo</div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT -->
+  <div class="left-col">
+    <div class="number-display">
+      <div id="ball-wrapper">
+        <div id="ball"><div id="big-number">?</div></div>
+      </div>
+      <div class="number-info">
+        <div class="number-label">Bolilla</div>
+        <div id="words-display">—</div>
+        <div id="group-tag"></div>
+        <div id="auto-cd"></div>
+        <div id="auto-bar-wrap"><div id="auto-bar"></div></div>
+      </div>
+    </div>
+
+    <div class="recent-strip">
+      <span class="recent-label">Últimas:</span>
+      <div id="recent-nums" style="display:flex;gap:10px;"></div>
+    </div>
+
+    <div class="grid-section">
+      <div class="section-title">Números Sorteados</div>
+      <div class="group-headers" id="group-headers"></div>
+      <div class="num-grid" id="num-grid"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+
+    <div class="panel">
+      <div class="panel-title">Controles</div>
+      <button class="btn btn-draw" id="btn-draw" onclick="drawNumber()">🎱 SORTEAR</button>
+      <div class="auto-row">
+        <button class="btn btn-auto" id="btn-auto" onclick="toggleAuto()">⏲ Auto [A]</button>
+        <input class="spinbox" type="number" id="auto-interval" min="3" max="60" value="10"> s
+      </div>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="repeatLast()">🔁 Repetir [R]</button>
+        <button class="btn btn-sm" onclick="stopAudio()">🔇 Silenciar</button>
+      </div>
+      <button class="btn btn-new" onclick="newGame()">🔄 Nuevo Juego [N]</button>
+      <div class="slider-label">
+        <span>Velocidad animación</span><span id="speed-val">55</span>
+      </div>
+      <input type="range" min="0" max="100" value="55" id="speed-slider"
+             oninput="document.getElementById('speed-val').textContent=this.value">
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Voz & Audio</div>
+      <select id="voice-select">
+        <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
+        <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
+        <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
+        <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
+        <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
+      </select>
+      <div class="slider-label">
+        <span>🔊 Volumen</span><span id="vol-val">85%</span>
+      </div>
+      <input type="range" min="0" max="100" value="85" id="vol-slider"
+             oninput="document.getElementById('vol-val').textContent=this.value+'%'">
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="gameover">
+  <h1>🎉 ¡BINGO!</h1>
+  <p id="gameover-info">Se sortearon las 90 bolillas.</p>
+  <button class="btn btn-draw" style="max-width:240px;margin:0 auto 8px;"
+          onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
+  <button class="btn btn-sm" style="max-width:200px;margin:0 auto;" onclick="hideGameOver()">Cerrar</button>
+</div>
+
+<!-- IS_ADMIN siempre true aquí: Flask protege esta ruta con session check -->
+<script>const IS_ADMIN = true;</script>
+<script src="/static/js/game.js"></script>
+<script>
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.href = '/admin/login';
+}
+// Mostrar la URL para jugadores (sin /admin/game)
+document.getElementById('server-url').textContent =
+  window.location.origin + '/';
+</script>
+
+</body>
+</html>

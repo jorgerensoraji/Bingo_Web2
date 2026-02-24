@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎱 Bingo Pro — Voz Latina</title>
+<title>🎱 Bingo Pro — En Vivo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/game.css">
 </head>
@@ -17,16 +16,10 @@
   <div class="header-right">
     <div class="nav-links">
       <a href="/" class="nav-link active">🎮 Juego</a>
-      <a href="/cartillas" class="nav-link">🎴 Cartillas</a>
-      {% if is_admin %}
-      <a href="/admin" class="nav-link">🛠 Admin</a>
-      <a href="#" class="nav-link" onclick="logout()">🚪 Salir</a>
-      {% else %}
-      <a href="/admin/login" class="nav-link">🔒 Admin</a>
-      {% endif %}
+      <a href="/cartillas" class="nav-link">🎴 Mi Cartilla</a>
     </div>
     <div id="connection-info">
-      Abre en cualquier dispositivo:<br>
+      Comparte esta dirección:<br>
       <strong id="server-url">cargando…</strong>
     </div>
     <div id="timer">⏱ 00:00</div>
@@ -38,32 +31,26 @@
   <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
   <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
   <div class="stat"><strong id="stat-pct">0%</strong></div>
-  <div class="shortcuts">[Space] Sortear &nbsp; [R] Repetir &nbsp; [A] Auto &nbsp; [Esc] Silenciar &nbsp; [N] Nuevo</div>
+  <div class="spectator-badge">👁 MODO ESPECTADOR — Actualización automática</div>
 </div>
 
 <div class="main">
 
-  <!-- LEFT -->
   <div class="left-col">
-
     <div class="number-display">
       <div id="ball-wrapper">
-        <div id="ball">
-          <div id="big-number">?</div>
-        </div>
+        <div id="ball"><div id="big-number">?</div></div>
       </div>
       <div class="number-info">
-        <div class="number-label">Bolilla</div>
+        <div class="number-label">Bolilla actual</div>
         <div id="words-display">—</div>
         <div id="group-tag"></div>
-        <div id="auto-cd"></div>
-        <!-- FIX: IDs match game.js (auto-bar-wrap / auto-bar) -->
-        <div id="auto-bar-wrap"><div id="auto-bar"></div></div>
+        <div id="sync-status" style="font-size:.75rem;color:var(--muted);margin-top:6px;">🔄 Sincronizando…</div>
       </div>
     </div>
 
     <div class="recent-strip">
-      <span class="recent-label">Últimas:</span>
+      <span class="recent-label">Últimas bolillas:</span>
       <div id="recent-nums" style="display:flex;gap:10px;"></div>
     </div>
 
@@ -72,71 +59,35 @@
       <div class="group-headers" id="group-headers"></div>
       <div class="num-grid" id="num-grid"></div>
     </div>
-
   </div>
 
-  <!-- RIGHT -->
   <div class="right-col">
-
     <div class="panel">
-      <div class="panel-title">Controles</div>
-
-      <button class="btn btn-draw admin-only" id="btn-draw" onclick="drawNumber()">🎱 SORTEAR</button>
-
-      <div class="auto-row">
-        <button class="btn btn-auto admin-only" id="btn-auto" onclick="toggleAuto()">⏲ Auto [A]</button>
-        <input class="spinbox admin-only" type="number" id="auto-interval" min="3" max="60" value="10"> s
+      <div class="panel-title">Estado del Juego</div>
+      <div id="game-status-msg" style="color:var(--muted);font-size:.9rem;line-height:1.8;">
+        Esperando que el administrador inicie el sorteo…
       </div>
-
-      <div class="btn-row" style="margin-bottom:8px;">
-        <button class="btn btn-sm admin-only" onclick="repeatLast()">🔁 Repetir [R]</button>
-        <button class="btn btn-sm admin-only" onclick="stopAudio()">🔇 Silenciar</button>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;letter-spacing:2px;text-transform:uppercase;">Última bolilla</div>
+        <div id="last-big" style="font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:var(--accent);line-height:1;letter-spacing:3px;">—</div>
       </div>
-
-      <button class="btn btn-new admin-only" onclick="newGame()">🔄 Nuevo Juego [N]</button>
-
-      <div class="slider-label">
-        <span>Velocidad animación</span>
-        <span id="speed-val">55</span>
-      </div>
-      <input type="range" min="0" max="100" value="55" id="speed-slider"
-             class="admin-only"
-             oninput="document.getElementById('speed-val').textContent=this.value">
     </div>
 
     <div class="panel">
-      <div class="panel-title">Voz & Audio</div>
-      <select id="voice-select" class="admin-only">
-        <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
-        <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
-        <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
-        <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
-        <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
-      </select>
-
-      <div class="slider-label">
-        <span>🔊 Volumen</span>
-        <span id="vol-val">85%</span>
-      </div>
-      <input type="range" min="0" max="100" value="85"
-             id="vol-slider" class="admin-only"
-             oninput="document.getElementById('vol-val').textContent=this.value+'%'">
-    </div>
-
-    {% if not is_admin %}
-    <div class="panel" style="border-color:rgba(0,229,180,.2);">
-      <div class="panel-title">👁 Modo Espectador</div>
-      <p style="color:var(--muted);font-size:.82rem;line-height:1.6;">
-        Estás viendo el juego en <strong style="color:var(--accent);">tiempo real</strong>.<br>
-        Los números se actualizan automáticamente cada 3 segundos.<br><br>
-        ¿Eres el administrador?
-      </p>
-      <a href="/admin/login" class="btn btn-sm" style="text-decoration:none;text-align:center;margin-top:8px;display:block;">
-        🔒 Iniciar sesión como Admin
+      <div class="panel-title">Tu Cartilla</div>
+      <p style="color:var(--muted);font-size:.82rem;line-height:1.6;margin-bottom:12px;">¿Aún no tienes tu cartilla?</p>
+      <a href="/cartillas" style="display:block;text-align:center;text-decoration:none;padding:10px;border-radius:10px;background:var(--accent);color:#041015;font-weight:900;">
+        🎴 Generar mi cartilla
       </a>
     </div>
-    {% endif %}
 
+    <div class="panel" style="border-color:rgba(47,128,237,.25);">
+      <div class="panel-title">¿Eres el Admin?</div>
+      <p style="color:var(--muted);font-size:.82rem;line-height:1.6;margin-bottom:12px;">El panel de control está en una pantalla separada.</p>
+      <a href="/admin/login" style="display:block;text-align:center;text-decoration:none;padding:10px;border-radius:10px;background:var(--card);color:var(--muted);font-weight:700;font-size:.85rem;border:1px solid var(--border);">
+        🔒 Acceso administrador
+      </a>
+    </div>
   </div>
 </div>
 
@@ -145,65 +96,10 @@
 <div id="gameover">
   <h1>🎉 ¡BINGO!</h1>
   <p id="gameover-info">Se sortearon las 90 bolillas.</p>
-  <button class="btn btn-draw admin-only" onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
-  <button class="btn btn-sm" style="margin-top:10px;" onclick="hideGameOver()">Cerrar</button>
+  <button class="btn btn-sm" style="max-width:200px;margin:0 auto;" onclick="hideGameOver()">Cerrar</button>
 </div>
 
-<!--
-  IS_ADMIN se verifica en VIVO via API en cada carga de página.
-  Esto garantiza que:
-  1) Al cerrar sesión (logout) y reabrir, el estado sea correcto.
-  2) Si el admin cierra el navegador, la cookie de sesión desaparece
-     y la próxima vez que cualquier pestaña cargue, IS_ADMIN = false.
-  3) Un jugador que abre la misma URL que el admin nunca hereda permisos.
--->
-<script>
-  // Valor provisional mientras llega la respuesta de la API
-  let IS_ADMIN = false;
-
-  async function _initAdminStatus() {
-    try {
-      const res  = await fetch('/api/auth/status');
-      const data = await res.json();
-      const wasAdmin = IS_ADMIN;
-      IS_ADMIN = data.is_admin === true;
-
-      if (wasAdmin !== IS_ADMIN) {
-        // Estado cambió (ej: sesión expiró o acaban de hacer login)
-        // Recargamos para que Flask renderice el HTML correcto
-        location.reload();
-        return;
-      }
-
-      // Aplicar restricciones de rol según el valor real
-      if (typeof applyRoleSecurity === 'function') {
-        applyRoleSecurity();
-      }
-    } catch(e) {
-      // Sin conexión: asumir no-admin por seguridad
-      IS_ADMIN = false;
-      if (typeof applyRoleSecurity === 'function') {
-        applyRoleSecurity();
-      }
-    }
-  }
-
-  async function logout() {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    location.reload();
-  }
-</script>
-
-<script src="/static/js/game.js"></script>
-
-<script>
-  // Verificar estado real DESPUÉS de que game.js haya cargado
-  // (para que applyRoleSecurity esté definida)
-  _initAdminStatus();
-
-  // Re-verificar cada 30 segundos por si la sesión expiró en el servidor
-  setInterval(_initAdminStatus, 30000);
-</script>
+<script src="/static/js/game_player.js"></script>
 
 </body>
 </html>

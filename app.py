@@ -458,7 +458,7 @@ def cartillas_player_page():
 @app.route("/admin/login")
 def admin_login_page():
     if is_admin():
-        return redirect("/admin")
+        return redirect("/admin/game")
     return render_template("admin_login.html")
 
 @app.route("/admin")
@@ -472,6 +472,13 @@ def admin_cartillas_page():
     if not is_admin():
         return redirect("/admin/login")
     return render_template("cartillas_admin.html")
+
+@app.route("/admin/game")
+def admin_game_page():
+    """Pantalla de juego EXCLUSIVA para el admin — con todos los controles activos."""
+    if not is_admin():
+        return redirect("/admin/login")
+    return render_template("admin_game.html")
 
 # ─── API Admin: Auth ──────────────────────────────────────────────────────────
 @app.route("/api/admin/login", methods=["POST"])

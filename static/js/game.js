@@ -502,54 +502,12 @@ function showToast(msg) {
   toastJob = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── SYNC ESTADO (para jugadores/espectadores) ─────
-async function syncState() {
-  // Si ahora IS_ADMIN es true, el admin no necesita sync externo
-  if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) return;
-
-  try {
-    const res  = await fetch('/api/state');
-    const data = await res.json();
-    const serverDrawn = data.drawn || [];
-
-    // Mark any new cells that were drawn server-side
-    if (serverDrawn.length !== drawn.length) {
-      drawn = serverDrawn;
-      drawn.forEach(n => markCell(n));
-      updateRecent();
-      updateStats(drawn.length, data.remaining ?? (90 - drawn.length));
-      if (drawn.length > 0) {
-        const last = drawn[drawn.length - 1];
-        if (last !== lastNumber) {
-          lastNumber = last;
-          const g    = Math.min(Math.floor((last - 1) / 10), 8);
-          updateDisplay(last, '');
-          document.getElementById('words-display').textContent = `Último: ${last}`;
-        }
-      }
-      if (data.remaining === 0) showGameOver();
-    }
-  } catch(e) { /* silent */ }
-}
 
 // ── INIT ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const urlEl = document.getElementById('server-url');
   if (urlEl) urlEl.textContent = window.location.href;
-
   initGrid();
-
-  // applyRoleSecurity() se llama desde index.html una vez que
-  // /api/auth/status confirma el estado real del usuario.
-  // Aquí lo llamamos una vez de forma defensiva con IS_ADMIN = false
-  // (valor provisional) para que los controles estén bloqueados
-  // desde el primer frame, antes de que llegue la respuesta de la API.
   applyRoleSecurity();
-
-  // Non-admin players: sync state every 3 seconds to follow the game live
-  // (Para admin, el estado ya es local así que no hace falta)
-  if (!(typeof IS_ADMIN !== 'undefined' && IS_ADMIN)) {
-    syncState();
-    setInterval(syncState, 3000);
-  }
+  // IS_ADMIN = true siempre en admin_game.html (protegido por Flask session)
 });
