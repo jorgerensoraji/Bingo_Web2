@@ -503,11 +503,43 @@ function showToast(msg) {
 }
 
 
+// ── CARGAR ESTADO PREVIO AL ENTRAR ────────────────
+// Si el admin entra mientras ya se sortearon bolillas,
+// carga todo el historial para mostrar el tablero actualizado.
+async function loadExistingState() {
+  try {
+    const res  = await fetch('/api/state');
+    const data = await res.json();
+    const serverDrawn = data.drawn || [];
+    if (serverDrawn.length === 0) return;
+
+    drawn      = serverDrawn;
+    lastNumber = data.last;
+
+    drawn.forEach(n => markCell(n));
+
+    if (data.last) {
+      updateDisplay(data.last, '');
+      document.getElementById('words-display').textContent = 'Último sorteado: ' + data.last;
+    }
+
+    updateRecent();
+    updateStats(drawn.length, data.remaining ?? (90 - drawn.length));
+
+    if (!startTime) { startTime = Date.now(); startClock(); }
+
+    showToast('✅ Juego en curso: ' + drawn.length + ' bolillas ya sorteadas');
+  } catch(e) {
+    console.error('Error al cargar estado previo:', e);
+  }
+}
+
 // ── INIT ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const urlEl = document.getElementById('server-url');
   if (urlEl) urlEl.textContent = window.location.href;
   initGrid();
   applyRoleSecurity();
-  // IS_ADMIN = true siempre en admin_game.html (protegido por Flask session)
+  // Cargar bolillas ya sorteadas antes de que el admin empiece a operar
+  loadExistingState();
 });

@@ -16,7 +16,6 @@
   <div class="header-right">
     <div class="nav-links">
       <a href="/" class="nav-link active">🎮 Juego</a>
-      <a href="/cartillas" class="nav-link">🎴 Mi Cartilla</a>
     </div>
     <div id="connection-info">
       Comparte esta dirección:<br>
@@ -31,7 +30,7 @@
   <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
   <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
   <div class="stat"><strong id="stat-pct">0%</strong></div>
-  <div class="spectator-badge">👁 MODO ESPECTADOR — Actualización automática</div>
+  <div class="spectator-badge">👁 EN VIVO — Actualización automática</div>
 </div>
 
 <div class="main">
@@ -45,7 +44,7 @@
         <div class="number-label">Bolilla actual</div>
         <div id="words-display">—</div>
         <div id="group-tag"></div>
-        <div id="sync-status" style="font-size:.75rem;color:var(--muted);margin-top:6px;">🔄 Sincronizando…</div>
+        <div id="sync-status" style="font-size:.75rem;color:var(--muted);margin-top:6px;">🔄 Conectando…</div>
       </div>
     </div>
 
@@ -61,6 +60,7 @@
     </div>
   </div>
 
+  <!-- RIGHT: solo estado del juego, sin cartillas ni acceso admin -->
   <div class="right-col">
     <div class="panel">
       <div class="panel-title">Estado del Juego</div>
@@ -68,27 +68,14 @@
         Esperando que el administrador inicie el sorteo…
       </div>
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-        <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;letter-spacing:2px;text-transform:uppercase;">Última bolilla</div>
-        <div id="last-big" style="font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:var(--accent);line-height:1;letter-spacing:3px;">—</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;
+                    letter-spacing:2px;text-transform:uppercase;">Última bolilla</div>
+        <div id="last-big" style="font-family:'Bebas Neue',sans-serif;font-size:4rem;
+                                   color:var(--accent);line-height:1;letter-spacing:3px;">—</div>
       </div>
     </div>
-
-    <div class="panel">
-      <div class="panel-title">Tu Cartilla</div>
-      <p style="color:var(--muted);font-size:.82rem;line-height:1.6;margin-bottom:12px;">¿Aún no tienes tu cartilla?</p>
-      <a href="/cartillas" style="display:block;text-align:center;text-decoration:none;padding:10px;border-radius:10px;background:var(--accent);color:#041015;font-weight:900;">
-        🎴 Generar mi cartilla
-      </a>
-    </div>
-
-    <div class="panel" style="border-color:rgba(47,128,237,.25);">
-      <div class="panel-title">¿Eres el Admin?</div>
-      <p style="color:var(--muted);font-size:.82rem;line-height:1.6;margin-bottom:12px;">El panel de control está en una pantalla separada.</p>
-      <a href="/admin/login" style="display:block;text-align:center;text-decoration:none;padding:10px;border-radius:10px;background:var(--card);color:var(--muted);font-weight:700;font-size:.85rem;border:1px solid var(--border);">
-        🔒 Acceso administrador
-      </a>
-    </div>
   </div>
+
 </div>
 
 <div id="toast"></div>
@@ -96,7 +83,8 @@
 <div id="gameover">
   <h1>🎉 ¡BINGO!</h1>
   <p id="gameover-info">Se sortearon las 90 bolillas.</p>
-  <button class="btn btn-sm" style="max-width:200px;margin:0 auto;" onclick="hideGameOver()">Cerrar</button>
+  <button class="btn btn-sm" style="max-width:200px;margin:0 auto;"
+          onclick="hideGameOver()">Cerrar</button>
 </div>
 
 <script src="/static/js/game_player.js"></script>
