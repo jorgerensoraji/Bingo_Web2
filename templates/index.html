@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -148,21 +149,61 @@
   <button class="btn btn-sm" style="margin-top:10px;" onclick="hideGameOver()">Cerrar</button>
 </div>
 
-<!-- Inyectado por Flask -->
+<!--
+  IS_ADMIN se verifica en VIVO via API en cada carga de página.
+  Esto garantiza que:
+  1) Al cerrar sesión (logout) y reabrir, el estado sea correcto.
+  2) Si el admin cierra el navegador, la cookie de sesión desaparece
+     y la próxima vez que cualquier pestaña cargue, IS_ADMIN = false.
+  3) Un jugador que abre la misma URL que el admin nunca hereda permisos.
+-->
 <script>
-  const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+  // Valor provisional mientras llega la respuesta de la API
+  let IS_ADMIN = false;
+
+  async function _initAdminStatus() {
+    try {
+      const res  = await fetch('/api/auth/status');
+      const data = await res.json();
+      const wasAdmin = IS_ADMIN;
+      IS_ADMIN = data.is_admin === true;
+
+      if (wasAdmin !== IS_ADMIN) {
+        // Estado cambió (ej: sesión expiró o acaban de hacer login)
+        // Recargamos para que Flask renderice el HTML correcto
+        location.reload();
+        return;
+      }
+
+      // Aplicar restricciones de rol según el valor real
+      if (typeof applyRoleSecurity === 'function') {
+        applyRoleSecurity();
+      }
+    } catch(e) {
+      // Sin conexión: asumir no-admin por seguridad
+      IS_ADMIN = false;
+      if (typeof applyRoleSecurity === 'function') {
+        applyRoleSecurity();
+      }
+    }
+  }
+
+  async function logout() {
+    await fetch('/api/admin/logout', { method: 'POST' });
+    location.reload();
+  }
 </script>
 
 <script src="/static/js/game.js"></script>
 
-{% if is_admin %}
 <script>
-async function logout() {
-  await fetch('/api/admin/logout', { method: 'POST' });
-  location.reload();
-}
+  // Verificar estado real DESPUÉS de que game.js haya cargado
+  // (para que applyRoleSecurity esté definida)
+  _initAdminStatus();
+
+  // Re-verificar cada 30 segundos por si la sesión expiró en el servidor
+  setInterval(_initAdminStatus, 30000);
 </script>
-{% endif %}
 
 </body>
 </html>

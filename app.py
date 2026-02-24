@@ -27,6 +27,14 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 ADMIN_USER = os.environ.get("ADMIN_USER", "jorgerensoraji")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "Humildes1!@#$%")
 
+# ── Sesión expira al cerrar el navegador (no permanente) ──────────────────────
+# session.permanent = False  es el default, pero lo forzamos explícitamente.
+# Esto hace que la cookie sea de tipo "session cookie" (sin fecha de expiración),
+# por lo que el navegador la elimina al cerrarse.
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_COOKIE_HTTPONLY"] = True   # JS no puede leer la cookie
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Protección CSRF básica
+
 def is_admin() -> bool:
     return bool(session.get("is_admin"))
 
@@ -481,6 +489,11 @@ def api_admin_login():
 def api_admin_logout():
     session.clear()
     return jsonify({"status": "ok"})
+
+@app.route("/api/auth/status")
+def api_auth_status():
+    """Frontend polls this to know live if the current user is admin."""
+    return jsonify({"is_admin": is_admin()})
 
 # ─── API Juego ────────────────────────────────────────────────────────────────
 @app.route("/api/draw", methods=["POST"])

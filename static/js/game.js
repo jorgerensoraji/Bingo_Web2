@@ -40,20 +40,39 @@ let currentAudio   = null;
 let elapsedSeconds = 0;
 
 // ── SEGURIDAD DE ROL ──────────────────────────────
+// Llamada desde index.html DESPUÉS de verificar /api/auth/status
+// Puede llamarse múltiples veces sin problema (idempotente).
 function applyRoleSecurity() {
-  if (typeof IS_ADMIN === 'undefined') window.IS_ADMIN = false;
+  // IS_ADMIN es una variable global definida en index.html
+  // que se actualiza desde la API antes de llamar esta función.
+  const admin = (typeof IS_ADMIN !== 'undefined') && IS_ADMIN === true;
 
-  if (!IS_ADMIN) {
-    document.querySelectorAll('.admin-only').forEach(el => {
-      el.disabled = true;
-      el.style.opacity       = '0.4';
+  document.querySelectorAll('.admin-only').forEach(el => {
+    if (admin) {
+      // Restaurar controles para el admin
+      el.disabled           = false;
+      el.style.opacity      = '';
+      el.style.pointerEvents = '';
+      el.removeAttribute('aria-disabled');
+      el.tabIndex = 0;
+    } else {
+      // Bloquear controles para jugadores/espectadores
+      el.disabled           = true;
+      el.style.opacity      = '0.4';
       el.style.pointerEvents = 'none';
       el.setAttribute('aria-disabled', 'true');
       el.tabIndex = -1;
-    });
+    }
+  });
 
+  // Bloquear / desbloquear atajos de teclado
+  // Usamos una bandera para no añadir el listener múltiples veces
+  if (!window._keyListenerAttached) {
+    window._keyListenerAttached = true;
     window.addEventListener('keydown', (e) => {
-      if ([' ','r','R','a','A','n','N'].includes(e.key)) {
+      // Re-leer IS_ADMIN en tiempo de ejecución (puede haber cambiado)
+      const isAdminNow = (typeof IS_ADMIN !== 'undefined') && IS_ADMIN === true;
+      if (!isAdminNow && [' ','r','R','a','A','n','N'].includes(e.key)) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -483,8 +502,11 @@ function showToast(msg) {
   toastJob = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── SYNC ESTADO (para jugadores) ──────────────────
+// ── SYNC ESTADO (para jugadores/espectadores) ─────
 async function syncState() {
+  // Si ahora IS_ADMIN es true, el admin no necesita sync externo
+  if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) return;
+
   try {
     const res  = await fetch('/api/state');
     const data = await res.json();
@@ -516,10 +538,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (urlEl) urlEl.textContent = window.location.href;
 
   initGrid();
+
+  // applyRoleSecurity() se llama desde index.html una vez que
+  // /api/auth/status confirma el estado real del usuario.
+  // Aquí lo llamamos una vez de forma defensiva con IS_ADMIN = false
+  // (valor provisional) para que los controles estén bloqueados
+  // desde el primer frame, antes de que llegue la respuesta de la API.
   applyRoleSecurity();
 
   // Non-admin players: sync state every 3 seconds to follow the game live
-  if (!IS_ADMIN) {
+  // (Para admin, el estado ya es local así que no hace falta)
+  if (!(typeof IS_ADMIN !== 'undefined' && IS_ADMIN)) {
     syncState();
     setInterval(syncState, 3000);
   }
