@@ -344,3 +344,45 @@ select {
   border-radius:20px;
   letter-spacing:.5px;
 }
+
+
+/* ── PLAYER CARTILLA MINI (index page) ───────────────────────────────────── */
+.cartilla-mini {
+  display:grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap:8px;
+  padding:12px;
+  background: rgba(10,18,26,.55);
+  border:1px solid var(--border);
+  border-radius:16px;
+}
+.cartilla-mini .c-cell {
+  height:44px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(17,31,46,.8);
+  color: rgba(230,240,255,.35);
+  user-select:none;
+}
+.cartilla-mini .c-cell.empty {
+  background: rgba(10,18,26,.45);
+  border:1px dashed rgba(255,255,255,.10);
+  color: transparent;
+}
+.cartilla-mini .c-cell.filled { }
+.cartilla-mini .c-cell.marked {
+  box-shadow: 0 0 0 2px rgba(0,229,180,.25);
+}
+.cartilla-mini .c-cell.marked > span {
+  width:78%;
+  height:78%;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#060d12;
+}

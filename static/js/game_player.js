@@ -23,6 +23,12 @@ let lastLocal   = null;
 let clockJob    = null;
 let elapsedSec  = 0;
 let gameStarted = false;
+let gameId = null;
+
+// ── PLAYER CARTILLA (auto-mark) ───────────────────
+let myCartillaId = null;
+let myCartilla   = null;
+let myBingoFired = false;
 
 // ── INIT GRID ─────────────────────────────────────
 function initGrid() {
@@ -59,6 +65,7 @@ async function syncState() {
     const res  = await fetch('/api/state');
     const data = await res.json();
     const serverDrawn = data.drawn || [];
+    gameId = data.game_id || gameId;
 
     // Actualizar estado del sync
     document.getElementById('sync-status').textContent = '✅ Sincronizado';
@@ -91,6 +98,9 @@ async function syncState() {
 
     updateRecent();
     updateStats(serverDrawn.length, data.remaining ?? (90 - serverDrawn.length));
+
+    // Auto-marcado de la cartilla del jugador
+    updateMyCartillaAutoMark();
 
     // Juego terminado
     if (data.remaining === 0 && serverDrawn.length === 90) {
@@ -243,10 +253,236 @@ function showToast(msg) {
   toastJob = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+
+
+// ── CARTILLA UI ───────────────────────────────────
+function getMyCartillasFromStorage() {
+  try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]') || []; }
+  catch(e) { return []; }
+}
+
+function populateMyCartillaSelect() {
+  const sel = document.getElementById('my-cartilla-select');
+  if (!sel) return;
+
+  const arr = getMyCartillasFromStorage();
+  sel.innerHTML = '';
+
+  const opt0 = document.createElement('option');
+  opt0.value = '';
+  opt0.textContent = arr.length ? '— Selecciona tu cartilla —' : 'Aún no tienes cartillas en este dispositivo';
+  sel.appendChild(opt0);
+
+  arr.forEach(cid => {
+    const o = document.createElement('option');
+    o.value = cid;
+    o.textContent = `Cartilla ${cid}`;
+    sel.appendChild(o);
+  });
+
+  // Auto-select last used
+  const last = localStorage.getItem('active_cartilla') || '';
+  if (last && arr.includes(last)) sel.value = last;
+}
+
+function renderMyCartilla(grid, drawnSet) {
+  const wrap = document.getElementById('my-cartilla-grid');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  for (let ri = 0; ri < 3; ri++) {
+    for (let ci = 0; ci < 9; ci++) {
+      const num = grid[ri][ci];
+      const g   = GROUP_COLORS[ci];
+      const cell = document.createElement('div');
+      cell.className = 'c-cell';
+      if (num === null || num === undefined) {
+        cell.classList.add('empty');
+        cell.textContent = '·';
+      } else {
+        cell.classList.add('filled');
+        if (drawnSet && drawnSet.has(num)) {
+          cell.classList.add('marked');
+          cell.style.borderColor = g.fg;
+          const s = document.createElement('span');
+          s.textContent = num;
+          s.style.background = g.fg;
+          cell.appendChild(s);
+        } else {
+          cell.textContent = num;
+          cell.style.color = g.fg + '44';
+        }
+      }
+      wrap.appendChild(cell);
+    }
+  }
+}
+
+async function loadSelectedCartilla() {
+  const sel = document.getElementById('my-cartilla-select');
+  const cid = (sel?.value || '').trim().toUpperCase();
+  if (!cid) {
+    showToast('🎴 Selecciona una cartilla');
+    return;
+  }
+
+  myCartillaId = cid;
+  localStorage.setItem('active_cartilla', cid);
+  myBingoFired = false;
+
+  try {
+    const res = await fetch(`/api/cartilla/${cid}`);
+    const data = await res.json();
+    if (!res.ok) {
+      showToast('❌ No se encontró esa cartilla');
+      return;
+    }
+    myCartilla = data;
+
+    const meta = document.getElementById('my-cartilla-meta');
+    if (meta) {
+      const tel = (data.telefono || '').trim();
+      meta.innerHTML = `ID: <strong style="color:var(--text)">${data.id}</strong>` +
+        (tel ? ` &nbsp;·&nbsp; Tel: <strong style="color:var(--accent)">${tel}</strong>` : '');
+    }
+
+    updateMyCartillaAutoMark(true);
+    showToast(`✅ Cartilla ${cid} cargada`);
+
+    // Ask notification permission (best-effort)
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    } catch(e) {}
+
+  } catch(e) {
+    showToast('❌ Error al cargar cartilla');
+  }
+}
+
+function isMyCartillaBingo(drawnSet) {
+  if (!myCartilla || !myCartilla.grid) return false;
+  const nums = [];
+  for (const row of myCartilla.grid) {
+    for (const n of row) if (n !== null && n !== undefined) nums.push(n);
+  }
+  return nums.length && nums.every(n => drawnSet.has(n));
+}
+
+function playWinAlert() {
+  // Short beep with WebAudio (works on desktop/mobile if user interacted at least once)
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = 880;
+    o.connect(g);
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+    o.start();
+    o.stop(ctx.currentTime + 1.25);
+    setTimeout(() => ctx.close(), 1400);
+  } catch(e) {}
+
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]); } catch(e) {}
+}
+
+function showWinNotification(title, body) {
+  try {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  } catch(e) {}
+}
+
+async function claimWinnerOnce() {
+  if (!myCartillaId || !gameId) return;
+  const key = `winner_claimed_${gameId}_${myCartillaId}`;
+  if (localStorage.getItem(key) === '1') return;
+
+  try {
+    const res = await fetch('/api/winner/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cid: myCartillaId }),
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      localStorage.setItem(key, '1');
+      return data;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function updateMyCartillaAutoMark(force = false) {
+  const status = document.getElementById('my-cartilla-status');
+  const btnBuy = document.getElementById('btn-go-cartillas');
+
+  // Disable buying when game already started (but allow viewing)
+  if (btnBuy) {
+    btnBuy.disabled = gameStarted;
+    btnBuy.textContent = gameStarted ? 'Ver/Ya compré' : 'Comprar';
+  }
+
+  if (!myCartilla || !myCartilla.grid) {
+    if (status) status.textContent = gameStarted
+      ? '💡 El juego ya empezó. Carga tu cartilla para marcar automáticamente.'
+      : '💡 Puedes comprar/generar tu cartilla antes de que empiece el juego.';
+    return;
+  }
+
+  const drawnSet = new Set(drawnLocal);
+  renderMyCartilla(myCartilla.grid, drawnSet);
+
+  const total = 15;
+  let marked = 0;
+  for (const row of myCartilla.grid) {
+    for (const n of row) if (n !== null && n !== undefined && drawnSet.has(n)) marked++;
+  }
+
+  if (status) {
+    status.innerHTML = `Marcadas: <strong style="color:var(--accent)">${marked} / ${total}</strong>`;
+  }
+
+  // Fire BINGO alert once
+  if (!myBingoFired && isMyCartillaBingo(drawnSet)) {
+    myBingoFired = true;
+    playWinAlert();
+    showToast('🎉 ¡BINGO!');
+    showWinNotification('🎉 ¡BINGO!', `Cartilla ${myCartillaId} — ¡Felicidades!`);
+
+    claimWinnerOnce().then((r) => {
+      if (r?.sms_sent) showToast('📩 Te enviamos un SMS (si Twilio está configurado)');
+    });
+  }
+}
+
+function initMyCartillaUI() {
+  populateMyCartillaSelect();
+
+  const btn = document.getElementById('btn-load-cartilla');
+  if (btn) btn.addEventListener('click', loadSelectedCartilla);
+
+  const sel = document.getElementById('my-cartilla-select');
+  if (sel) sel.addEventListener('change', () => {
+    const cid = (sel.value || '').trim();
+    if (cid) loadSelectedCartilla();
+  });
+
+  // Refresh list if user comes back from /cartillas
+  window.addEventListener('focus', populateMyCartillaSelect);
+}
 // ── INIT ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('server-url').textContent = window.location.href;
   initGrid();
+  initMyCartillaUI();
   syncState();
   setInterval(syncState, 3000);
 });

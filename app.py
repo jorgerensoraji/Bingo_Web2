@@ -76,6 +76,17 @@ def _find_voucher(vs: list, code: str):
             return v
     return None
 
+
+def get_voucher_info(code: str):
+    """Return voucher dict for a code (or None). Does not modify state."""
+    code = (code or "").strip().upper()
+    if not code:
+        return None
+    with vouchers_lock:
+        vs = _load_vouchers()
+        v = _find_voucher(vs, code)
+        return dict(v) if v else None
+
 def validate_voucher_code(code: str) -> tuple:
     code = (code or "").strip().upper()
     if not code:
@@ -110,6 +121,10 @@ class GameState:
         self.available = list(range(1, 91))
         self.drawn: list = []
         self.last = None
+        # Winner notifications are tracked per game
+        self.game_id = str(uuid.uuid4())[:8].upper()
+        self.claimed_winners = set()  # cartilla IDs that already claimed BINGO
+        self.winners_log = []         # list of winner dicts
 
     def draw(self):
         if not self.available:
@@ -184,11 +199,13 @@ def generate_cartilla_grid():
 
     raise RuntimeError("No se pudo generar cartilla válida")
 
-def save_cartilla(nombre: str, grid: list) -> dict:
+def save_cartilla(nombre: str, grid: list, telefono: str = '', voucher_code: str = '') -> dict:
     cid  = str(uuid.uuid4())[:8].upper()
     data = {
         "id":      cid,
         "nombre":  nombre,
+        "telefono": (telefono or '').strip()[:30],
+        "voucher_code": (voucher_code or '').strip().upper(),
         "grid":    grid,
         "created": datetime.now().isoformat(),
     }
@@ -577,7 +594,8 @@ def api_state():
         return jsonify({
             "drawn":     game.drawn,
             "remaining": len(game.available),
-            "last":      game.last
+            "last":      game.last,
+            "game_id":   getattr(game, 'game_id', None),
         })
 
 # ─── API Admin: Vouchers ──────────────────────────────────────────────────────
@@ -662,7 +680,12 @@ def api_save_manual():
     if len(nums) != 15:
         return jsonify({"error": f"Se requieren 15 numeros, recibidos: {len(nums)}"}), 400
 
-    cartilla = save_cartilla(nombre, grid)
+    telefono = ''
+    if (not is_admin()) and code:
+        vinfo = get_voucher_info(code)
+        if vinfo:
+            telefono = (vinfo.get('numero') or '').strip()
+    cartilla = save_cartilla(nombre, grid, telefono=telefono, voucher_code=code if (not is_admin()) else '')
 
     if not is_admin() and code:
         mark_voucher_used(code, [cartilla["id"]])
@@ -689,7 +712,12 @@ def api_generate():
     results = []
     for _ in range(count):
         grid     = generate_cartilla_grid()
-        cartilla = save_cartilla(nombre, grid)
+        telefono = ''
+        if (not is_admin()) and code:
+            vinfo = get_voucher_info(code)
+            if vinfo:
+                telefono = (vinfo.get('numero') or '').strip()
+        cartilla = save_cartilla(nombre, grid, telefono=telefono, voucher_code=code if (not is_admin()) else '')
         results.append(cartilla)
 
     if not is_admin() and code:
@@ -783,6 +811,91 @@ def api_delete_all_cartillas():
             f.unlink()
             count += 1
     return jsonify({"status": "ok", "deleted": count})
+
+
+# ─── Winner notification (optional SMS via Twilio) ───────────────────────────────
+def _send_sms_twilio(to_number: str, body: str) -> bool:
+    """Send SMS using Twilio REST API if env vars are present.
+    Env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
+    Returns True if attempted+accepted (best-effort), False otherwise.
+    """
+    to_number = (to_number or '').strip()
+    if not to_number:
+        return False
+
+    sid   = os.environ.get('TWILIO_ACCOUNT_SID', '').strip()
+    token = os.environ.get('TWILIO_AUTH_TOKEN', '').strip()
+    from_ = os.environ.get('TWILIO_FROM', '').strip()
+    if not (sid and token and from_):
+        return False
+
+    try:
+        import base64, urllib.parse, urllib.request
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+        data = urllib.parse.urlencode({
+            'To': to_number,
+            'From': from_,
+            'Body': body,
+        }).encode('utf-8')
+
+        req = urllib.request.Request(url, data=data, method='POST')
+        auth = base64.b64encode(f"{sid}:{token}".encode('utf-8')).decode('ascii')
+        req.add_header('Authorization', f'Basic {auth}')
+        req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return 200 <= resp.status < 300
+    except Exception:
+        return False
+
+
+@app.route('/api/winner/claim', methods=['POST'])
+def api_winner_claim():
+    """Player claims BINGO. Server verifies and (optionally) sends SMS to registered phone."""
+    data = request.get_json() or {}
+    cid  = (data.get('cid') or '').strip().upper()
+
+    if not cid:
+        return jsonify({'error': 'missing_cid'}), 400
+
+    c = load_cartilla(cid)
+    if not c:
+        return jsonify({'error': 'not_found'}), 404
+
+    with game_lock:
+        drawn2  = list(game.drawn)
+        gid     = getattr(game, 'game_id', None)
+        claimed = getattr(game, 'claimed_winners', set())
+
+        chk = check_winner(c['grid'], drawn2)
+        if not chk.get('bingo'):
+            return jsonify({'ok': False, 'error': 'not_bingo', 'game_id': gid, 'check': chk}), 400
+
+        if cid in claimed:
+            return jsonify({'ok': True, 'already': True, 'game_id': gid})
+
+        claimed.add(cid)
+        game.claimed_winners = claimed
+
+        winner = {
+            'id': cid,
+            'nombre': c.get('nombre'),
+            'telefono': c.get('telefono') or '',
+            'claimed_at': datetime.now().isoformat(),
+            'drawn_count': len(drawn2),
+            'game_id': gid,
+        }
+        try:
+            game.winners_log.append(winner)
+        except Exception:
+            pass
+
+    phone = (c.get('telefono') or '').strip()
+    sms_ok = False
+    if phone:
+        sms_ok = _send_sms_twilio(phone, f"🎉 ¡BINGO! Felicidades {c.get('nombre','Jugador')} — Cartilla {cid}.")
+
+    return jsonify({'ok': True, 'already': False, 'sms_sent': bool(sms_ok), 'game_id': gid, 'winner': winner})
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

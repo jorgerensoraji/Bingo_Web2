@@ -16,6 +16,7 @@
   <div class="header-right">
     <div class="nav-links">
       <a href="/" class="nav-link active">🎮 Juego</a>
+      <a href="/cartillas" class="nav-link" id="nav-cartillas">🎴 Mi cartilla</a>
     </div>
     <div id="connection-info">
       Comparte esta dirección:<br>
@@ -60,7 +61,7 @@
     </div>
   </div>
 
-  <!-- RIGHT: solo estado del juego, sin cartillas ni acceso admin -->
+  <!-- RIGHT: estado del juego + cartilla del jugador -->
   <div class="right-col">
     <div class="panel">
       <div class="panel-title">Estado del Juego</div>
@@ -74,6 +75,22 @@
                                    color:var(--accent);line-height:1;letter-spacing:3px;">—</div>
       </div>
     </div>
+
+    <div class="panel" id="my-cartilla-panel" style="margin-top:14px;">
+      <div class="panel-title">🎴 Mi cartilla (auto-marcado)</div>
+      <div class="hint" style="margin-bottom:10px;">
+        Selecciona la cartilla que compraste/generaste en este dispositivo.
+      </div>
+      <select id="my-cartilla-select"></select>
+      <div class="auto-row">
+        <button class="btn btn-primary" id="btn-load-cartilla">Cargar</button>
+        <button class="btn btn-ghost" id="btn-go-cartillas" onclick="location.href='/cartillas'">Comprar</button>
+      </div>
+      <div id="my-cartilla-meta" class="hint" style="margin:8px 0 10px;"></div>
+      <div id="my-cartilla-grid" class="cartilla-mini"></div>
+      <div id="my-cartilla-status" class="hint" style="margin-top:10px;"></div>
+    </div>
+  </div>
   </div>
 
 </div>
