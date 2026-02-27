@@ -11,41 +11,47 @@
 
 <header>
   <div>
-    <div class="logo">🎱 Bingo Pro <span>MADE BY RENSO RAMIREZ</span></div>
+    <div class="header-title">🎱 Bingo Pro <span class="badge">En Vivo</span></div>
+    <div class="header-sub">
+      URL del juego:
+      <span id="server-url" style="color:var(--accent);font-weight:600"></span>
+    </div>
   </div>
   <div class="header-right">
-    <div class="nav-links">
-      <a href="/" class="nav-link active">🎮 Juego</a>
-      <a href="/cartillas" class="nav-link" id="nav-cartillas">🎴 Mi cartilla</a>
+    <div class="stat">
+      <div class="stat-label">Sorteadas</div>
+      <div class="stat-val" id="stat-drawn">0</div>
     </div>
-    <div id="connection-info">
-      Comparte esta dirección:<br>
-      <strong id="server-url">cargando…</strong>
+    <div class="stat">
+      <div class="stat-label">Restantes</div>
+      <div class="stat-val" id="stat-rem">90</div>
     </div>
-    <div id="timer">⏱ 00:00</div>
+    <div class="stat">
+      <div class="stat-label">Progreso</div>
+      <div class="stat-val" id="stat-pct">0%</div>
+    </div>
+    <div class="timer" id="timer">⏱ 00:00</div>
   </div>
 </header>
 
-<div class="stats-bar">
-  <div class="stat">Sorteadas: <strong id="stat-drawn">0</strong></div>
-  <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
-  <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
-  <div class="stat"><strong id="stat-pct">0%</strong></div>
-  <div class="spectator-badge">👁 EN VIVO — Actualización automática</div>
+<div class="progress-wrap">
+  <div id="progress"></div>
 </div>
 
-<div class="main">
-
-  <div class="left-col">
-    <div class="number-display">
-      <div id="ball-wrapper">
-        <div id="ball"><div id="big-number">?</div></div>
+<div class="layout">
+  <div class="left">
+    <div class="panel big-panel">
+      <div class="ball-wrap">
+        <div id="ball">
+          <div id="big-number">?</div>
+        </div>
       </div>
       <div class="number-info">
         <div class="number-label">Bolilla actual</div>
         <div id="words-display">—</div>
         <div id="group-tag"></div>
         <div id="sync-status" style="font-size:.75rem;color:var(--muted);margin-top:6px;">🔄 Conectando…</div>
+        <button id="btn-sound" class="btn btn-sm" style="margin-top:10px;max-width:220px;">🔊 Activar sonido</button>
       </div>
     </div>
 
@@ -61,36 +67,18 @@
     </div>
   </div>
 
-  <!-- RIGHT: estado del juego + cartilla del jugador -->
-  <div class="right-col">
-    <div class="panel">
-      <div class="panel-title">Estado del Juego</div>
-      <div id="game-status-msg" style="color:var(--muted);font-size:.9rem;line-height:1.8;">
+  <div class="right">
+    <div class="panel side-panel">
+      <div class="section-title">Estado del Juego</div>
+      <div id="game-status-msg" style="line-height:1.4;color:var(--muted);">
         Esperando que el administrador inicie el sorteo…
       </div>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-        <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;
-                    letter-spacing:2px;text-transform:uppercase;">Última bolilla</div>
-        <div id="last-big" style="font-family:'Bebas Neue',sans-serif;font-size:4rem;
-                                   color:var(--accent);line-height:1;letter-spacing:3px;">—</div>
-      </div>
-    </div>
 
-    <div class="panel" id="my-cartilla-panel" style="margin-top:14px;">
-      <div class="panel-title">🎴 Mi cartilla (auto-marcado)</div>
-      <div class="hint" style="margin-bottom:10px;">
-        Selecciona la cartilla que compraste/generaste en este dispositivo.
+      <div style="margin-top:16px;">
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:6px;">Última bolilla</div>
+        <div id="last-big" style="font-size:56px;font-weight:900;line-height:1;letter-spacing:3px;">—</div>
       </div>
-      <select id="my-cartilla-select"></select>
-      <div class="auto-row">
-        <button class="btn btn-primary" id="btn-load-cartilla">Cargar</button>
-        <button class="btn btn-ghost" id="btn-go-cartillas" onclick="location.href='/cartillas'">Comprar</button>
-      </div>
-      <div id="my-cartilla-meta" class="hint" style="margin:8px 0 10px;"></div>
-      <div id="my-cartilla-grid" class="cartilla-mini"></div>
-      <div id="my-cartilla-status" class="hint" style="margin-top:10px;"></div>
     </div>
-  </div>
   </div>
 
 </div>
