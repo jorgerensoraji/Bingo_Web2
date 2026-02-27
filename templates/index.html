@@ -51,7 +51,18 @@
         <div id="words-display">—</div>
         <div id="group-tag"></div>
         <div id="sync-status" style="font-size:.75rem;color:var(--muted);margin-top:6px;">🔄 Conectando…</div>
-        <button id="btn-sound" class="btn btn-sm" style="margin-top:10px;max-width:220px;">🔊 Activar sonido</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+          <button id="btn-sound" class="btn btn-sm" style="max-width:180px;">🔈 Activar sonido</button>
+          <select id="player-voice-select" style="max-width:200px;padding:6px 10px;border-radius:8px;
+                  border:1px solid var(--border);background:var(--card);color:var(--muted);
+                  font-family:'Outfit',sans-serif;font-size:.78rem;">
+            <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
+            <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
+            <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
+            <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
+            <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
+          </select>
+        </div>
       </div>
     </div>
 

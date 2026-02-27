@@ -5,7 +5,7 @@ Sistema completo: Juego + Cartillas + PDF + PNG + Auto-verificación
 Fixed & Enhanced by Claude — v4.0
 """
 
-import asyncio, json, os, random, socket, tempfile, threading, uuid
+import asyncio, json, os, random, socket, tempfile, threading, time, uuid
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -125,6 +125,9 @@ class GameState:
         self.game_id = str(uuid.uuid4())[:8].upper()
         self.claimed_winners = set()  # cartilla IDs that already claimed BINGO
         self.winners_log = []         # list of winner dicts
+        self.last_phrase = None       # last spoken phrase (for player audio)
+        self.last_voice  = "es-PE-CamilaNeural"  # voice used for last phrase
+        self.last_activity = None     # admin last draw timestamp (epoch)
 
     def draw(self):
         if not self.available:
@@ -512,7 +515,9 @@ def api_admin_login():
 @app.route("/api/admin/logout", methods=["POST"])
 def api_admin_logout():
     session.clear()
-    return jsonify({"status": "ok"})
+    with game_lock:
+        game.reset()
+    return jsonify({"status": "ok", "game_reset": True})
 
 @app.route("/api/auth/status")
 def api_auth_status():
@@ -538,6 +543,11 @@ def api_draw():
             phrase = f"Última bolilla, número {words}. Juego completo!"
         else:
             phrase = f"La siguiente bolilla es el número {words}"
+
+        voice = (request.get_json() or {}).get("voice", "es-PE-CamilaNeural")
+        game.last_phrase   = phrase
+        game.last_voice    = voice
+        game.last_activity = time.time()
 
         return jsonify({
             "status":    "ok",
@@ -591,11 +601,18 @@ def api_reset():
 @app.route("/api/state")
 def api_state():
     with game_lock:
+        last_activity = getattr(game, 'last_activity', None)
+        admin_timeout = 300  # 5 minutes
+        admin_online  = last_activity is None or (time.time() - last_activity) < admin_timeout
         return jsonify({
-            "drawn":     game.drawn,
-            "remaining": len(game.available),
-            "last":      game.last,
-            "game_id":   getattr(game, 'game_id', None),
+            "drawn":         game.drawn,
+            "remaining":     len(game.available),
+            "last":          game.last,
+            "game_id":       getattr(game, 'game_id', None),
+            "last_phrase":   getattr(game, 'last_phrase', None),
+            "last_voice":    getattr(game, 'last_voice', 'es-PE-CamilaNeural'),
+            "last_activity": last_activity,
+            "admin_online":  admin_online,
         })
 
 # ─── API Admin: Vouchers ──────────────────────────────────────────────────────
