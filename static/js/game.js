@@ -534,6 +534,58 @@ async function loadExistingState() {
   }
 }
 
+let playerPollJob = null;
+let lastSeenServerLast = null;
+
+async function pollStateForPlayers() {
+  if (IS_ADMIN) return; // solo jugadores
+
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    const data = await res.json();
+
+    const serverDrawn = data.drawn || [];
+    const serverLast  = data.last || null;
+
+    // primera vez: solo sincroniza (sin hablar)
+    if (lastSeenServerLast === null) {
+      drawn = serverDrawn;
+      lastNumber = serverLast;
+      serverDrawn.forEach(n => markCell(n));
+      if (serverLast) updateDisplay(serverLast, '');
+      updateRecent();
+      updateStats(serverDrawn.length, data.remaining ?? (90 - serverDrawn.length));
+      lastSeenServerLast = serverLast;
+      return;
+    }
+
+    // si salió un nuevo número
+    if (serverLast && serverLast !== lastSeenServerLast) {
+      drawn = serverDrawn;
+      lastNumber = serverLast;
+      lastSeenServerLast = serverLast;
+
+      // UI
+      updateDisplay(serverLast, '');
+      markCell(serverLast);
+      updateRecent();
+      updateStats(serverDrawn.length, data.remaining ?? (90 - serverDrawn.length));
+
+      // AUDIO: requiere unlock por click/tap
+      speak(`Bolilla ${serverLast}`);
+    }
+  } catch (e) {
+    // silencioso para no molestar
+    // console.error(e);
+  }
+}
+
+function startPlayerPolling() {
+  if (IS_ADMIN) return;
+  if (playerPollJob) clearInterval(playerPollJob);
+  playerPollJob = setInterval(pollStateForPlayers, 1000);
+}
+
 // ── INIT ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const urlEl = document.getElementById('server-url');
