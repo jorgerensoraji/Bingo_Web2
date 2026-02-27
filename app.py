@@ -544,20 +544,28 @@ def api_draw():
         else:
             phrase = f"La siguiente bolilla es el número {words}"
 
-        voice = (request.get_json() or {}).get("voice", "es-PE-CamilaNeural")
         game.last_phrase   = phrase
-        game.last_voice    = voice
         game.last_activity = time.time()
-
-        return jsonify({
+        result = {
             "status":    "ok",
             "number":    num,
             "words":     words,
             "phrase":    phrase,
-            "drawn":     game.drawn,
+            "drawn":     list(game.drawn),
             "remaining": len(game.available),
             "count":     count,
-        })
+        }
+
+    # Read voice OUTSIDE lock (request context safe)
+    try:
+        voice = (request.get_json(silent=True) or {}).get("voice", "es-PE-CamilaNeural")
+    except Exception:
+        voice = "es-PE-CamilaNeural"
+    with game_lock:
+        game.last_voice = voice
+
+    return jsonify(result)
+    
 
 @app.route("/api/speak", methods=["POST"])
 def api_speak():

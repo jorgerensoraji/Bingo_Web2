@@ -262,7 +262,9 @@ async function syncState() {
       const pKey     = serverDrawn.length; // unique key per draw
       if (phrase && pKey !== lastPhraseKey) {
         lastPhraseKey = pKey;
-        playPhrase(phrase, data.last_voice);
+        // Use player's own selected voice (or fall back to admin voice)
+        const pVoice = (document.getElementById('player-voice-select') || {}).value || data.last_voice || 'es-PE-CamilaNeural';
+        playPhrase(phrase, pVoice);
       }
     }
 

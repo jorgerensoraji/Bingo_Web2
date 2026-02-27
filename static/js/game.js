@@ -150,7 +150,12 @@ function runAnimation() {
 
 async function fetchDraw() {
   try {
-    const res  = await fetch('/api/draw', { method: 'POST' });
+    const voice = IS_ADMIN ? getVoice() : 'es-PE-CamilaNeural';
+    const res  = await fetch('/api/draw', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ voice }),
+    });
     const data = await res.json();
 
     if (!res.ok) {
