@@ -108,48 +108,84 @@ function playPhrase(text, voice) {
   if (!soundEnabled || !text) return;
   stopAudio();
   voice = voice || 'es-PE-CamilaNeural';
+
   fetch('/api/speak', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ text: text, voice: voice })
   })
-  .then(function(r) { return r.blob(); })
+  .then(function(r) {
+    if (!r.ok) throw new Error('speak HTTP ' + r.status);
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('audio')) throw new Error('speak returned non-audio: ' + ct);
+    return r.blob();
+  })
   .then(function(blob) {
+    if (!blob || blob.size < 100) throw new Error('empty audio blob');
     const url    = URL.createObjectURL(blob);
     currentAudio = new Audio(url);
     currentAudio.volume = 0.9;
-    currentAudio.play().catch(function(){});
+    var playPromise = currentAudio.play();
+    if (playPromise && playPromise.catch) {
+      playPromise.catch(function(e) {
+        console.warn('Audio play blocked:', e);
+        showToast('🔇 Haz clic en la página para activar sonido');
+      });
+    }
     currentAudio.onended = function() {
       URL.revokeObjectURL(url);
       currentAudio = null;
     };
   })
-  .catch(function(e) { console.error('Audio error:', e); });
+  .catch(function(e) {
+    console.error('playPhrase error:', e);
+    showToast('⚠️ Error de audio: ' + e.message);
+  });
 }
 
 function enableSound() {
   soundEnabled = true;
   const btn = document.getElementById('btn-sound');
   if (btn) {
-    btn.textContent         = '🔊 Sonido activado';
-    btn.style.background    = 'var(--accent)';
-    btn.style.color         = '#041015';
-    btn.style.borderColor   = 'var(--accent)';
+    btn.textContent       = '🔊 Sonido ON';
+    btn.style.background  = 'var(--accent)';
+    btn.style.color       = '#041015';
+    btn.style.borderColor = 'var(--accent)';
   }
-  showToast('🔊 Sonido activado — escucharás cada bolilla');
-  // Confirmation beep
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine'; o.frequency.value = 880;
-    o.connect(g); g.connect(ctx.destination);
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-    o.start(); o.stop(ctx.currentTime + 0.55);
-    setTimeout(function() { ctx.close(); }, 700);
-  } catch(e) {}
+
+  // Play a REAL TTS test phrase so the user hears the actual voice
+  const voice = (document.getElementById('player-voice-select') || {}).value || 'es-PE-CamilaNeural';
+  showToast('🔊 Probando sonido…');
+
+  fetch('/api/speak', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ text: 'Sonido activado. ¡Buena suerte!', voice: voice })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  })
+  .then(function(blob) {
+    if (!blob || blob.size < 100) throw new Error('empty');
+    const url  = URL.createObjectURL(blob);
+    const test = new Audio(url);
+    test.volume = 0.9;
+    var p = test.play();
+    if (p && p.catch) p.catch(function(e) {
+      showToast('❌ El navegador bloqueó el audio. Intenta de nuevo.');
+      soundEnabled = false;
+      if (btn) { btn.textContent = '🔈 Activar sonido'; btn.style.background = ''; btn.style.color = ''; }
+    });
+    test.onended = function() {
+      URL.revokeObjectURL(url);
+      showToast('✅ Sonido OK — escucharás cada bolilla');
+    };
+  })
+  .catch(function(e) {
+    console.error('Test audio error:', e);
+    showToast('❌ Error de audio: ' + e.message);
+  });
 }
 
 // ── ADMIN OFFLINE HANDLING ────────────────────────
@@ -576,9 +612,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   initGrid();
   initMyCartillaUI();
-
-  const btnSound = document.getElementById('btn-sound');
-  if (btnSound) btnSound.addEventListener('click', enableSound);
 
   syncState();
   setInterval(syncState, 3000);
