@@ -31,6 +31,7 @@ let gameId        = null;
 let lastPhraseKey = null;   // tracks which phrase we already played
 let soundEnabled  = false;
 let currentAudio  = null;
+let testAudio     = null;  // separate from currentAudio so syncState doesn't kill it
 let adminWasOnline = true;
 let resetPending   = false;
 
@@ -104,6 +105,14 @@ function stopAudio() {
   }
 }
 
+function stopTestAudio() {
+  if (testAudio) {
+    testAudio.pause();
+    testAudio.src = '';
+    testAudio     = null;
+  }
+}
+
 function playPhrase(text, voice) {
   if (!soundEnabled || !text) return;
   stopAudio();
@@ -168,17 +177,23 @@ function enableSound() {
   })
   .then(function(blob) {
     if (!blob || blob.size < 100) throw new Error('empty');
+    stopTestAudio();
     const url  = URL.createObjectURL(blob);
-    const test = new Audio(url);
-    test.volume = 0.9;
-    var p = test.play();
+    testAudio  = new Audio(url);
+    testAudio.volume = 0.9;
+    var p = testAudio.play();
     if (p && p.catch) p.catch(function(e) {
-      showToast('❌ El navegador bloqueó el audio. Intenta de nuevo.');
-      soundEnabled = false;
-      if (btn) { btn.textContent = '🔈 Activar sonido'; btn.style.background = ''; btn.style.color = ''; }
+      // Only disable if truly blocked by browser policy (NotAllowedError)
+      // NOT if interrupted by stopTestAudio (AbortError)
+      if (e.name === 'NotAllowedError') {
+        showToast('❌ El navegador bloqueó el audio. Intenta de nuevo.');
+        soundEnabled = false;
+        if (btn) { btn.textContent = '🔈 Activar sonido'; btn.style.background = ''; btn.style.color = ''; }
+      }
     });
-    test.onended = function() {
+    testAudio.onended = function() {
       URL.revokeObjectURL(url);
+      testAudio = null;
       showToast('✅ Sonido OK — escucharás cada bolilla');
     };
   })
@@ -478,6 +493,26 @@ function renderMyCartilla(grid, drawnSet) {
   const wrap = document.getElementById('my-cartilla-grid');
   if (!wrap) return;
   wrap.innerHTML = '';
+
+  // Show the mini wrapper
+  const miniWrap = document.getElementById('cartilla-mini-wrap');
+  if (miniWrap) miniWrap.style.display = 'block';
+
+  // Build column labels once
+  const colsEl = document.getElementById('cartilla-mini-cols');
+  if (colsEl && !colsEl.dataset.built) {
+    colsEl.dataset.built = '1';
+    colsEl.innerHTML = '';
+    var colLabels = ['1-9','10-19','20-29','30-39','40-49','50-59','60-69','70-79','80-90'];
+    colLabels.forEach(function(lbl, ci) {
+      var d = document.createElement('div');
+      d.className   = 'cartilla-mini-col-label';
+      d.textContent = lbl;
+      d.style.color      = GROUP_COLORS[ci].fg;
+      d.style.background = GROUP_COLORS[ci].bg;
+      colsEl.appendChild(d);
+    });
+  }
   for (let ri = 0; ri < 3; ri++) {
     for (let ci = 0; ci < 9; ci++) {
       const num  = grid[ri][ci];

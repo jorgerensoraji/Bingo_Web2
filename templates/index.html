@@ -6,6 +6,198 @@
 <title>🎱 Bingo Pro — En Vivo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/game.css">
+<style>
+  /* ── Layout jugador ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 310px;
+    gap: 14px;
+    padding: 14px;
+    max-width: 1300px;
+    margin: 0 auto;
+    position: relative; z-index: 1;
+  }
+  @media(max-width:900px){ .layout{ grid-template-columns:1fr; } }
+  .left  { display:flex; flex-direction:column; gap:12px; }
+  .right { display:flex; flex-direction:column; gap:12px; }
+
+  /* ── Bolilla grande ── */
+  .big-panel { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+  .ball-wrap { width:clamp(110px,13vw,155px); height:clamp(110px,13vw,155px); flex-shrink:0; }
+  #ball {
+    width:100%; height:100%; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 32%,#ffffff44 0%,#00d4aa22 30%,#0a2a3a 70%,#041015 100%);
+    box-shadow:0 0 0 3px rgba(0,229,180,.35),0 0 30px rgba(0,229,180,.25),
+      inset 0 -8px 20px rgba(0,0,0,.6),inset 0 8px 16px rgba(255,255,255,.07);
+    position:relative; transition:background .3s,box-shadow .3s;
+  }
+  #ball::before {
+    content:''; position:absolute; top:12%; left:20%; width:38%; height:28%;
+    background:radial-gradient(ellipse,rgba(255,255,255,.22) 0%,transparent 80%);
+    border-radius:50%; pointer-events:none;
+  }
+  #big-number {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2.5rem,5vw,4.5rem);
+    color:var(--accent); line-height:1;
+    text-shadow:0 0 20px rgba(0,229,180,.5),0 2px 4px rgba(0,0,0,.8);
+    position:relative; z-index:2; letter-spacing:2px;
+  }
+  @keyframes ballReveal {
+    0%  { transform:scale(.7) rotate(-15deg); opacity:0; }
+    50% { transform:scale(1.12) rotate(5deg); }
+    75% { transform:scale(.96) rotate(-2deg); }
+    100%{ transform:scale(1) rotate(0); opacity:1; }
+  }
+  #ball.reveal { animation:ballReveal .5s cubic-bezier(.34,1.56,.64,1) forwards; }
+  .number-info { flex:1; min-width:150px; }
+  .number-label { font-size:.68rem; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:5px; }
+  #words-display { font-size:clamp(1rem,2.3vw,1.5rem); font-weight:700; color:var(--text); margin-bottom:4px; min-height:1.6rem; }
+  #group-tag { font-size:.82rem; color:var(--muted); margin-bottom:6px; }
+  #sync-status { font-size:.7rem; color:var(--muted); }
+
+  /* ── Audio bar ── */
+  .audio-bar {
+    display:flex; gap:7px; align-items:center; flex-wrap:wrap;
+    margin-top:10px; padding:9px 11px;
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+  }
+  #btn-sound {
+    padding:7px 13px; border-radius:8px; border:1px solid var(--border);
+    background:var(--sub); color:var(--muted);
+    font-family:'Outfit',sans-serif; font-weight:700; font-size:.8rem;
+    cursor:pointer; transition:all .2s; white-space:nowrap;
+  }
+  #btn-sound.active { background:var(--accent); color:#041015; border-color:var(--accent); }
+  #player-voice-select {
+    flex:1; min-width:130px;
+    padding:6px 9px; border-radius:8px; border:1px solid var(--border);
+    background:var(--card); color:var(--muted);
+    font-family:'Outfit',sans-serif; font-size:.78rem; outline:none; cursor:pointer;
+  }
+
+  /* ── Recent strip ── */
+  .recent-strip {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:7px 14px;
+    display:flex; align-items:center; gap:10px; overflow-x:auto;
+  }
+  .recent-label { font-size:.72rem; color:var(--muted); white-space:nowrap; }
+  .recent-num { font-family:'Bebas Neue',sans-serif; font-size:1.25rem; min-width:32px; text-align:center; }
+
+  /* ── Grid ── */
+  .grid-section {
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:16px; padding:10px;
+  }
+  .section-title {
+    font-size:.62rem; letter-spacing:3px; color:var(--muted);
+    text-transform:uppercase; border-bottom:1px solid var(--border);
+    padding-bottom:8px; margin-bottom:10px;
+  }
+  .group-headers { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; margin-bottom:3px; }
+  .group-header  { font-size:.58rem; font-weight:700; text-align:center; padding:2px 0; border-radius:4px; }
+  .num-grid {
+    display:grid; grid-template-columns:repeat(9,1fr);
+    grid-template-rows:repeat(10,1fr); gap:2px;
+  }
+  .num-cell {
+    height:29px; display:flex; align-items:center; justify-content:center;
+    font-size:.7rem; font-weight:600; border-radius:4px;
+    background:var(--card); color:var(--muted);
+    border:1px solid transparent; transition:all .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .num-cell.drawn {
+    font-size:.82rem; font-weight:900; transform:scale(1.06);
+    border-color:currentColor; box-shadow:0 0 8px rgba(255,255,255,.1);
+  }
+  @keyframes popIn {
+    0%  { transform:scale(.5); opacity:0; }
+    60% { transform:scale(1.2); }
+    100%{ transform:scale(1.06); opacity:1; }
+  }
+  .num-cell.just-drawn { animation:popIn .5s cubic-bezier(.34,1.56,.64,1); }
+
+  /* ── Cartilla panel ── */
+  .c-select-row { display:flex; gap:7px; margin-bottom:9px; }
+  .c-select-row select {
+    flex:1;
+    background:var(--card); color:var(--text);
+    border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; font-family:'Outfit',sans-serif; font-size:.82rem; outline:none;
+  }
+  .c-btns { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:9px; }
+  .btn-p {
+    display:inline-flex; align-items:center; justify-content:center; gap:5px;
+    padding:8px 13px; border:1px solid var(--border); border-radius:9px;
+    font-family:'Outfit',sans-serif; font-weight:700; font-size:.8rem;
+    cursor:pointer; transition:all .15s; text-decoration:none;
+    background:var(--card); color:var(--muted);
+  }
+  .btn-p:hover { color:var(--text); border-color:var(--accent); }
+  .btn-p.primary { background:var(--accent); color:#041015; border-color:var(--accent); }
+  .btn-p:disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
+
+  #my-cartilla-meta   { font-size:.73rem; color:var(--muted); margin-bottom:6px; min-height:.9rem; }
+  #my-cartilla-status { font-size:.8rem; color:var(--muted); margin-bottom:8px; min-height:1rem; }
+
+  /* ── Cartilla mini grid ── */
+  .cartilla-mini-wrap {
+    margin-top:6px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:7px; overflow:hidden;
+  }
+  .cartilla-mini-cols { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; margin-bottom:3px; }
+  .cartilla-mini-col-label {
+    font-size:.5rem; font-weight:700; text-align:center;
+    padding:2px 0; border-radius:3px;
+  }
+  #my-cartilla-grid { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; }
+  .c-cell {
+    aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    font-size:.72rem; font-weight:700; border-radius:5px;
+    border:1px solid transparent; transition:all .3s;
+    background:var(--sub); color:var(--muted);
+  }
+  .c-cell.empty { background:rgba(10,18,26,.5); color:transparent; border:1px dashed var(--border); }
+  .c-cell.marked { transform:scale(1.06); border-color:currentColor; }
+  .c-cell.marked span {
+    width:76%; height:76%; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#060d12; font-size:.66rem;
+  }
+
+  /* ── Toast ── */
+  #toast {
+    position:fixed; bottom:22px; left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:12px; padding:11px 22px; font-size:.88rem;
+    z-index:1000; transition:transform .3s; pointer-events:none; white-space:nowrap;
+  }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  /* ── Game over ── */
+  #gameover {
+    display:none; position:fixed; inset:0;
+    background:rgba(7,13,20,.93); z-index:500;
+    align-items:center; justify-content:center;
+    flex-direction:column; text-align:center; padding:24px;
+  }
+  #gameover.show { display:flex; }
+  #gameover h1 {
+    font-family:'Bebas Neue',sans-serif; font-size:3.8rem;
+    color:var(--accent); letter-spacing:4px;
+    text-shadow:0 0 40px rgba(0,229,180,.5); margin-bottom:12px;
+  }
+  #gameover p { font-size:1.05rem; color:var(--muted); margin-bottom:22px; }
+  .confetti-piece {
+    position:fixed; width:8px; height:8px; top:-10px;
+    border-radius:2px; animation:confettiFall linear forwards; z-index:600;
+  }
+  @keyframes confettiFall { to { transform:translateY(110vh) rotate(720deg); opacity:0; } }
+</style>
 </head>
 <body>
 
@@ -13,8 +205,7 @@
   <div>
     <div class="header-title">🎱 Bingo Pro <span class="badge">En Vivo</span></div>
     <div class="header-sub">
-      URL del juego:
-      <span id="server-url" style="color:var(--accent);font-weight:600"></span>
+      URL: <span id="server-url" style="color:var(--accent);font-weight:600"></span>
     </div>
   </div>
   <div class="header-right">
@@ -39,70 +230,87 @@
 </div>
 
 <div class="layout">
+
+  <!-- ══ IZQUIERDA ══ -->
   <div class="left">
+
+    <!-- Bolilla actual -->
     <div class="panel big-panel">
       <div class="ball-wrap">
-        <div id="ball">
-          <div id="big-number">?</div>
-        </div>
+        <div id="ball"><div id="big-number">?</div></div>
       </div>
       <div class="number-info">
         <div class="number-label">Bolilla actual</div>
         <div id="words-display">—</div>
         <div id="group-tag"></div>
-        <div id="sync-status" style="font-size:.75rem;color:var(--muted);margin-top:6px;">🔄 Conectando…</div>
-        <div style="margin-top:12px;">
-          <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;">🔊 Audio</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <button id="btn-sound" onclick="enableSound()" style="
-              padding:9px 16px;border-radius:10px;border:1px solid var(--border);
-              background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
-              font-weight:700;font-size:.85rem;cursor:pointer;transition:all .2s;
-              display:flex;align-items:center;gap:6px;">
-              🔈 Activar sonido
-            </button>
-            <select id="player-voice-select" onchange="if(soundEnabled) enableSound()" style="
-              padding:8px 12px;border-radius:10px;border:1px solid var(--border);
-              background:var(--card);color:var(--muted);font-family:'Outfit',sans-serif;
-              font-size:.82rem;outline:none;cursor:pointer;">
-              <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
-              <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
-              <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
-              <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
-              <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
-            </select>
-          </div>
-          <div style="font-size:.7rem;color:var(--muted);margin-top:5px;">
-            👆 Haz clic para activar — el navegador requiere una acción tuya
-          </div>
+        <div id="sync-status">🔄 Conectando…</div>
+        <div class="audio-bar">
+          <button id="btn-sound" onclick="enableSound()">🔈 Activar sonido</button>
+          <select id="player-voice-select" onchange="if(soundEnabled) enableSound()">
+            <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
+            <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
+            <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
+            <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
+            <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
+          </select>
         </div>
       </div>
     </div>
 
+    <!-- Últimas bolillas -->
     <div class="recent-strip">
       <span class="recent-label">Últimas bolillas:</span>
       <div id="recent-nums" style="display:flex;gap:10px;"></div>
     </div>
 
+    <!-- Grid numérico -->
     <div class="grid-section">
       <div class="section-title">Números Sorteados</div>
       <div class="group-headers" id="group-headers"></div>
       <div class="num-grid" id="num-grid"></div>
     </div>
+
   </div>
 
+  <!-- ══ DERECHA ══ -->
   <div class="right">
-    <div class="panel side-panel">
+
+    <!-- Estado del juego -->
+    <div class="panel">
       <div class="section-title">Estado del Juego</div>
-      <div id="game-status-msg" style="line-height:1.4;color:var(--muted);">
+      <div id="game-status-msg" style="line-height:1.5;color:var(--muted);">
         Esperando que el administrador inicie el sorteo…
       </div>
-
-      <div style="margin-top:16px;">
-        <div style="font-size:.85rem;color:var(--muted);margin-bottom:6px;">Última bolilla</div>
-        <div id="last-big" style="font-size:56px;font-weight:900;line-height:1;letter-spacing:3px;">—</div>
+      <div style="margin-top:14px;">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px;">Última bolilla</div>
+        <div id="last-big" style="font-family:'Bebas Neue',sans-serif;font-size:50px;line-height:1;letter-spacing:3px;">—</div>
       </div>
     </div>
+
+    <!-- Mi Cartilla -->
+    <div class="panel">
+      <div class="section-title">Mi Cartilla</div>
+
+      <div class="c-select-row">
+        <select id="my-cartilla-select">
+          <option value="">Cargando cartillas…</option>
+        </select>
+      </div>
+
+      <div class="c-btns">
+        <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar</button>
+        <a class="btn-p" id="btn-go-cartillas" href="/cartillas">🎴 Comprar cartilla</a>
+      </div>
+
+      <div id="my-cartilla-meta"></div>
+      <div id="my-cartilla-status">💡 Selecciona tu cartilla para marcarla en tiempo real.</div>
+
+      <div class="cartilla-mini-wrap" id="cartilla-mini-wrap" style="display:none;">
+        <div class="cartilla-mini-cols" id="cartilla-mini-cols"></div>
+        <div id="my-cartilla-grid"></div>
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -112,8 +320,13 @@
 <div id="gameover">
   <h1>🎉 ¡BINGO!</h1>
   <p id="gameover-info">Se sortearon las 90 bolillas.</p>
-  <button class="btn btn-sm" style="max-width:200px;margin:0 auto;"
-          onclick="hideGameOver()">Cerrar</button>
+  <button onclick="hideGameOver()" style="
+      padding:11px 30px; border:none; border-radius:10px;
+      background:var(--accent); color:#041015;
+      font-family:'Outfit',sans-serif; font-weight:900;
+      font-size:1rem; cursor:pointer; margin-top:4px;">
+    Cerrar
+  </button>
 </div>
 
 <script src="/static/js/game_player.js"></script>
