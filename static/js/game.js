@@ -18,7 +18,7 @@ const GROUP_COLORS = [
   { fg:'#7fb3d3', bg:'#061320' },
   { fg:'#95a5a6', bg:'#0e1315' },
 ];
-const GROUP_LABELS = ['1–10','11–20','21–30','31–40','41–50','51–60','61–70','71–80','81–90'];
+const GROUP_LABELS = ['1–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–90'];
 const BALL_COLORS  = [
   ['#1a4a7a','#0a1e2e'], ['#7a6010','#2e2504'], ['#7a2020','#3d0a08'],
   ['#7a3810','#3d1800'], ['#0f5a28','#0a2e16'], ['#4a1a6a','#22083d'],
@@ -169,6 +169,13 @@ async function fetchDraw() {
       showGameOver();
       isDrawing = false;
       setDrawBtnState(true);
+      return;
+    }
+
+    if (data.status === 'paused') {
+      isDrawing = false;
+      setDrawBtnState(true);
+      showPausedBanner(data.winners || []);
       return;
     }
 
@@ -533,7 +540,12 @@ async function loadExistingState() {
 
     if (!startTime) { startTime = Date.now(); startClock(); }
 
-    showToast('✅ Juego en curso: ' + drawn.length + ' bolillas ya sorteadas');
+    if (data.paused) {
+      showPausedBanner(data.winners || []);
+      showToast('⏸ Juego pausado — hay ganador(es)');
+    } else {
+      showToast('✅ Juego en curso: ' + drawn.length + ' bolillas ya sorteadas');
+    }
   } catch(e) {
     console.error('Error al cargar estado previo:', e);
   }
@@ -589,6 +601,79 @@ function startPlayerPolling() {
   if (IS_ADMIN) return;
   if (playerPollJob) clearInterval(playerPollJob);
   playerPollJob = setInterval(pollStateForPlayers, 1000);
+}
+
+// ── PAUSA POR GANADOR ────────────────────────────
+function showPausedBanner(winners) {
+  stopAuto();
+
+  let existing = document.getElementById('paused-banner');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = 'paused-banner';
+    existing.style.cssText = `
+      position:fixed;top:0;left:0;right:0;bottom:0;
+      background:rgba(7,13,20,.92);z-index:490;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      text-align:center;padding:28px;
+    `;
+    document.body.appendChild(existing);
+  }
+
+  const names = (winners || []).map(function(w) {
+    return '<div style="margin:4px 0;font-size:1.1rem;color:var(--text);">🏆 ' +
+      escHtml(w.nombre || w.id) + ' <span style="color:var(--muted);font-size:.85rem;">(Cartilla ' + w.id + ')</span></div>';
+  }).join('');
+
+  existing.innerHTML = `
+    <div style="max-width:480px;">
+      <div style="font-size:4rem;margin-bottom:8px;">🎉</div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;color:var(--accent);
+                 letter-spacing:4px;text-shadow:0 0 30px rgba(0,229,180,.5);margin-bottom:12px;">
+        ¡GANADOR!
+      </h1>
+      <div style="margin-bottom:20px;">${names || '<div style="color:var(--muted);">Verificando ganador…</div>'}</div>
+      <div style="color:var(--muted);font-size:.9rem;margin-bottom:20px;">
+        El juego está <strong style="color:var(--warning);">pausado</strong>.<br>
+        Como admin puedes continuar o iniciar un nuevo juego.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="resumeGame()" style="
+          padding:12px 24px;border:none;border-radius:10px;
+          background:var(--accent);color:#041015;
+          font-family:'Outfit',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">
+          ▶ Continuar sorteo
+        </button>
+        <button onclick="newGame(); hidePausedBanner();" style="
+          padding:12px 24px;border:1px solid var(--border);border-radius:10px;
+          background:var(--card);color:var(--text);
+          font-family:'Outfit',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;">
+          🔄 Nuevo juego
+        </button>
+      </div>
+    </div>
+  `;
+
+  launchConfetti();
+}
+
+function hidePausedBanner() {
+  const b = document.getElementById('paused-banner');
+  if (b) b.remove();
+}
+
+async function resumeGame() {
+  const res = await fetch('/api/admin/resume', { method: 'POST' });
+  if (res.ok) {
+    hidePausedBanner();
+    showToast('▶ Juego reanudado');
+  } else {
+    showToast('❌ Error al reanudar');
+  }
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ── INIT ──────────────────────────────────────────

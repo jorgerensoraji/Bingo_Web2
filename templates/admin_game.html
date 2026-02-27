@@ -81,6 +81,27 @@
         <button class="btn btn-sm" onclick="stopAudio()">🔇 Silenciar</button>
       </div>
       <button class="btn btn-new" onclick="newGame()">🔄 Nuevo Juego [N]</button>
+
+      <div style="margin-top:10px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
+        <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">⏸ Pausa automática</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label style="font-size:.82rem;color:var(--muted);white-space:nowrap;">Parar al llegar a</label>
+          <select id="winners-limit-select" onchange="setWinnersLimit(this.value)"
+                  style="flex:1;background:var(--sub);color:var(--text);border:1px solid var(--border);
+                         border-radius:7px;padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;">
+            <option value="1">1 ganador</option>
+            <option value="2">2 ganadores</option>
+            <option value="3">3 ganadores</option>
+            <option value="5">5 ganadores</option>
+          </select>
+        </div>
+        <button id="btn-resume" onclick="resumeGame()" style="
+          display:none;width:100%;margin-top:8px;padding:9px;border:none;border-radius:8px;
+          background:var(--accent);color:#041015;
+          font-family:'Outfit',sans-serif;font-weight:900;font-size:.9rem;cursor:pointer;">
+          ▶ Reanudar sorteo
+        </button>
+      </div>
       <div class="slider-label">
         <span>Velocidad animación</span><span id="speed-val">55</span>
       </div>
@@ -125,6 +146,28 @@ async function logout() {
   await fetch('/api/admin/logout', { method: 'POST' });
   location.href = '/admin/login';
 }
+
+async function setWinnersLimit(val) {
+  await fetch('/api/admin/winners_limit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ limit: parseInt(val) }),
+  });
+}
+
+// Poll state to show/hide resume button in sidebar
+setInterval(async function() {
+  try {
+    const res  = await fetch('/api/state');
+    const data = await res.json();
+    const btn  = document.getElementById('btn-resume');
+    if (btn) btn.style.display = data.paused ? 'block' : 'none';
+    // Sync winners_limit select
+    const sel = document.getElementById('winners-limit-select');
+    if (sel && data.winners_limit) sel.value = String(data.winners_limit);
+  } catch(e) {}
+}, 3000);
+
 // Mostrar la URL para jugadores (sin /admin/game)
 document.getElementById('server-url').textContent =
   window.location.origin + '/';

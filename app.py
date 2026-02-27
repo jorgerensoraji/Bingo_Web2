@@ -128,6 +128,8 @@ class GameState:
         self.last_phrase = None       # last spoken phrase (for player audio)
         self.last_voice  = "es-PE-CamilaNeural"  # voice used for last phrase
         self.last_activity = None     # admin last draw timestamp (epoch)
+        self.paused        = False    # True when winners limit reached
+        self.winners_limit = 1        # how many winners before pausing
 
     def draw(self):
         if not self.available:
@@ -533,6 +535,8 @@ def api_draw():
     with game_lock:
         if not game.available:
             return jsonify({"status": "finished", "drawn": game.drawn})
+        if getattr(game, 'paused', False):
+            return jsonify({"status": "paused", "winners": getattr(game, 'winners_log', []), "drawn": game.drawn}), 200
         num   = game.draw()
         words = num2words(num, lang="es")
         count = len(game.drawn)
@@ -546,6 +550,12 @@ def api_draw():
 
         game.last_phrase   = phrase
         game.last_activity = time.time()
+
+        # Auto-pause if winners limit reached
+        winners_count = len(getattr(game, 'claimed_winners', set()))
+        winners_limit = getattr(game, 'winners_limit', 1)
+        if winners_count >= winners_limit and not getattr(game, 'paused', False):
+            game.paused = True
         result = {
             "status":    "ok",
             "number":    num,
@@ -621,6 +631,9 @@ def api_state():
             "last_voice":    getattr(game, 'last_voice', 'es-PE-CamilaNeural'),
             "last_activity": last_activity,
             "admin_online":  admin_online,
+            "paused":        getattr(game, 'paused', False),
+            "winners":       getattr(game, 'winners_log', []),
+            "winners_limit": getattr(game, 'winners_limit', 1),
         })
 
 # ─── API Admin: Vouchers ──────────────────────────────────────────────────────
@@ -902,6 +915,11 @@ def api_winner_claim():
         claimed.add(cid)
         game.claimed_winners = claimed
 
+        # Pause game if winners limit reached
+        winners_limit = getattr(game, 'winners_limit', 1)
+        if len(claimed) >= winners_limit:
+            game.paused = True
+
         winner = {
             'id': cid,
             'nombre': c.get('nombre'),
@@ -921,6 +939,26 @@ def api_winner_claim():
         sms_ok = _send_sms_twilio(phone, f"🎉 ¡BINGO! Felicidades {c.get('nombre','Jugador')} — Cartilla {cid}.")
 
     return jsonify({'ok': True, 'already': False, 'sms_sent': bool(sms_ok), 'game_id': gid, 'winner': winner})
+
+# ─── API Admin: Pause / Resume / Winners limit ───────────────────────────────
+@app.route("/api/admin/resume", methods=["POST"])
+def api_admin_resume():
+    chk = admin_required()
+    if chk: return chk
+    with game_lock:
+        game.paused = False
+    return jsonify({"status": "ok", "paused": False})
+
+@app.route("/api/admin/winners_limit", methods=["POST"])
+def api_admin_winners_limit():
+    chk = admin_required()
+    if chk: return chk
+    data  = request.get_json() or {}
+    limit = int(data.get("limit", 1))
+    limit = max(1, min(limit, 10))
+    with game_lock:
+        game.winners_limit = limit
+    return jsonify({"status": "ok", "winners_limit": limit})
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

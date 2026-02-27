@@ -323,6 +323,13 @@ async function syncState() {
     updateStats(serverDrawn.length, data.remaining);
     updateMyCartillaAutoMark();
 
+    // Juego pausado por ganador
+    if (data.paused) {
+      showPausedOverlay(data.winners || []);
+    } else {
+      hidePausedOverlay();
+    }
+
     if (data.remaining === 0 && serverDrawn.length === 90) {
       showGameOver();
     }
@@ -638,6 +645,62 @@ function initMyCartillaUI() {
     if (cid) loadSelectedCartilla();
   });
   window.addEventListener('focus', populateMyCartillaSelect);
+}
+
+// ── PAUSA POR GANADOR (jugador) ──────────────────
+let pausedOverlayShown = false;
+
+function showPausedOverlay(winners) {
+  if (pausedOverlayShown) return;
+  pausedOverlayShown = true;
+
+  // Check if THIS player is a winner
+  const iWon = myCartillaId && winners.some(function(w) { return w.id === myCartillaId; });
+
+  let existing = document.getElementById('player-paused-overlay');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = 'player-paused-overlay';
+    existing.style.cssText = [
+      'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);',
+      'background:var(--panel);border:2px solid var(--accent);',
+      'border-radius:16px;padding:18px 28px;z-index:400;',
+      'text-align:center;max-width:380px;width:90%;',
+      'box-shadow:0 0 30px rgba(0,229,180,.2);',
+    ].join('');
+    document.body.appendChild(existing);
+  }
+
+  if (iWon) {
+    existing.style.borderColor = 'var(--accent)';
+    existing.innerHTML = [
+      '<div style="font-size:2.5rem;margin-bottom:4px;">🎉</div>',
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:var(--accent);letter-spacing:3px;">¡GANASTE!</div>',
+      '<div style="font-size:.88rem;color:var(--muted);margin-top:6px;">El juego está pausado. El admin verificará tu cartilla.</div>',
+    ].join('');
+    // Play win alert
+    playWinAlert();
+  } else {
+    const names = winners.map(function(w) {
+      return '<strong style="color:var(--accent)">' + (w.nombre || w.id) + '</strong>';
+    }).join(', ');
+    existing.style.borderColor = 'var(--warning)';
+    existing.innerHTML = [
+      '<div style="font-size:1.5rem;margin-bottom:4px;">⏸</div>',
+      '<div style="font-weight:700;color:var(--warning);margin-bottom:6px;">Juego Pausado</div>',
+      '<div style="font-size:.85rem;color:var(--muted);">',
+        names ? ('Ganador(es): ' + names) : 'Hay un ganador.',
+      '</div>',
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:5px;">Esperando al administrador…</div>',
+    ].join('');
+  }
+}
+
+function hidePausedOverlay() {
+  if (!pausedOverlayShown) return;
+  pausedOverlayShown = false;
+  var el = document.getElementById('player-paused-overlay');
+  if (el) el.remove();
 }
 
 // ── INIT ──────────────────────────────────────────
