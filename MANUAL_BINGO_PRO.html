@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Completo — Bingo Pro Web</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1a1a2e;
+    background: #fff;
+  }
+  /* ── COVER ── */
+  .cover {
+    background: linear-gradient(135deg, #0a0f1e 0%, #1a2744 50%, #0d1b3e 100%);
+    color: white;
+    text-align: center;
+    padding: 80px 40px;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 48px; letter-spacing: 4px; margin-bottom: 12px; color: #f4d03f; }
+  .cover .subtitle { font-size: 22px; color: #a0c4ff; margin-bottom: 40px; }
+  .cover .version { font-size: 13px; color: #6080a0; border-top: 1px solid #2a4070; padding-top: 20px; margin-top: 60px; }
+  .cover .badges { display: flex; justify-content: center; gap: 20px; margin: 40px 0; flex-wrap: wrap; }
+  .badge {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 14px 22px;
+    text-align: center;
+  }
+  .badge .bnum { font-size: 28px; font-weight: bold; color: #f4d03f; }
+  .badge .blabel { font-size: 11px; color: #80a0c0; margin-top: 4px; }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 50px 60px;
+    page-break-inside: avoid;
+  }
+  .section-break { page-break-after: always; }
+  h2 {
+    font-size: 26px;
+    color: #0d1b3e;
+    border-left: 5px solid #f4d03f;
+    padding-left: 16px;
+    margin-bottom: 28px;
+  }
+  h3 {
+    font-size: 17px;
+    color: #1a3060;
+    margin: 28px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #dde4f0;
+  }
+  h4 { font-size: 14px; color: #2a4080; margin: 18px 0 8px; }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 14px 22px; }
+  li { margin-bottom: 5px; }
+
+  /* ── TOC ── */
+  .toc { page-break-after: always; padding: 50px 60px; }
+  .toc h2 { border-left-color: #5dade2; }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px dotted #ccd4e0;
+    color: #1a3060;
+  }
+  .toc-item.h3-item { padding-left: 24px; font-size: 13px; color: #4060a0; }
+  .toc-page { color: #888; font-size: 12px; }
+
+  /* ── STEP BOXES ── */
+  .steps { counter-reset: step; }
+  .step {
+    counter-increment: step;
+    display: flex;
+    gap: 18px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .step-num {
+    min-width: 36px;
+    height: 36px;
+    background: #0d1b3e;
+    color: #f4d03f;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { color: #0d1b3e; }
+
+  /* ── CALLOUT BOXES ── */
+  .box {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .box-info { background: #e8f0fe; border-left: 4px solid #4a80f0; }
+  .box-warn { background: #fff8e1; border-left: 4px solid #f4d03f; }
+  .box-success { background: #e8f8f0; border-left: 4px solid #27ae60; }
+  .box-danger { background: #fdecea; border-left: 4px solid #e74c3c; }
+  .box strong { display: block; margin-bottom: 4px; }
+
+  /* ── TABLES ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  th {
+    background: #0d1b3e;
+    color: #f4d03f;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid #dde4f0; }
+  tr:nth-child(even) td { background: #f6f8ff; }
+
+  /* ── URL BOXES ── */
+  .url-box {
+    background: #1a2744;
+    color: #a0d4ff;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin: 8px 0;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 20px 0;
+  }
+  .flow-item {
+    background: #0d1b3e;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+    min-width: 100px;
+  }
+  .flow-arrow {
+    color: #f4d03f;
+    font-size: 20px;
+    margin: 0 6px;
+    font-weight: bold;
+  }
+
+  /* ── PRIZE TABLE ── */
+  .prize-card {
+    border: 2px solid;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .prize-card.sol { border-color: #f4d03f; background: #fffde7; }
+  .prize-card.cinco { border-color: #5dade2; background: #e8f4fb; }
+  .prize-card.diez { border-color: #00e5b4; background: #e6fff9; }
+  .prize-card h4 { font-size: 16px; margin: 0 0 10px; }
+  .prize-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 13px; }
+
+  /* ── PRINT ── */
+  @media print {
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section { padding: 30px 40px; }
+    h2 { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ COVER -->
+<div class="cover">
+  <h1>BINGO PRO WEB</h1>
+  <div class="subtitle">Manual Completo del Sistema</div>
+  <div style="color:#6080a0; font-size:14px; margin-bottom:40px;">Version 9.0 &nbsp;|&nbsp; Guia para Administrador y Jugador</div>
+
+  <div class="badges">
+    <div class="badge">
+      <div class="bnum">3</div>
+      <div class="blabel">Tipos de Bingo</div>
+    </div>
+    <div class="badge">
+      <div class="bnum">90</div>
+      <div class="blabel">Bolillas</div>
+    </div>
+    <div class="badge">
+      <div class="bnum">3x9</div>
+      <div class="blabel">Cartilla</div>
+    </div>
+    <div class="badge">
+      <div class="bnum">100%</div>
+      <div class="blabel">Online</div>
+    </div>
+  </div>
+
+  <div style="color:#a0c4ff; font-size:15px; max-width:500px; margin:0 auto;">
+    Plataforma completa para organizar bingos en vivo con pagos por Yape, Plin y transferencia bancaria.
+  </div>
+
+  <div class="version">
+    Bingo Pro Web v9.0 &nbsp;|&nbsp; Documento generado para uso interno
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ TOC -->
+<div class="toc">
+  <h2>Contenido</h2>
+
+  <div class="toc-item"><span>1. Como funciona el sistema</span><span class="toc-page">Vista general</span></div>
+  <div class="toc-item h3-item"><span>Flujo completo del juego</span></div>
+  <div class="toc-item h3-item"><span>Tipos de bingo y premios</span></div>
+  <div class="toc-item h3-item"><span>Metodos de pago</span></div>
+
+  <div class="toc-item" style="margin-top:10px;"><span>2. Guia del Administrador</span><span class="toc-page">Panel admin</span></div>
+  <div class="toc-item h3-item"><span>Iniciar sesion como admin</span></div>
+  <div class="toc-item h3-item"><span>Crear una sesion de bingo</span></div>
+  <div class="toc-item h3-item"><span>Aprobar pagos de jugadores</span></div>
+  <div class="toc-item h3-item"><span>Iniciar el juego</span></div>
+  <div class="toc-item h3-item"><span>Sacar bolillas / juego en vivo</span></div>
+  <div class="toc-item h3-item"><span>Verificar ganadores</span></div>
+  <div class="toc-item h3-item"><span>Cerrar la sesion / Pagar premios</span></div>
+  <div class="toc-item h3-item"><span>Panel financiero (Caja)</span></div>
+  <div class="toc-item h3-item"><span>Configurar la plataforma</span></div>
+
+  <div class="toc-item" style="margin-top:10px;"><span>3. Guia del Jugador</span><span class="toc-page">Como jugar</span></div>
+  <div class="toc-item h3-item"><span>Registrarse y pagar</span></div>
+  <div class="toc-item h3-item"><span>Obtener la cartilla</span></div>
+  <div class="toc-item h3-item"><span>Ver el juego en vivo</span></div>
+  <div class="toc-item h3-item"><span>Cantar LINEA y BINGO</span></div>
+
+  <div class="toc-item" style="margin-top:10px;"><span>4. URLs del sistema</span></div>
+  <div class="toc-item" style="margin-top:4px;"><span>5. Preguntas frecuentes</span></div>
+
+  <div class="toc-item" style="margin-top:10px;"><span>6. Que necesitas para ponerlo en internet (going live)</span></div>
+  <div class="toc-item h3-item"><span>Hosting (servidor VPS)</span></div>
+  <div class="toc-item h3-item"><span>Dominio</span></div>
+  <div class="toc-item h3-item"><span>SSL / HTTPS</span></div>
+  <div class="toc-item h3-item"><span>Pagos (Yape/Plin vs tarjeta de credito)</span></div>
+  <div class="toc-item h3-item"><span>Email (fix rapido)</span></div>
+  <div class="toc-item h3-item"><span>Resumen de costos y orden de lanzamiento</span></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 1 -->
+<div class="section section-break">
+  <h2>1. Como funciona el sistema</h2>
+
+  <p>Bingo Pro Web es una plataforma completa para organizar bingos en linea. Los jugadores acceden desde su celular o computadora, pagan por Yape/Plin/transferencia, generan su cartilla y juegan en tiempo real mientras tu sacas las bolillas desde el panel de administrador.</p>
+
+  <h3>Flujo completo del juego</h3>
+
+  <div class="flow">
+    <div class="flow-item">Jugador se registra y paga</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-item">Admin aprueba el pago</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-item">Jugador genera su cartilla</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-item">Admin inicia el juego</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-item">Se sacan las bolillas</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-item">Jugador gana / Admin paga</div>
+  </div>
+
+  <div class="box box-info">
+    <strong>Sistema de pago manual (verificacion humana)</strong>
+    Los jugadores hacen el pago por Yape, Plin o transferencia y envian el numero de operacion. Tu verificas en tu app de Yape/Plin que el pago llego y luego apruebas desde el panel admin. Esto protege contra fraudes.
+  </div>
+
+  <h3>Tipos de bingo y premios</h3>
+
+  <div class="prize-card sol">
+    <h4>Bingo 1 Sol (entrada basica)</h4>
+    <div class="prize-row"><span>Precio por entrada:</span><span><strong>S/. 1.00</strong></span></div>
+    <div class="prize-row"><span>Maximo de cartillas por jugador:</span><span>3</span></div>
+    <div class="prize-row"><span>Premio BINGO (cartilla completa):</span><span><strong>70% del pozo</strong></span></div>
+    <div class="prize-row"><span>Premio LINEA (una fila completa):</span><span>10% del pozo</span></div>
+    <div class="prize-row"><span>Ganancia del organizador:</span><span>20% del pozo</span></div>
+    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 3 cartillas = S/. 60 &rarr; Premio bingo: S/. 42, Premio linea: S/. 6, Para ti: S/. 12</div>
+  </div>
+
+  <div class="prize-card cinco">
+    <h4>Bingo 5 Soles (entrada estandar)</h4>
+    <div class="prize-row"><span>Precio por entrada:</span><span><strong>S/. 5.00</strong></span></div>
+    <div class="prize-row"><span>Maximo de cartillas por jugador:</span><span>5</span></div>
+    <div class="prize-row"><span>Premio BINGO:</span><span><strong>75% del pozo</strong></span></div>
+    <div class="prize-row"><span>Premio LINEA:</span><span>8% del pozo</span></div>
+    <div class="prize-row"><span>Ganancia del organizador:</span><span>17% del pozo</span></div>
+    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 5 cartillas = S/. 500 &rarr; Premio bingo: S/. 375, Premio linea: S/. 40, Para ti: S/. 85</div>
+  </div>
+
+  <div class="prize-card diez">
+    <h4>Bingo 10 Soles (entrada premium)</h4>
+    <div class="prize-row"><span>Precio por entrada:</span><span><strong>S/. 10.00</strong></span></div>
+    <div class="prize-row"><span>Maximo de cartillas por jugador:</span><span>5</span></div>
+    <div class="prize-row"><span>Premio BINGO:</span><span><strong>80% del pozo</strong></span></div>
+    <div class="prize-row"><span>Premio LINEA:</span><span>5% del pozo</span></div>
+    <div class="prize-row"><span>Ganancia del organizador:</span><span>15% del pozo</span></div>
+  </div>
+
+  <div class="box box-warn">
+    <strong>Nota sobre premios divididos</strong>
+    Si dos jugadores cantan BINGO al mismo tiempo, el premio se divide entre ambos. El sistema lo calcula automaticamente.
+  </div>
+
+  <h3>Metodos de pago aceptados</h3>
+  <table>
+    <tr><th>Metodo</th><th>Requiere numero de operacion</th><th>Como verificar</th></tr>
+    <tr><td>Yape</td><td>Si</td><td>Revisa tu app Yape, seccion movimientos</td></tr>
+    <tr><td>Plin</td><td>Si</td><td>Revisa tu app del banco, movimientos</td></tr>
+    <tr><td>Transferencia bancaria</td><td>Si</td><td>Revisa tu cuenta bancaria</td></tr>
+    <tr><td>Efectivo</td><td>No (pago presencial)</td><td>Cobras tu directamente</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 2 -->
+<div class="section">
+  <h2>2. Guia del Administrador</h2>
+
+  <h3>Iniciar sesion como admin</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        Abre el navegador y ve a la URL del panel de administrador:
+        <div class="url-box">http://[IP-DE-TU-PC]:5000/admin/login</div>
+        Ejemplo: <code>http://10.0.0.54:5000/admin/login</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Ingresa tu usuario y contrasena</strong><br>
+        Los definidos en el archivo <code>.env</code>: campo <code>ADMIN_USER</code> y <code>ADMIN_PASS</code>.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Haz clic en "Ingresar"</strong> — Si las credenciales son correctas entras al dashboard principal.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-warn">
+    <strong>Seguridad: bloqueo por intentos fallidos</strong>
+    Si ingresas mal la contrasena 5 veces seguidas, el sistema bloquea tu IP por 15 minutos. Espera o reinicia el servidor para desbloquear.
+  </div>
+
+  <h3>Crear una sesion de bingo</h3>
+  <p>Antes de que los jugadores puedan registrarse, debes crear una sesion (evento de bingo).</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Ve al menu <strong>"Sesiones"</strong> en el panel admin o a:
+        <div class="url-box">http://[IP]:5000/admin/sessions</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Haz clic en "Nueva Sesion"</strong> y completa el formulario:
+        <ul>
+          <li><strong>Tipo de bingo:</strong> 1 Sol / 5 Soles / 10 Soles</li>
+          <li><strong>Fecha y hora:</strong> Cuando empieza el bingo</li>
+          <li><strong>Maximo de jugadores:</strong> Cupos disponibles (0 = ilimitado)</li>
+          <li><strong>Descripcion:</strong> Texto que ven los jugadores (opcional)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Haz clic en "Crear Sesion"</strong>. La sesion queda en estado <em>Programada</em> y los jugadores ya pueden registrarse.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>Comparte el enlace de registro</strong> con tus jugadores:
+        <div class="url-box">http://[IP]:5000/cartillas</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Aprobar pagos de jugadores</h3>
+  <p>Cuando un jugador se registra, su pago queda en estado "pendiente de revision". Debes verificarlo manualmente.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Ve a <strong>"Pagos"</strong> en el menu admin o a:
+        <div class="url-box">http://[IP]:5000/admin/payments</div>
+        Veras un indicador rojo con el numero de pagos pendientes.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Para cada pago pendiente:</strong>
+        <ul>
+          <li>Abre tu app de Yape/Plin y busca el <strong>numero de operacion</strong> que el jugador indico</li>
+          <li>Verifica que el monto sea correcto (S/. 1 / S/. 5 / S/. 10)</li>
+          <li>Verifica que el pago sea reciente y no repetido</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Haz clic en "Aprobar"</strong> si el pago es correcto.<br>
+        El sistema envia automaticamente el codigo de acceso al email del jugador.<br>
+        <strong>Haz clic en "Rechazar"</strong> si el pago no llego o es sospechoso.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-info">
+    <strong>Numero de operacion duplicado</strong>
+    El sistema detecta automaticamente si dos jugadores enviaron el mismo numero de operacion y los resalta en rojo. Uno de los dos es un fraude — rechaza el duplicado.
+  </div>
+</div>
+
+<div class="section section-break">
+  <h3>Iniciar el juego</h3>
+  <p>Cuando ya tienes jugadores con pago aprobado y es hora del bingo:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Ve a <strong>"Sesiones"</strong>, busca tu sesion y haz clic en <strong>"Iniciar"</strong>.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        El sistema calcula automaticamente el pozo de premios segun cuantos jugadores pagaron:<br>
+        <em>(jugadores x precio) x porcentaje = premio</em>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">La sesion cambia a estado <strong>"Activa"</strong> y el juego comienza.</div>
+    </div>
+  </div>
+
+  <h3>Sacar bolillas — Juego en vivo</h3>
+  <p>Ve al panel de juego en:</p>
+  <div class="url-box">http://[IP]:5000/admin/game</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Modo Manual:</strong> Haz clic en <strong>"Sacar Bolilla"</strong> para sacar una bolilla aleatoria. El sistema la anuncia con voz (Microsoft TTS en espanol peruano).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Modo Automatico:</strong> Haz clic en <strong>"Auto-draw"</strong> para que el sistema saque bolillas automaticamente cada 15 segundos (configurable en el .env).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>En todo momento puedes:</strong>
+        <ul>
+          <li><strong>Pausar/Reanudar</strong> el sorteo automatico</li>
+          <li><strong>Repetir</strong> la ultima bolilla anunciada</li>
+          <li>Ver cuantas bolillas quedan disponibles</li>
+          <li>Ver la lista de bolillas ya sacadas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-warn">
+    <strong>Limite de ganadores</strong>
+    Por defecto el juego se pausa cuando hay 1 ganador de BINGO. Puedes cambiar esto a 2 o mas ganadores antes de iniciar. Utiles para bingos grandes con multiple premios.
+  </div>
+
+  <h3>Verificar ganadores</h3>
+  <p>Cuando un jugador canta BINGO o LINEA:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        El sistema <strong>verifica automaticamente</strong> si la cartilla del jugador realmente tiene todos los numeros marcados. Si no, el boton no hace nada (proteccion anti-trampa).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        Si el BINGO es valido, el jugador aparece en la pantalla de ganadores con su nombre, ID de cartilla y el monto del premio.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Tu tarea como admin:</strong> Contactar al ganador (WhatsApp, llamada) y enviarle el premio por Yape/Plin segun el monto mostrado en pantalla.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-success">
+    <strong>Cuanto pagar al ganador</strong>
+    El sistema calcula el monto exacto automaticamente en base al numero de jugadores pagados. Lo ves en el panel de juego como "Premio BINGO: S/. XXX". Ese es el monto que debes transferir al ganador.
+  </div>
+
+  <h3>Cerrar la sesion</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Ve a <strong>"Sesiones"</strong> y haz clic en <strong>"Finalizar"</strong> para la sesion activa.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">El historial de ganadores queda guardado en la base de datos para tu registro.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">Puedes crear una nueva sesion para el proximo bingo.</div>
+    </div>
+  </div>
+</div>
+
+<div class="section section-break">
+  <h3>Panel financiero — Caja</h3>
+  <p>Ve a <strong>"Caja"</strong> en el menu o a:</p>
+  <div class="url-box">http://[IP]:5000/admin/caja</div>
+
+  <p>Aqui ves un resumen detallado de cada sesion:</p>
+  <table>
+    <tr><th>Campo</th><th>Descripcion</th></tr>
+    <tr><td>Total recaudado</td><td>Suma de todos los pagos aprobados</td></tr>
+    <tr><td>Premio bingo</td><td>Lo que se pago o se debe pagar al ganador de BINGO</td></tr>
+    <tr><td>Premio linea</td><td>Lo que se pago o se debe pagar al ganador de LINEA</td></tr>
+    <tr><td>Ganancia neta</td><td>Tu ganancia despues de premios (la casa)</td></tr>
+  </table>
+
+  <p>Puedes exportar el reporte como CSV para abrirlo en Excel.</p>
+
+  <h3>Configurar la plataforma</h3>
+  <p>Ve a <strong>"Configuracion"</strong> o a:</p>
+  <div class="url-box">http://[IP]:5000/admin/config</div>
+
+  <table>
+    <tr><th>Campo</th><th>Para que sirve</th></tr>
+    <tr><td>Nombre del organizador</td><td>Aparece en emails y en la pagina de jugadores</td></tr>
+    <tr><td>WhatsApp</td><td>Los jugadores pueden contactarte directamente</td></tr>
+    <tr><td>Numero Yape/Plin</td><td>Numero al que los jugadores deben pagar</td></tr>
+    <tr><td>Instrucciones de pago</td><td>Texto que ven los jugadores al registrarse</td></tr>
+    <tr><td>Metodos de pago activos</td><td>Cuales metodos aceptas (Yape, Plin, etc.)</td></tr>
+  </table>
+
+  <div class="box box-info">
+    <strong>Configura tu numero Yape/Plin antes de anunciar el bingo</strong>
+    Los jugadores necesitan saber a que numero pagar. Ponlo en la configuracion y en las instrucciones de pago.
+  </div>
+
+  <h3>Resumen de URLs del admin</h3>
+  <table>
+    <tr><th>Seccion</th><th>URL</th></tr>
+    <tr><td>Dashboard principal</td><td>/admin</td></tr>
+    <tr><td>Iniciar sesion</td><td>/admin/login</td></tr>
+    <tr><td>Sesiones de bingo</td><td>/admin/sessions</td></tr>
+    <tr><td>Pagos pendientes</td><td>/admin/payments</td></tr>
+    <tr><td>Gestion de cartillas</td><td>/admin/cartillas</td></tr>
+    <tr><td>Panel de juego en vivo</td><td>/admin/game</td></tr>
+    <tr><td>Caja / Finanzas</td><td>/admin/caja</td></tr>
+    <tr><td>Configuracion</td><td>/admin/config</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 3 -->
+<div class="section section-break">
+  <h2>3. Guia del Jugador</h2>
+  <p>Esta seccion puedes compartirla con tus jugadores. Explica paso a paso como participar.</p>
+
+  <h3>Paso 1 — Registrarse y pagar</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        Entra a la pagina del bingo desde tu celular o computadora:
+        <div class="url-box">http://[IP]:5000/cartillas</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Selecciona el tipo de bingo</strong> (1 Sol, 5 Soles o 10 Soles) y la sesion a la que quieres entrar.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Completa el formulario:</strong>
+        <ul>
+          <li>Nombre completo</li>
+          <li>Email (aqui recibes tu codigo de acceso)</li>
+          <li>Numero de celular</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>Realiza el pago</strong> por Yape, Plin o transferencia al numero indicado en pantalla.<br>
+        Copia el <strong>numero de operacion</strong> que aparece en tu app de pago.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <strong>Ingresa el numero de operacion</strong> en el formulario y haz clic en <strong>"Registrar"</strong>.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <strong>Espera el email de confirmacion.</strong> El administrador verificara tu pago y te enviara un codigo por email. Esto puede tomar unos minutos.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-warn">
+    <strong>Importante: guarda tu codigo de acceso</strong>
+    Recibes un codigo de 6 caracteres por email (ejemplo: <strong>AB3X7K</strong>). Lo necesitas para generar tu cartilla. Si no lo recibes, revisa la carpeta de spam.
+  </div>
+
+  <h3>Paso 2 — Generar la cartilla</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        Vuelve a la pagina <strong>/cartillas</strong> y haz clic en <strong>"Ya tengo mi codigo"</strong>.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Ingresa tu codigo</strong> (el que llegaste por email) y haz clic en "Verificar".
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Haz clic en "Generar Cartilla".</strong> El sistema crea una cartilla unica con numeros del 1 al 90 distribuidos en una cuadricula de 3 filas x 9 columnas.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>Descarga o guarda tu cartilla</strong> en PNG o PDF. Tambien puedes dejarla abierta en el navegador — los numeros se marcan automaticamente mientras avanza el juego.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-info">
+    <strong>Cuantas cartillas puedo tener?</strong>
+    Segun el tipo de bingo: Bingo 1 Sol = hasta 3 cartillas, Bingo 5 y 10 Soles = hasta 5 cartillas. Cada cartilla se genera por separado con tu mismo codigo.
+  </div>
+
+  <h3>Paso 3 — Ver el juego en vivo</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        Cuando empiece el bingo, abre la pagina principal:
+        <div class="url-box">http://[IP]:5000</div>
+        Aqui ves el tablero con todas las bolillas sacadas.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>La pagina se actualiza sola.</strong> Cada bolilla nueva aparece con una animacion y se anuncia con voz. No necesitas recargar.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        Si tienes tu cartilla abierta en el navegador (no en PDF), los <strong>numeros se marcan automaticamente</strong> cuando salen. El sistema te avisa cuando te falta solo 1 numero para BINGO.
+      </div>
+    </div>
+  </div>
+
+  <h3>Paso 4 — Cantar LINEA y BINGO</h3>
+  <table>
+    <tr><th>Tipo</th><th>Cuando cantar</th><th>Premio</th></tr>
+    <tr>
+      <td><strong>LINEA</strong></td>
+      <td>Cuando tienes <strong>una fila completa</strong> marcada (los 5 numeros de una de las 3 filas)</td>
+      <td>8–10% del pozo (segun tipo de bingo)</td>
+    </tr>
+    <tr>
+      <td><strong>BINGO</strong></td>
+      <td>Cuando tienes <strong>la cartilla completa</strong> marcada (todos tus numeros han salido)</td>
+      <td>70–80% del pozo (segun tipo de bingo)</td>
+    </tr>
+  </table>
+
+  <div class="steps" style="margin-top:16px;">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        Cuando tengas todos los numeros marcados, haz clic en el boton <strong>"CANTAR BINGO"</strong> o <strong>"CANTAR LINEA"</strong> en la pagina del juego.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        El sistema <strong>verifica automaticamente</strong> tu cartilla. Si es correcto, apareces como ganador y el juego se pausa.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        El administrador te contactara para enviarte el premio por Yape/Plin al numero que registraste.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-danger">
+    <strong>No esperes demasiado para cantar BINGO</strong>
+    Si otro jugador canta antes que tu y el juego se pausa, pierdes la oportunidad. En cuanto completes la cartilla, canta inmediatamente. Si dos personas cantan al mismo tiempo, el premio se divide entre ambas.
+  </div>
+
+  <h3>Como funciona la cartilla — formato 3x9</h3>
+  <p>La cartilla de bingo contiene <strong>15 numeros</strong> distribuidos en una grilla de 3 filas y 9 columnas:</p>
+  <table>
+    <tr><th>Columna</th><th>Rango de numeros</th></tr>
+    <tr><td>Columna 1</td><td>1 – 10</td></tr>
+    <tr><td>Columna 2</td><td>11 – 20</td></tr>
+    <tr><td>Columna 3</td><td>21 – 30</td></tr>
+    <tr><td>Columna 4</td><td>31 – 40</td></tr>
+    <tr><td>Columna 5</td><td>41 – 50</td></tr>
+    <tr><td>Columna 6</td><td>51 – 60</td></tr>
+    <tr><td>Columna 7</td><td>61 – 70</td></tr>
+    <tr><td>Columna 8</td><td>71 – 80</td></tr>
+    <tr><td>Columna 9</td><td>81 – 90</td></tr>
+  </table>
+  <p>Cada fila tiene exactamente <strong>5 numeros</strong> (el resto de celdas estan vacias). Necesitas que salgan los 5 numeros de una fila para cantar LINEA, o los 15 numeros totales para cantar BINGO.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 4 -->
+<div class="section section-break">
+  <h2>4. URLs del Sistema</h2>
+
+  <p>Reemplaza <code>[IP]</code> con la IP de la computadora donde corre el servidor (se muestra en la consola al iniciar).</p>
+
+  <h3>Para los jugadores (compartir estos links)</h3>
+  <table>
+    <tr><th>Pagina</th><th>URL</th><th>Para que sirve</th></tr>
+    <tr><td>Juego en vivo</td><td><code>http://[IP]:5000</code></td><td>Ver bolillas y cantar BINGO</td></tr>
+    <tr><td>Registro y cartillas</td><td><code>http://[IP]:5000/cartillas</code></td><td>Pagar y generar cartilla</td></tr>
+  </table>
+
+  <h3>Para el administrador (no compartir)</h3>
+  <table>
+    <tr><th>Seccion</th><th>URL</th></tr>
+    <tr><td>Dashboard</td><td><code>http://[IP]:5000/admin</code></td></tr>
+    <tr><td>Login</td><td><code>http://[IP]:5000/admin/login</code></td></tr>
+    <tr><td>Gestionar sesiones</td><td><code>http://[IP]:5000/admin/sessions</code></td></tr>
+    <tr><td>Aprobar pagos</td><td><code>http://[IP]:5000/admin/payments</code></td></tr>
+    <tr><td>Control del juego</td><td><code>http://[IP]:5000/admin/game</code></td></tr>
+    <tr><td>Ver cartillas</td><td><code>http://[IP]:5000/admin/cartillas</code></td></tr>
+    <tr><td>Caja / Finanzas</td><td><code>http://[IP]:5000/admin/caja</code></td></tr>
+    <tr><td>Configuracion</td><td><code>http://[IP]:5000/admin/config</code></td></tr>
+  </table>
+
+  <div class="box box-info">
+    <strong>Como saber tu IP</strong>
+    Cuando inicias el servidor con <code>python app.py</code>, la consola muestra algo como:<br>
+    <code>Red WiFi -> http://10.0.0.54:5000</code><br>
+    Ese es el link que compartes con tus jugadores (deben estar en la misma red WiFi, o necesitas un servidor publico para acceso desde internet).
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 5 -->
+<div class="section">
+  <h2>5. Preguntas Frecuentes</h2>
+
+  <h4>Un jugador dice que no recibio el email con su codigo</h4>
+  <p>Primero pide que revise la carpeta de spam. Si el email no llego, ve a <strong>/admin/payments</strong>, busca al jugador y haz clic en <strong>"Reenviar codigo"</strong>. Si los emails no funcionan en absoluto, revisa que el <code>EMAIL_PASS</code> en el archivo <code>.env</code> sea una contrasena de aplicacion Gmail de 16 caracteres (no tu contrasena normal).</p>
+
+  <h4>Un jugador pago pero no aparece en "Pagos pendientes"</h4>
+  <p>Es posible que haya un error en su registro. Busca su voucher en <strong>/admin/cartillas</strong> por email o nombre. Si no aparece, el jugador debe registrarse de nuevo.</p>
+
+  <h4>El sistema no detecta un BINGO valido</h4>
+  <p>El sistema verifica estrictamente que todos los numeros de la cartilla esten en la lista de bolillas sacadas. Si el jugador dice que tiene BINGO pero el sistema no lo acepta, probablemente le falta al menos un numero. Pide que verifique su cartilla con cuidado.</p>
+
+  <h4>Dos jugadores cantaron BINGO al mismo tiempo</h4>
+  <p>El sistema divide el premio automaticamente entre los dos. Ambos son ganadores y cada uno recibe la mitad del pozo de BINGO.</p>
+
+  <h4>Quiero hacer un bingo con varios premios (linea + bingo)</h4>
+  <p>El sistema soporta LINEA y BINGO automaticamente. La LINEA se puede cantar antes del BINGO. El jugador que canta LINEA puede seguir jugando y tambien cantar BINGO si completa su cartilla.</p>
+
+  <h4>Puedo hacer bingos por internet (no solo WiFi local)?</h4>
+  <p>Si, pero necesitas exponer el servidor a internet. Opciones: usar un servicio como ngrok, contratar un VPS (servidor), o configurar port forwarding en tu router. Esto requiere configuracion adicional.</p>
+
+  <h4>Como hago una copia de seguridad de los datos?</h4>
+  <p>Todos los datos estan en el archivo <code>bingo.db</code> en la carpeta del proyecto. Copia ese archivo regularmente a un lugar seguro (USB, Google Drive, etc.). Si lo pierdes, pierdes todos los jugadores, sesiones y registros.</p>
+
+  <h4>Cuantos jugadores soporta el sistema al mismo tiempo?</h4>
+  <p>Para uso local con WiFi, el sistema soporta comfortablemente 50-100 jugadores. Para mas jugadores o acceso por internet, se recomienda usar gunicorn con varios workers o un servidor dedicado.</p>
+
+  <h4>Como inicio el servidor?</h4>
+  <p>Abre una terminal en la carpeta del proyecto y ejecuta:</p>
+  <div class="url-box">python app.py</div>
+  <p>El servidor corre en el puerto 5000. Para cerrarlo, presiona Ctrl+C en la terminal.</p>
+
+  <h4>El servidor se cerro en medio de un juego. Se perdieron los datos?</h4>
+  <p>No. El sistema guarda el estado del juego en la base de datos automaticamente. Al reiniciar el servidor, el estado del juego se restaura donde quedo (bolillas sacadas, ganadores, etc.).</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 6 -->
+<div class="section section-break">
+  <h2>6. Que necesitas para ponerlo en internet (Going Live)</h2>
+
+  <p>Actualmente el sistema solo funciona en tu red WiFi local. Para que jugadores de cualquier lugar del mundo puedan entrar, necesitas estas cosas. Aqui va la guia completa y honesta de todo lo que se necesita y cuanto cuesta.</p>
+
+  <div class="box box-success">
+    <strong>La buena noticia</strong>
+    Con Yape y Plin NO necesitas contratar ningun servicio de pagos. Es gratis. El costo minimo para lanzar es solo el hosting (~$5 al mes) y arreglar el email (gratis).
+  </div>
+
+  <h3>1. Hosting — Servidor VPS (SI, obligatorio)</h3>
+  <p>Tu app necesita correr en una computadora que este encendida las 24 horas. Eso es un VPS (servidor virtual). Sin esto, el sitio solo funciona cuando tu computadora esta prendida y en WiFi.</p>
+
+  <table>
+    <tr><th>Proveedor</th><th>Precio</th><th>Plan recomendado</th><th>Donde pagar</th></tr>
+    <tr><td><strong>Hostinger VPS</strong></td><td>~$4/mes</td><td>KVM 1 (1GB RAM)</td><td>Visa/Mastercard/PayPal</td></tr>
+    <tr><td><strong>DigitalOcean</strong></td><td>~$6/mes</td><td>Basic Droplet (1GB)</td><td>Visa/Mastercard/PayPal</td></tr>
+    <tr><td><strong>Contabo</strong></td><td>~$4/mes</td><td>VPS S (4GB RAM)</td><td>PayPal / tarjeta</td></tr>
+  </table>
+
+  <p>Cualquiera de los tres sirve perfectamente para 100-200 jugadores. <strong>Hostinger es el mas barato y facil para empezar.</strong></p>
+
+  <div class="box box-info">
+    <strong>Que incluye el VPS?</strong>
+    Te dan una IP publica (ej: <code>164.90.12.34</code>), acceso SSH para subir tu app, y el servidor corre Ubuntu Linux. Yo puedo guiarte paso a paso para instalar todo una vez que tengas el VPS.
+  </div>
+
+  <h3>2. Dominio — Nombre del sitio (OPCIONAL pero recomendado)</h3>
+  <p>Sin dominio tu URL se ve asi: <code>http://164.90.12.34:5000</code> — funciona pero es feo y dificil de compartir.<br>
+  Con dominio se ve asi: <code>www.tubingo.com</code> o <code>www.bingoperu.pe</code></p>
+
+  <table>
+    <tr><th>Tipo de dominio</th><th>Costo aproximado</th><th>Donde comprarlo</th></tr>
+    <tr><td><code>.com</code> (ej: tubingo.com)</td><td>~$10–12 al año</td><td>namecheap.com, porkbun.com</td></tr>
+    <tr><td><code>.pe</code> (ej: tubingo.pe)</td><td>~$30 al año</td><td>nic.pe (dominio peruano oficial)</td></tr>
+    <tr><td><code>.online</code> (ej: tubingo.online)</td><td>~$3–5 al año</td><td>namecheap.com</td></tr>
+  </table>
+
+  <div class="box box-warn">
+    <strong>No necesitas el dominio para empezar</strong>
+    Puedes lanzar con solo la IP del servidor y agregar el dominio despues cuando ya estes generando ingresos. Prioriza el hosting primero.
+  </div>
+
+  <h3>3. SSL / HTTPS — Candado de seguridad (SI, obligatorio — pero GRATIS)</h3>
+  <p>HTTPS es el candado que aparece en el navegador. Sin el, los navegadores muestran "Sitio no seguro" y los jugadores no confiaran en tu pagina. <strong>Es obligatorio pero completamente gratuito</strong> gracias a Let's Encrypt.</p>
+
+  <ul>
+    <li>Costo: <strong>$0</strong></li>
+    <li>Se instala una vez en el servidor con una herramienta llamada <strong>Certbot</strong></li>
+    <li>Se renueva automaticamente cada 3 meses</li>
+    <li>Requiere tener un dominio (no funciona solo con IP)</li>
+  </ul>
+
+  <div class="box box-info">
+    <strong>Si no tienes dominio todavia</strong>
+    Puedes usar la IP sin HTTPS mientras pruebas. Solo cuando tengas dominio activas el HTTPS. Yo puedo guiarte con el comando exacto cuando llegue ese momento.
+  </div>
+
+  <h3>4. Pagos — Yape/Plin vs Tarjeta de credito</h3>
+
+  <p><strong>Para el mercado peruano, Yape y Plin son suficientes y gratuitos.</strong> Tu app ya los maneja perfectamente. No necesitas contratar nada.</p>
+
+  <table>
+    <tr><th>Metodo</th><th>Costo de setup</th><th>Comision por pago</th><th>Requiere RUC / empresa?</th></tr>
+    <tr><td><strong>Yape / Plin</strong></td><td>$0</td><td>$0</td><td>No</td></tr>
+    <tr><td><strong>Transferencia bancaria</strong></td><td>$0</td><td>$0</td><td>No</td></tr>
+    <tr><td>Efectivo (presencial)</td><td>$0</td><td>$0</td><td>No</td></tr>
+    <tr><td>Tarjeta de credito (Stripe)</td><td>$0 setup</td><td>~3.5% por pago</td><td>Si (requiere empresa)</td></tr>
+    <tr><td>Tarjeta de credito (Culqi, Peru)</td><td>$0 setup</td><td>~3.99% por pago</td><td>Si (requiere RUC)</td></tr>
+    <tr><td>PayPal</td><td>$0 setup</td><td>~5% por pago</td><td>No (pero complejo)</td></tr>
+  </table>
+
+  <div class="box box-warn">
+    <strong>Sobre las tarjetas de credito</strong>
+    Para aceptar tarjetas (Visa, Mastercard) en Peru necesitas registrarte en Culqi o Izipay, tener RUC de empresa, y pasar una verificacion. Ademas cobran ~4% de comision por cada pago. Para empezar, Yape y Plin son mucho mas simples y sin costo. Puedes agregar tarjetas despues si tu negocio crece.
+  </div>
+
+  <h3>5. Email — Fix rapido y gratuito (SI, obligatorio)</h3>
+  <p>El email ya esta configurado en tu app pero la contrasena esta mal. Necesitas una <strong>Contrasena de Aplicacion de Gmail</strong> (diferente a tu contrasena normal). Es gratis y toma 5 minutos.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Entra a <strong>gmail.com</strong> con la cuenta <code>deisyrestore@gmail.com</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">Ve a <strong>Cuenta de Google &rarr; Seguridad &rarr; Verificacion en 2 pasos</strong> y activala si no esta activa</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">Ve a <strong>Seguridad &rarr; Contrasenas de aplicacion</strong> &rarr; crea una nueva para "Correo / Windows"</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">Google te da un codigo de <strong>16 caracteres</strong> (ejemplo: <code>abcd efgh ijkl mnop</code>) — copialo sin espacios</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        Abre el archivo <code>.env</code> en la carpeta del proyecto y cambia:<br>
+        <div class="url-box">EMAIL_PASS=Humildes1!@</div>
+        por tu nueva contrasena de 16 caracteres:<br>
+        <div class="url-box">EMAIL_PASS=abcdefghijklmnop</div>
+        Guarda el archivo y reinicia el servidor.
+      </div>
+    </div>
+  </div>
+
+  <h3>Resumen de costos totales</h3>
+  <table>
+    <tr><th>Que necesitas</th><th>Costo</th><th>Obligatorio?</th></tr>
+    <tr><td>Hosting VPS (Hostinger o DigitalOcean)</td><td>~$4–6 / mes</td><td>SI</td></tr>
+    <tr><td>Nombre de dominio (.com)</td><td>~$10–15 / año</td><td>No (opcional)</td></tr>
+    <tr><td>SSL / HTTPS (Let's Encrypt)</td><td>$0</td><td>SI (gratis)</td></tr>
+    <tr><td>Procesador de pagos (Yape/Plin)</td><td>$0</td><td>Ya incluido en la app</td></tr>
+    <tr><td>Email (Gmail App Password)</td><td>$0</td><td>SI (gratis, solo configurar)</td></tr>
+    <tr><td>Tarjetas de credito (futuro)</td><td>~4% por cobro</td><td>No (para mas adelante)</td></tr>
+  </table>
+
+  <div class="box box-success">
+    <strong>Costo minimo para lanzar: $4–6 al mes</strong>
+    Solo el hosting. Todo lo demas es gratis o ya esta incluido en la app.
+  </div>
+
+  <h3>Orden de lanzamiento — paso a paso</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content"><strong>Arregla el email</strong> — Crea la contrasena de aplicacion Gmail y actualiza el <code>.env</code>. (Gratis, 5 minutos)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content"><strong>Compra el hosting VPS</strong> — Hostinger KVM 1 o DigitalOcean Basic. (~$4–6/mes)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content"><strong>Sube la app al servidor</strong> — Instalar Python, dependencias y configurar el servidor. (Yo puedo guiarte paso a paso)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content"><strong>Opcional: compra un dominio</strong> — namecheap.com o porkbun.com. (~$10/año)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content"><strong>Activa HTTPS</strong> con Let's Encrypt / Certbot. (Gratis, 5 minutos si tienes dominio)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content"><strong>Prueba con amigos</strong> antes de abrir al publico. Registrate, paga, genera cartilla, juega. Verifica que todo funcione.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-content"><strong>Lanza y comparte el link</strong> — Redes sociales, WhatsApp, grupos. Empieza a cobrar.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ FOOTER -->
+<div style="background:#0d1b3e; color:#4a6080; text-align:center; padding:30px; margin-top:40px; font-size:12px;">
+  Bingo Pro Web v9.0 &nbsp;|&nbsp; Manual del Sistema &nbsp;|&nbsp; Uso interno y educativo
+</div>
+
+</body>
+</html>

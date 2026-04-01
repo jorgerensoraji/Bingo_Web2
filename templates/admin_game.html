@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎱 Bingo Pro — Panel de Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">🎱 Bingo Pro <span>ADMIN</span></div>
+  </div>
+  <div class="header-right">
+    <div class="nav-links">
+      <a href="/admin/game" class="nav-link active">🎮 Control</a>
+      <a href="/" class="nav-link" target="_blank">👁 Vista Jugadores</a>
+      <a href="/admin/cartillas" class="nav-link">🎴 Cartillas</a>
+      <a href="/admin" class="nav-link">🛠 Panel Admin</a>
+      <a href="#" class="nav-link" onclick="logout()">🚪 Salir</a>
+    </div>
+    <div id="connection-info">
+      URL para jugadores:<br>
+      <strong id="server-url">cargando…</strong>
+    </div>
+    <div id="timer">⏱ 00:00</div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">Sorteadas: <strong id="stat-drawn">0</strong></div>
+  <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+  <div class="stat"><strong id="stat-pct">0%</strong></div>
+  <div class="shortcuts">[Space] Sortear &nbsp;[R] Repetir &nbsp;[A] Auto &nbsp;[Esc] Silenciar &nbsp;[N] Nuevo</div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT -->
+  <div class="left-col">
+    <div class="number-display">
+      <div id="ball-wrapper">
+        <div id="ball"><div id="big-number">?</div></div>
+      </div>
+      <div class="number-info">
+        <div class="number-label">Bolilla</div>
+        <div id="words-display">—</div>
+        <div id="group-tag"></div>
+        <div id="auto-cd"></div>
+        <div id="auto-bar-wrap"><div id="auto-bar"></div></div>
+      </div>
+    </div>
+
+    <div class="recent-strip">
+      <span class="recent-label">Últimas:</span>
+      <div id="recent-nums" style="display:flex;gap:10px;"></div>
+    </div>
+
+    <div class="grid-section">
+      <div class="section-title">Números Sorteados</div>
+      <div class="group-headers" id="group-headers"></div>
+      <div class="num-grid" id="num-grid"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+
+    <div class="panel">
+      <div class="panel-title">Controles</div>
+      <button class="btn btn-draw" id="btn-draw" onclick="drawNumber()">🎱 SORTEAR</button>
+      <div class="auto-row">
+        <button class="btn btn-auto" id="btn-auto" onclick="toggleAuto()">⏲ Auto [A]</button>
+        <input class="spinbox" type="number" id="auto-interval" min="3" max="60" value="10"> s
+      </div>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="repeatLast()">🔁 Repetir [R]</button>
+        <button class="btn btn-sm" onclick="stopAudio()">🔇 Silenciar</button>
+      </div>
+      <button class="btn btn-new" onclick="newGame()">🔄 Nuevo Juego [N]</button>
+
+      <div style="margin-top:10px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
+        <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">⏸ Pausa automática</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label style="font-size:.82rem;color:var(--muted);white-space:nowrap;">Parar al llegar a</label>
+          <select id="winners-limit-select" onchange="setWinnersLimit(this.value)"
+                  style="flex:1;background:var(--sub);color:var(--text);border:1px solid var(--border);
+                         border-radius:7px;padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;">
+            <option value="1">1 ganador</option>
+            <option value="2">2 ganadores</option>
+            <option value="3">3 ganadores</option>
+            <option value="5">5 ganadores</option>
+          </select>
+        </div>
+        <button id="btn-resume" onclick="resumeGame()" style="
+          display:none;width:100%;margin-top:8px;padding:9px;border:none;border-radius:8px;
+          background:var(--accent);color:#041015;
+          font-family:'Outfit',sans-serif;font-weight:900;font-size:.9rem;cursor:pointer;">
+          ▶ Reanudar sorteo
+        </button>
+      </div>
+      <div class="slider-label">
+        <span>Velocidad animación</span><span id="speed-val">55</span>
+      </div>
+      <input type="range" min="0" max="100" value="55" id="speed-slider"
+             oninput="document.getElementById('speed-val').textContent=this.value">
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Voz & Audio</div>
+      <select id="voice-select">
+        <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>
+        <option value="es-MX-JorgeNeural">🇲🇽 Jorge (México)</option>
+        <option value="es-AR-ElenaNeural">🇦🇷 Elena (Argentina)</option>
+        <option value="es-ES-ElviraNeural">🇪🇸 Elvira (España)</option>
+        <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
+      </select>
+      <div class="slider-label">
+        <span>🔊 Volumen</span><span id="vol-val">85%</span>
+      </div>
+      <input type="range" min="0" max="100" value="85" id="vol-slider"
+             oninput="document.getElementById('vol-val').textContent=this.value+'%'">
+    </div>
+
+    <!-- ══ PANEL SESIÓN ACTIVA ══ -->
+    <div class="panel" id="panel-sesion" style="border:1px solid rgba(231,76,60,.3);background:rgba(231,76,60,.04)">
+      <div class="panel-title" style="color:var(--danger)">⚠️ Control de Sesión</div>
+
+      <!-- Info sesión activa -->
+      <div id="sesion-info" style="font-size:.82rem;color:var(--muted);
+           padding:8px 10px;background:var(--card);border-radius:8px;
+           margin-bottom:10px;line-height:1.6">
+        Cargando sesión…
+      </div>
+
+      <!-- Finalizar sesión (limpio — registra ganadores) -->
+      <button onclick="finalizarSesion()" style="
+        width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:9px;
+        background:var(--warning);color:#041015;
+        font-family:'Outfit',sans-serif;font-weight:900;font-size:.88rem;cursor:pointer;">
+        ⏹ Finalizar sesión (normal)
+      </button>
+
+      <!-- Cancelar forzado -->
+      <button onclick="cancelarSesionForzado()" style="
+        width:100%;padding:10px;border:none;border-radius:9px;
+        background:var(--danger);color:white;
+        font-family:'Outfit',sans-serif;font-weight:900;font-size:.88rem;cursor:pointer;">
+        🛑 Cancelar sesión (forzado)
+      </button>
+
+      <!-- Limpiar estado residual (sin sesión activa) -->
+      <div id="btn-limpiar-wrap" style="display:none;margin-top:6px">
+        <button onclick="limpiarEstado()" style="
+          width:100%;padding:10px;border:none;border-radius:9px;
+          background:#2c3e50;color:var(--muted);border:1px solid var(--border);
+          font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;">
+          🧹 Limpiar estado residual
+        </button>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:4px">
+          Limpia bolillas sorteadas sin sesión activa.
+        </div>
+      </div>
+
+      <div style="font-size:.7rem;color:var(--muted);margin-top:8px;line-height:1.5">
+        <strong>Finalizar</strong>: cierra el juego y registra ganadores.<br>
+        <strong>Cancelar forzado</strong>: anula la sesión completamente. Úsalo solo en emergencias.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="gameover">
+  <h1>🎉 ¡BINGO!</h1>
+  <p id="gameover-info">Se sortearon las 90 bolillas.</p>
+  <button class="btn btn-draw" style="max-width:240px;margin:0 auto 8px;"
+          onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
+  <button class="btn btn-sm" style="max-width:200px;margin:0 auto;" onclick="hideGameOver()">Cerrar</button>
+</div>
+
+<!-- IS_ADMIN siempre true aquí: Flask protege esta ruta con session check -->
+<script>const IS_ADMIN = true;</script>
+<script src="/static/js/game.js"></script>
+<script>
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.href = '/admin/login';
+}
+
+async function setWinnersLimit(val) {
+  await fetch('/api/admin/winners_limit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ limit: parseInt(val) }),
+  });
+}
+
+// ── Finalizar sesión (normal — registra ganadores) ────
+async function finalizarSesion() {
+  const sid = window._activeSesionId;
+  if (!sid) { alert('No hay sesión activa.'); return; }
+  if (!confirm('¿Finalizar la sesión?\nSe registrarán los ganadores y el juego quedará cerrado.')) return;
+  try {
+    const res = await fetch(`/api/admin/session/${sid}/finish`, { method: 'POST' });
+    if (res.ok) {
+      showToast('✅ Sesión finalizada');
+      setTimeout(() => { location.href = '/admin/sessions'; }, 1500);
+    } else {
+      const d = await res.json();
+      alert('❌ Error: ' + (d.message || d.error || 'No se pudo finalizar'));
+    }
+  } catch(e) { alert('❌ Error de conexión'); }
+}
+
+// ── Cancelar sesión forzado ───────────────────────────
+async function cancelarSesionForzado() {
+  const sid = window._activeSesionId;
+  if (!sid) { alert('No hay sesión activa.'); return; }
+  const motivo = prompt(
+    '⚠️ CANCELAR SESIÓN FORZADO\n\n' +
+    'Esta acción anulará la sesión completamente.\n' +
+    'Úsala solo en caso de emergencia.\n\n' +
+    'Escribe el motivo de la cancelación:',
+    ''
+  );
+  if (motivo === null) return; // canceló el prompt
+  if (!motivo.trim()) { alert('Debes ingresar un motivo.'); return; }
+  if (!confirm(`¿Confirmas cancelar FORZADO la sesión ${sid}?\nMotivo: "${motivo}"\n\nEsta acción no se puede deshacer.`)) return;
+  try {
+    const res = await fetch(`/api/admin/session/${sid}/cancel`, { method: 'POST' });
+    if (res.ok) {
+      showToast('🛑 Sesión cancelada forzadamente');
+      setTimeout(() => { location.href = '/admin/sessions'; }, 1500);
+    } else {
+      const d = await res.json();
+      alert('❌ Error: ' + (d.message || d.error || 'No se pudo cancelar'));
+    }
+  } catch(e) { alert('❌ Error de conexión'); }
+}
+
+// ── Limpiar estado residual ───────────────────────────
+async function limpiarEstado() {
+  if (!confirm('¿Limpiar el estado del juego?\nSe borrarán las bolillas sorteadas y se reiniciará el tablero.')) return;
+  try {
+    const res = await fetch('/api/admin/reset_state', { method: 'POST' });
+    const d   = await res.json();
+    if (res.ok) {
+      showToast('🧹 Estado limpiado correctamente');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      alert('❌ Error: ' + (d.message || d.error || 'No se pudo limpiar'));
+    }
+  } catch(e) { alert('❌ Error de conexión'); }
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Poll state: resume button + sesión activa ─────────
+window._activeSesionId = null;
+
+setInterval(async function() {
+  try {
+    const res  = await fetch('/api/state');
+    const data = await res.json();
+
+    // Mostrar/ocultar botón reanudar
+    const btn = document.getElementById('btn-resume');
+    if (btn) btn.style.display = data.paused ? 'block' : 'none';
+
+    // Sincronizar winners_limit select
+    const sel = document.getElementById('winners-limit-select');
+    if (sel && data.winners_limit) sel.value = String(data.winners_limit);
+
+    // Actualizar info de sesión activa
+    const sid       = data.session_id;
+    const infoEl    = document.getElementById('sesion-info');
+    const panelSes  = document.getElementById('panel-sesion');
+
+    if (sid && infoEl) {
+      window._activeSesionId = sid;
+      const bt     = data.bingo_nombre || '—';
+      const drawn  = (data.drawn || []).length;
+      const pool   = Number(data.prize_pool || 0).toFixed(2);
+      const linea  = Number(data.linea_pool  || 0).toFixed(2);
+      infoEl.innerHTML =
+        `Sesión: <strong style="color:var(--accent)">#${sid}</strong><br>` +
+        `Tipo: <strong>${bt}</strong><br>` +
+        `Bolillas sorteadas: <strong>${drawn}/90</strong><br>` +
+        `Premio BINGO: <strong style="color:var(--accent)">S/. ${pool}</strong><br>` +
+        `Premio LÍNEA: <strong style="color:var(--warning)">S/. ${linea}</strong>`;
+      if (panelSes) panelSes.style.display = 'block';
+      // Hay sesión activa — ocultar botón limpiar
+      const btnLimpiar = document.getElementById('btn-limpiar-wrap');
+      if (btnLimpiar) btnLimpiar.style.display = 'none';
+    } else {
+      window._activeSesionId = null;
+      const drawn = (data.drawn || []).length;
+      if (infoEl) {
+        if (drawn > 0) {
+          // Hay bolillas sin sesión — mostrar aviso y botón limpiar
+          infoEl.innerHTML = `<span style="color:var(--warning)">⚠️ Hay <strong>${drawn} bolillas</strong> de una sesión anterior sin limpiar.</span>`;
+          const btnLimpiar = document.getElementById('btn-limpiar-wrap');
+          if (btnLimpiar) btnLimpiar.style.display = 'block';
+        } else {
+          infoEl.textContent = 'Sin sesión activa en este momento.';
+          const btnLimpiar = document.getElementById('btn-limpiar-wrap');
+          if (btnLimpiar) btnLimpiar.style.display = 'none';
+        }
+      }
+    }
+  } catch(e) {}
+}, 3000);
+
+// Mostrar la URL para jugadores
+document.getElementById('server-url').textContent =
+  window.location.origin + '/';
+</script>
+
+</body>
+</html>

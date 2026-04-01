@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💼 Caja — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:1300px;margin:0 auto;padding:20px}
+
+/* KPIs principales */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:20px;text-align:center;position:relative;overflow:hidden;
+}
+.kpi::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 70% 0%,var(--kpi-color,rgba(0,229,180,.06)),transparent 70%);
+  pointer-events:none;
+}
+.kpi .v{
+  font-family:'Bebas Neue',sans-serif;font-size:2.6rem;
+  color:var(--kpi-color,var(--accent));line-height:1;margin-bottom:4px;
+}
+.kpi .l{font-size:.62rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.kpi .sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+
+/* Tarjeta */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+      padding:20px;margin-bottom:16px}
+.card-title{
+  font-size:.62rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;
+  border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:16px;
+}
+
+/* Tabla */
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{
+  padding:10px 12px;text-align:left;background:var(--card);color:var(--muted);
+  font-size:.62rem;letter-spacing:2px;text-transform:uppercase;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid rgba(26,49,72,.4);transition:background .15s}
+tbody tr:hover{background:rgba(17,31,46,.8)}
+td{padding:10px 12px;vertical-align:middle}
+
+/* Barra de margen */
+.bar-wrap{width:100%;height:6px;background:var(--sub);border-radius:3px;
+          margin-top:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;
+          background:linear-gradient(90deg,var(--accent),#2f80ed);
+          transition:width .6s ease}
+
+/* Pills de estado */
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700}
+.pill-green{background:rgba(39,174,96,.2);color:#27ae60}
+.pill-blue{background:rgba(0,229,180,.15);color:var(--accent)}
+.pill-yellow{background:rgba(246,195,67,.15);color:var(--warning)}
+.pill-red{background:rgba(231,76,60,.15);color:var(--danger)}
+.pill-gray{background:rgba(100,130,160,.12);color:var(--muted)}
+
+/* Resumen por tipo */
+.by-type-row{
+  display:flex;align-items:center;gap:20px;padding:12px 14px;
+  background:var(--card);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;
+}
+
+/* Ganadores inline */
+.winner-inline{font-size:.78rem;color:var(--muted);line-height:1.7}
+
+/* Botones */
+.btn{padding:9px 18px;border-radius:9px;border:none;font-weight:900;cursor:pointer;
+     font-family:'Outfit',sans-serif;font-size:.85rem;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn-accent{background:var(--accent);color:#041015}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:12px 22px;z-index:1000;
+  transition:transform .3s;white-space:nowrap;pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Empty state */
+.empty{text-align:center;color:var(--muted);padding:30px;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💼 Caja</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
+    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Encabezado -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;
+              margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;
+                 color:var(--accent);letter-spacing:2px;margin:0">
+        Reporte de Caja
+      </h2>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:2px">
+        Ingresos, premios pagados y ganancia neta por sesión
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-accent" onclick="load()">🔄 Actualizar</button>
+      <button class="btn btn-ghost" onclick="exportCSV()">📥 Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi" style="--kpi-color:var(--accent)">
+      <div class="v" id="k-total">S/.0</div>
+      <div class="l">Total Recaudado</div>
+      <div class="sub" id="k-total-sub">0 sesiones</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--warning)">
+      <div class="v" id="k-premios">S/.0</div>
+      <div class="l">Premios Pagados</div>
+      <div class="sub" id="k-premios-sub">bingo + línea</div>
+    </div>
+    <div class="kpi" style="--kpi-color:#27ae60">
+      <div class="v" id="k-ganancia">S/.0</div>
+      <div class="l">Ganancia Neta</div>
+      <div class="sub" id="k-margen-sub">0% margen</div>
+    </div>
+    <div class="kpi" style="--kpi-color:#5dade2">
+      <div class="v" id="k-jugadores">0</div>
+      <div class="l">Jugadores pagados</div>
+      <div class="sub" id="k-jugadores-sub">total histórico</div>
+    </div>
+  </div>
+
+  <!-- Resumen por tipo de bingo -->
+  <div class="card" id="card-by-type" style="display:none">
+    <div class="card-title">Resumen por Tipo de Bingo</div>
+    <div id="by-type-content"></div>
+  </div>
+
+  <!-- Tabla detallada por sesión -->
+  <div class="card">
+    <div class="card-title">Detalle por Sesión</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Sesión</th>
+            <th>Fecha · Hora</th>
+            <th>Tipo</th>
+            <th>Jugadores</th>
+            <th>Recaudado</th>
+            <th>Premios</th>
+            <th>Ganancia</th>
+            <th>Margen</th>
+            <th>Estado</th>
+            <th>Ganadores</th>
+          </tr>
+        </thead>
+        <tbody id="tb-sessions">
+          <tr><td colspan="10" class="empty">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const BT = {
+  "1sol":    { emoji:"🟡", color:"#f4d03f", nombre:"Bingo 1 Sol" },
+  "5soles":  { emoji:"🔵", color:"#5dade2", nombre:"Bingo 5 Soles" },
+  "10soles": { emoji:"💎", color:"#00e5b4", nombre:"Bingo 10 Soles" },
+};
+
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3000);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt(n) {
+  return 'S/.' + Number(n || 0).toFixed(2);
+}
+
+// ── Datos cacheados para exportar ─────────────────────
+let _lastData = null;
+
+// ── Cargar datos ──────────────────────────────────────
+async function load() {
+  try {
+    const res = await fetch('/api/admin/caja');
+    if (!res.ok) { showToast('❌ Error al cargar caja'); return; }
+    const data = await res.json();
+    _lastData  = data;
+    renderKPIs(data.resumen, data.sesiones);
+    renderByType(data.sesiones);
+    renderTable(data.sesiones);
+  } catch(e) {
+    showToast('❌ Error de conexión');
+  }
+}
+
+// ── KPIs ──────────────────────────────────────────────
+function renderKPIs(r, ss) {
+  if (!r) return;
+  const margen = r.total_recaudado > 0
+    ? Math.round((r.ganancia_bruta / r.total_recaudado) * 100)
+    : 0;
+  const totalJugadores = ss.reduce((a, s) => a + (s.jugadores || 0), 0);
+
+  document.getElementById('k-total').textContent    = fmt(r.total_recaudado);
+  document.getElementById('k-premios').textContent  = fmt(r.total_premios);
+  document.getElementById('k-ganancia').textContent = fmt(r.ganancia_bruta);
+  document.getElementById('k-jugadores').textContent = totalJugadores;
+
+  document.getElementById('k-total-sub').textContent    = `${r.total_sesiones} sesión(es)`;
+  document.getElementById('k-margen-sub').textContent   = `${margen}% margen promedio`;
+  document.getElementById('k-jugadores-sub').textContent = `${r.total_vouchers} vouchers emitidos`;
+}
+
+// ── Resumen por tipo ──────────────────────────────────
+function renderByType(ss) {
+  if (!ss || !ss.length) return;
+  const byType = {};
+  ss.forEach(s => {
+    const k = s.bingo_type || '1sol';
+    if (!byType[k]) byType[k] = { count:0, jugadores:0, recaudado:0, premios:0, ganancia:0 };
+    byType[k].count++;
+    byType[k].jugadores  += s.jugadores  || 0;
+    byType[k].recaudado  += s.recaudado  || 0;
+    byType[k].premios    += s.premios_paid || 0;
+    byType[k].ganancia   += s.ganancia   || 0;
+  });
+
+  const el = document.getElementById('by-type-content');
+  el.innerHTML = Object.entries(byType).map(([k, v]) => {
+    const bt     = BT[k] || BT['1sol'];
+    const margen = v.recaudado > 0 ? Math.round((v.ganancia / v.recaudado) * 100) : 0;
+    return `<div class="by-type-row">
+      <span style="color:${bt.color};font-weight:700;font-size:.95rem;min-width:130px">
+        ${bt.emoji} ${bt.nombre}
+      </span>
+      <span style="color:var(--muted);font-size:.8rem">${v.count} sesión(es) · ${v.jugadores} jugadores</span>
+      <span style="color:var(--accent)"><strong>${fmt(v.recaudado)}</strong> recaudado</span>
+      <span style="color:var(--warning)">${fmt(v.premios)} en premios</span>
+      <span style="color:#27ae60;font-weight:700">${fmt(v.ganancia)} ganancia</span>
+      <span style="color:var(--muted);font-size:.78rem">${margen}% margen</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('card-by-type').style.display = 'block';
+}
+
+// ── Tabla por sesión ──────────────────────────────────
+function renderTable(ss) {
+  const tb = document.getElementById('tb-sessions');
+  if (!ss || !ss.length) {
+    tb.innerHTML = '<tr><td colspan="10" class="empty">Sin sesiones registradas</td></tr>';
+    return;
+  }
+
+  const statusPill = {
+    finished:  '<span class="pill pill-green">✅ Finalizada</span>',
+    active:    '<span class="pill pill-blue">▶ Activa</span>',
+    scheduled: '<span class="pill pill-yellow">⏳ Programada</span>',
+    cancelled: '<span class="pill pill-red">❌ Cancelada</span>',
+  };
+
+  tb.innerHTML = ss.map(s => {
+    const bt       = BT[s.bingo_type] || BT['1sol'];
+    const margen   = s.recaudado > 0 ? Math.round((s.ganancia / s.recaudado) * 100) : 0;
+    const ganColor = s.ganancia >= 0 ? '#27ae60' : 'var(--danger)';
+    const ganadores = (s.ganadores || []).map(w =>
+      `🏆 ${esc(w.nombre || w.id)} · ${fmt(w.prize)} · ${w.drawn_count} bolillas`
+    ).join('<br>') || '<span style="color:var(--muted)">—</span>';
+
+    return `<tr>
+      <td>
+        <span style="font-family:'Courier New',monospace;color:var(--accent);
+                     font-weight:700;font-size:.82rem">${s.id}</span>
+      </td>
+      <td style="font-size:.83rem;white-space:nowrap">${s.fecha} · ${s.hora}</td>
+      <td>
+        <span style="color:${bt.color};font-weight:700;font-size:.83rem">
+          ${bt.emoji} ${esc(s.bingo_nombre)}
+        </span>
+      </td>
+      <td style="text-align:center;font-weight:700;color:var(--text)">${s.jugadores}</td>
+      <td style="color:var(--accent);font-weight:700">${fmt(s.recaudado)}</td>
+      <td style="color:var(--warning);font-weight:700">${fmt(s.premios_paid)}</td>
+      <td style="font-weight:700;color:${ganColor}">${fmt(s.ganancia)}</td>
+      <td style="min-width:100px">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:3px">${margen}%</div>
+        <div class="bar-wrap">
+          <div class="bar-fill" style="width:${Math.max(0,Math.min(100,margen))}%"></div>
+        </div>
+      </td>
+      <td>${statusPill[s.status] || s.status}</td>
+      <td>
+        <div class="winner-inline">${ganadores}</div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Exportar a CSV ────────────────────────────────────
+function exportCSV() {
+  if (!_lastData || !_lastData.sesiones.length) {
+    showToast('⚠️ No hay datos para exportar');
+    return;
+  }
+  const rows = [
+    ['ID','Fecha','Hora','Tipo','Jugadores','Recaudado','Premios','Ganancia','Margen%','Estado'],
+    ..._lastData.sesiones.map(s => {
+      const margen = s.recaudado > 0 ? Math.round((s.ganancia/s.recaudado)*100) : 0;
+      return [s.id, s.fecha, s.hora, s.bingo_nombre, s.jugadores,
+              s.recaudado.toFixed(2), s.premios_paid.toFixed(2),
+              s.ganancia.toFixed(2), margen + '%', s.status];
+    }),
+    [],
+    ['RESUMEN'],
+    ['Total recaudado', _lastData.resumen.total_recaudado.toFixed(2)],
+    ['Total premios',   _lastData.resumen.total_premios.toFixed(2)],
+    ['Ganancia bruta',  _lastData.resumen.ganancia_bruta.toFixed(2)],
+  ];
+  const csv     = rows.map(r => r.join(',')).join('\n');
+  const blob    = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  a.download    = `caja_bingo_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSV exportado');
+}
+
+async function logout() {
+  await fetch('/api/admin/logout', { method:'POST' });
+  location.href = '/admin/login';
+}
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

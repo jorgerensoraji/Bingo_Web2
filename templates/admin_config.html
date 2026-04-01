@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚙️ Configuración — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap        { max-width:1100px; margin:0 auto; padding:20px }
+.grid2       { display:grid; grid-template-columns:1fr 1fr; gap:16px }
+@media(max-width:860px){ .grid2{ grid-template-columns:1fr } }
+.card        { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:16px }
+.card-title  { font-size:.65rem; letter-spacing:3px; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:18px }
+.label       { display:block; margin:12px 0 5px; color:var(--muted); font-size:.78rem; letter-spacing:.5px; text-transform:uppercase }
+.input       { width:100%; padding:11px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; font-family:'Outfit',sans-serif; font-size:.9rem; transition:border-color .2s; box-sizing:border-box }
+.input:focus { border-color:var(--accent) }
+textarea.input { resize:vertical; min-height:80px; line-height:1.5 }
+.btn         { padding:11px 20px; border-radius:10px; border:none; font-weight:900; cursor:pointer; font-family:'Outfit',sans-serif; font-size:.9rem; transition:filter .15s }
+.btn:hover   { filter:brightness(1.1) }
+.btn-primary { background:var(--accent); color:#041015 }
+.btn-ghost   { background:var(--card); color:var(--text); border:1px solid var(--border) }
+.btn-danger  { background:var(--danger); color:white }
+.btn-success { background:#27ae60; color:white }
+.btn-sm      { padding:6px 12px; font-size:.78rem; border-radius:7px }
+.row         { display:flex; gap:10px; flex-wrap:wrap }
+.row > div   { flex:1; min-width:180px }
+
+/* Preview WhatsApp button */
+.wa-preview  { display:inline-flex; align-items:center; gap:10px; padding:13px 20px; border-radius:12px; background:#25D366; color:white; font-weight:700; font-size:.95rem; text-decoration:none; margin-top:10px; transition:filter .2s }
+.wa-preview:hover { filter:brightness(1.1) }
+
+/* Payment method cards */
+.pay-methods { display:flex; flex-direction:column; gap:10px; margin-top:8px }
+.pay-method-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; transition:border-color .2s }
+.pay-method-card.active-card { border-color:var(--accent) }
+.pm-header { display:flex; align-items:center; gap:10px; margin-bottom:10px }
+.pm-emoji   { font-size:1.5rem }
+.pm-toggle  { margin-left:auto; display:flex; align-items:center; gap:6px; cursor:pointer }
+.toggle-sw  { width:42px; height:22px; border-radius:11px; background:var(--sub); border:1px solid var(--border); position:relative; cursor:pointer; transition:background .2s }
+.toggle-sw.on { background:var(--accent) }
+.toggle-sw::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:white; transition:left .2s }
+.toggle-sw.on::after { left:22px }
+.pm-fields  { display:none; gap:8px; flex-wrap:wrap }
+.pm-fields.show { display:flex }
+.pm-fields > div { flex:1; min-width:160px }
+
+.preview-box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:10px }
+.preview-box h4 { margin:0 0 10px; font-size:.85rem; color:var(--muted) }
+
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px); background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px 24px; font-size:.9rem; z-index:1000; transition:transform .3s; pointer-events:none; white-space:nowrap }
+.toast.show { transform:translateX(-50%) translateY(0) }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚙️ Configuración</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div style="margin-bottom:18px">
+    <h1 style="font-family:'Bebas Neue',sans-serif;color:var(--accent);letter-spacing:3px;font-size:2.2rem;margin:0 0 4px">⚙️ Contacto & Pagos</h1>
+    <p style="color:var(--muted);font-size:.88rem">Esta información se muestra a los jugadores en la página de cartillas para que puedan contactarte y pagar.</p>
+  </div>
+
+  <div class="grid2">
+
+    <!-- LEFT: Contacto -->
+    <div>
+      <div class="card">
+        <div class="card-title">📞 Información de contacto</div>
+
+        <label class="label">Nombre del organizador / grupo</label>
+        <input id="cfg-nombre" class="input" placeholder="Ej: Bingo Familiar Ramirez">
+
+        <label class="label">📱 Número de WhatsApp</label>
+        <div style="display:flex;gap:8px">
+          <input id="cfg-wa" class="input" placeholder="Ej: 51987654321 (con código de país)" style="flex:1">
+        </div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:4px">Incluye el código de país sin el + (Perú = 51, Colombia = 57…)</div>
+
+        <div id="wa-preview-wrap" style="margin-top:10px;display:none">
+          <a id="wa-preview-btn" href="#" target="_blank" class="wa-preview">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.122 1.524 5.857L0 24l6.347-1.49A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.899 0-3.68-.505-5.215-1.385l-.374-.222-3.878.911.974-3.769-.245-.391A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Probar enlace de WhatsApp
+          </a>
+        </div>
+
+        <label class="label">💬 Mensaje de contacto predeterminado</label>
+        <textarea id="cfg-msg" class="input" rows="3" placeholder="Mensaje que el jugador enviará al hacer clic en WhatsApp"></textarea>
+
+        <label class="label">📘 Facebook (opcional)</label>
+        <input id="cfg-fb" class="input" placeholder="Ej: https://facebook.com/tupagina o @tupagina">
+
+        <label class="label">📸 Instagram (opcional)</label>
+        <input id="cfg-ig" class="input" placeholder="Ej: @tuinstagram">
+
+        <label class="label">📞 Teléfono adicional (opcional)</label>
+        <input id="cfg-tel" class="input" placeholder="Ej: +51 987 654 321">
+      </div>
+
+      <!-- Preview como lo ven los jugadores -->
+      <div class="card">
+        <div class="card-title">👁 Vista previa — Como lo ven los jugadores</div>
+        <div id="contact-preview" class="preview-box">
+          <p style="color:var(--muted);font-size:.85rem">Completa los datos arriba para ver la vista previa.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Métodos de pago -->
+    <div>
+      <div class="card">
+        <div class="card-title">💳 Métodos de pago aceptados</div>
+        <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px">Activa los métodos que aceptas y agrega los datos necesarios. Solo los métodos activos se mostrarán a los jugadores.</p>
+
+        <div class="pay-methods" id="pay-methods-list">
+          <!-- generado por JS -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Instrucciones de pago</div>
+        <p style="color:var(--muted);font-size:.82rem;margin-bottom:8px">Texto que aparece en la sección "¿Cómo pagar?" de los jugadores.</p>
+        <textarea id="cfg-instrucciones" class="input" rows="6" placeholder="Escribe los pasos para pagar..."></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="loadConfig()">↩ Deshacer cambios</button>
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar configuración</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// Default payment method templates
+const DEFAULT_METHODS = [
+  { id:'yape',          nombre:'Yape',              emoji:'💜', color:'#6C1FC6', activo:false, numero:'', titular:'', instrucciones:'Envía el pago a este número de Yape y manda la captura por WhatsApp.' },
+  { id:'plin',          nombre:'Plin',              emoji:'💙', color:'#2196F3', activo:false, numero:'', titular:'', instrucciones:'' },
+  { id:'transferencia', nombre:'Transferencia BCP', emoji:'🏦', color:'#f4d03f', activo:false, numero:'', titular:'', instrucciones:'' },
+  { id:'interbank',     nombre:'Interbank',         emoji:'🟢', color:'#27ae60', activo:false, numero:'', titular:'', instrucciones:'' },
+  { id:'efectivo',      nombre:'Efectivo',          emoji:'💵', color:'#95a5a6', activo:false, numero:'', titular:'', instrucciones:'Paga presencialmente antes del inicio del juego.' },
+];
+
+let currentMethods = JSON.parse(JSON.stringify(DEFAULT_METHODS));
+
+// ── Toast ──────────────────────────────────────────
+let tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(tj); tj = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Load config ────────────────────────────────────
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/admin/config');
+    const cfg = await res.json();
+
+    document.getElementById('cfg-nombre').value       = cfg.nombre_organizador || '';
+    document.getElementById('cfg-wa').value           = cfg.whatsapp || '';
+    document.getElementById('cfg-msg').value          = cfg.mensaje_contacto  || '';
+    document.getElementById('cfg-fb').value           = cfg.facebook  || '';
+    document.getElementById('cfg-ig').value           = cfg.instagram || '';
+    document.getElementById('cfg-tel').value          = cfg.telefono_extra || '';
+    document.getElementById('cfg-instrucciones').value = cfg.instrucciones_pago || '';
+
+    // Merge stored methods with defaults so all methods always show
+    const stored = cfg.metodos_pago || [];
+    currentMethods = DEFAULT_METHODS.map(def => {
+      const found = stored.find(s => s.id === def.id);
+      return found ? { ...def, ...found } : { ...def };
+    });
+
+    buildPayMethods();
+    updateWaPreview();
+    updateContactPreview();
+  } catch(e) {
+    showToast('❌ Error al cargar configuración');
+  }
+}
+
+// ── Build payment methods UI ───────────────────────
+function buildPayMethods() {
+  const el = document.getElementById('pay-methods-list');
+  el.innerHTML = currentMethods.map((m, idx) => `
+    <div class="pay-method-card ${m.activo ? 'active-card' : ''}" id="pmc-${m.id}">
+      <div class="pm-header">
+        <span class="pm-emoji">${m.emoji}</span>
+        <span style="font-weight:700">${m.nombre}</span>
+        <div class="pm-toggle" onclick="toggleMethod('${m.id}')">
+          <span style="font-size:.78rem;color:var(--muted)">${m.activo ? 'Activo' : 'Inactivo'}</span>
+          <div class="toggle-sw ${m.activo ? 'on' : ''}" id="tsw-${m.id}"></div>
+        </div>
+      </div>
+      <div class="pm-fields ${m.activo ? 'show' : ''}" id="pmf-${m.id}">
+        <div>
+          <label class="label" style="margin-top:0">Número / cuenta</label>
+          <input class="input" id="pm-num-${m.id}" value="${escHtml(m.numero)}" placeholder="Ej: 987654321" oninput="updateMethod('${m.id}','numero',this.value)">
+        </div>
+        <div>
+          <label class="label" style="margin-top:0">Titular</label>
+          <input class="input" id="pm-tit-${m.id}" value="${escHtml(m.titular)}" placeholder="Nombre del titular" oninput="updateMethod('${m.id}','titular',this.value)">
+        </div>
+        <div style="flex:100%">
+          <label class="label" style="margin-top:0">Instrucciones (opcional)</label>
+          <input class="input" id="pm-ins-${m.id}" value="${escHtml(m.instrucciones)}" placeholder="Pasos o notas adicionales" oninput="updateMethod('${m.id}','instrucciones',this.value)">
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleMethod(id) {
+  const m = currentMethods.find(x => x.id === id);
+  if (!m) return;
+  m.activo = !m.activo;
+  document.getElementById(`pmc-${id}`).className = `pay-method-card ${m.activo ? 'active-card' : ''}`;
+  document.getElementById(`tsw-${id}`).className = `toggle-sw ${m.activo ? 'on' : ''}`;
+  document.getElementById(`tsw-${id}`).previousElementSibling.textContent = m.activo ? 'Activo' : 'Inactivo';
+  const fields = document.getElementById(`pmf-${id}`);
+  if (m.activo) fields.classList.add('show'); else fields.classList.remove('show');
+  updateContactPreview();
+}
+
+function updateMethod(id, field, value) {
+  const m = currentMethods.find(x => x.id === id);
+  if (m) { m[field] = value; updateContactPreview(); }
+}
+
+// ── WhatsApp preview ───────────────────────────────
+function updateWaPreview() {
+  const wa  = document.getElementById('cfg-wa').value.trim();
+  const msg = document.getElementById('cfg-msg').value.trim();
+  const btn = document.getElementById('wa-preview-btn');
+  const wrap= document.getElementById('wa-preview-wrap');
+  if (wa) {
+    const encoded = encodeURIComponent(msg || '¡Hola! Quiero participar en el bingo.');
+    btn.href = `https://wa.me/${wa}?text=${encoded}`;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+  updateContactPreview();
+}
+
+document.getElementById('cfg-wa').addEventListener('input',  updateWaPreview);
+document.getElementById('cfg-msg').addEventListener('input', updateWaPreview);
+document.getElementById('cfg-nombre').addEventListener('input', updateContactPreview);
+document.getElementById('cfg-fb').addEventListener('input', updateContactPreview);
+document.getElementById('cfg-ig').addEventListener('input', updateContactPreview);
+document.getElementById('cfg-tel').addEventListener('input', updateContactPreview);
+
+// ── Contact preview ────────────────────────────────
+function updateContactPreview() {
+  const nombre = document.getElementById('cfg-nombre').value.trim();
+  const wa     = document.getElementById('cfg-wa').value.trim();
+  const msg    = document.getElementById('cfg-msg').value.trim();
+  const fb     = document.getElementById('cfg-fb').value.trim();
+  const ig     = document.getElementById('cfg-ig').value.trim();
+  const tel    = document.getElementById('cfg-tel').value.trim();
+  const active = currentMethods.filter(m => m.activo);
+
+  let html = '';
+
+  if (nombre) html += `<div style="font-weight:800;font-size:1.05rem;margin-bottom:10px;color:var(--accent)">🎱 ${escHtml(nombre)}</div>`;
+
+  if (wa) {
+    const encoded = encodeURIComponent(msg || '¡Hola! Quiero participar en el bingo.');
+    html += `<a href="https://wa.me/${wa}?text=${encoded}" target="_blank"
+               style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;
+                      background:#25D366;color:white;font-weight:700;text-decoration:none;font-size:.88rem;margin-bottom:8px">
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.122 1.524 5.857L0 24l6.347-1.49A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.899 0-3.68-.505-5.215-1.385l-.374-.222-3.878.911.974-3.769-.245-.391A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+               Contactar por WhatsApp</a><br>`;
+  }
+
+  const links = [];
+  if (tel) links.push(`<span style="color:var(--muted);font-size:.84rem">📞 ${escHtml(tel)}</span>`);
+  if (fb)  links.push(`<a href="${escHtml(fb)}" target="_blank" style="color:#2196F3;font-size:.84rem">📘 Facebook</a>`);
+  if (ig)  links.push(`<a href="https://instagram.com/${ig.replace('@','')}" target="_blank" style="color:#E1306C;font-size:.84rem">📸 ${escHtml(ig)}</a>`);
+  if (links.length) html += `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;margin-bottom:10px">${links.join('')}</div>`;
+
+  if (active.length) {
+    html += `<div style="font-size:.75rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px">Métodos de pago</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:6px">` +
+      active.map(m => `
+        <div style="background:var(--sub);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.85rem">
+          <div style="font-weight:700">${m.emoji} ${escHtml(m.nombre)}</div>
+          ${m.numero   ? `<div style="color:var(--accent);font-family:'Courier New',monospace;margin-top:2px">${escHtml(m.numero)}</div>` : ''}
+          ${m.titular  ? `<div style="color:var(--muted);font-size:.78rem">${escHtml(m.titular)}</div>` : ''}
+          ${m.instrucciones ? `<div style="color:var(--muted);font-size:.76rem;margin-top:3px">${escHtml(m.instrucciones)}</div>` : ''}
+        </div>`).join('') +
+      `</div>`;
+  }
+
+  if (!html) html = '<p style="color:var(--muted);font-size:.85rem">Completa los datos para ver la vista previa.</p>';
+  document.getElementById('contact-preview').innerHTML = html;
+}
+
+// ── Save config ────────────────────────────────────
+async function saveConfig() {
+  const payload = {
+    nombre_organizador: document.getElementById('cfg-nombre').value.trim(),
+    whatsapp:           document.getElementById('cfg-wa').value.trim(),
+    facebook:           document.getElementById('cfg-fb').value.trim(),
+    instagram:          document.getElementById('cfg-ig').value.trim(),
+    telefono_extra:     document.getElementById('cfg-tel').value.trim(),
+    mensaje_contacto:   document.getElementById('cfg-msg').value.trim(),
+    instrucciones_pago: document.getElementById('cfg-instrucciones').value.trim(),
+    metodos_pago:       currentMethods,
+  };
+
+  const res  = await fetch('/api/admin/config', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) { showToast('❌ Error al guardar'); return; }
+  showToast('✅ Configuración guardada');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.href = '/admin/login';
+}
+
+loadConfig();
+</script>
+</body>
+</html>

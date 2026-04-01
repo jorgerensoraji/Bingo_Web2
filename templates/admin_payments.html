@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💰 Pagos — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:1300px;margin:0 auto;padding:20px}
+
+/* KPIs */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:800px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+          padding:14px;text-align:center}
+.stat-box .v{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--accent);line-height:1}
+.stat-box .l{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+
+/* Alerta email */
+.email-status-bar{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-radius:10px;margin-bottom:16px;font-size:.85rem;
+}
+.email-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.25);color:#27ae60}
+.email-no{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25);color:var(--danger)}
+
+/* Tarjeta */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+      padding:20px;margin-bottom:14px}
+
+/* Toolbar */
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.inp{background:var(--card);color:var(--text);border:1px solid var(--border);
+     border-radius:8px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none}
+.inp:focus{border-color:var(--accent)}
+
+/* Botones */
+.btn{padding:8px 14px;border-radius:9px;border:none;font-weight:900;cursor:pointer;
+     font-family:'Outfit',sans-serif;font-size:.85rem;transition:filter .15s}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ok{background:#27ae60;color:white}
+.btn-no{background:var(--danger);color:white}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-blue{background:#2980b9;color:white}
+.btn-sm{padding:5px 10px;font-size:.75rem;border-radius:7px}
+
+/* Tabla */
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{padding:10px 12px;text-align:left;background:var(--card);color:var(--muted);
+         font-size:.62rem;letter-spacing:2px;text-transform:uppercase;
+         border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(26,49,72,.5);transition:background .15s}
+tbody tr:hover{background:rgba(17,31,46,.8)}
+tbody tr.row-review{border-left:3px solid var(--warning)}
+tbody tr.row-rejected{opacity:.6}
+td{padding:10px 12px;vertical-align:middle}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.b-ok{background:rgba(39,174,96,.2);color:#27ae60}
+.b-manual{background:rgba(0,229,180,.15);color:var(--accent)}
+.b-pend{background:rgba(246,195,67,.15);color:var(--warning)}
+.b-rej{background:rgba(231,76,60,.15);color:var(--danger)}
+.b-wait{background:rgba(100,130,160,.12);color:var(--muted)}
+
+/* Email enviado badge */
+.email-sent{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:.68rem;color:#27ae60;
+  background:rgba(39,174,96,.1);border-radius:4px;padding:2px 6px;
+}
+.email-not-sent{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:.68rem;color:var(--muted);
+  background:rgba(100,130,160,.1);border-radius:4px;padding:2px 6px;
+}
+
+/* Código mono */
+.code-mono{font-family:'Courier New',monospace;font-weight:900;
+           color:var(--accent);font-size:.88rem;letter-spacing:1px}
+
+/* Ref duplicada */
+.ref-dup{background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);
+         border-radius:6px;padding:2px 7px;color:var(--danger);
+         font-size:.72rem;font-weight:700}
+
+/* Auto-refresh dot */
+.auto-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);
+          animation:blink 2s ease-in-out infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* Modal de aprobación */
+.modal-back{
+  display:none;position:fixed;inset:0;background:rgba(7,13,20,.85);
+  z-index:200;align-items:center;justify-content:center;padding:20px;
+}
+.modal-back.show{display:flex}
+.modal-box{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:18px;padding:26px;max-width:460px;width:100%;
+}
+.modal-box h3{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;
+              color:var(--accent);letter-spacing:2px;margin:0 0 16px}
+.detail-row{display:flex;justify-content:space-between;
+            padding:6px 0;border-bottom:1px solid rgba(26,49,72,.4);font-size:.85rem}
+.detail-row:last-child{border:none;font-weight:700}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;
+       transform:translateX(-50%) translateY(100px);
+       background:var(--panel);border:1px solid var(--border);
+       border-radius:12px;padding:12px 24px;font-size:.9rem;
+       z-index:1000;transition:transform .3s;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💰 Pagos</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/cartillas">🎴 Cartillas</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Estado del email -->
+  <div id="email-status-bar" class="email-status-bar" style="display:none"></div>
+
+  <!-- KPIs -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="v" id="st-total">0</div><div class="l">Total</div>
+    </div>
+    <div class="stat-box">
+      <div class="v" id="st-paid" style="color:#27ae60">0</div><div class="l">Aprobados</div>
+    </div>
+    <div class="stat-box">
+      <div class="v" id="st-pend" style="color:var(--warning)">0</div><div class="l">En revisión ⚠️</div>
+    </div>
+    <div class="stat-box">
+      <div class="v" id="st-rej" style="color:var(--danger)">0</div><div class="l">Rechazados</div>
+    </div>
+    <div class="stat-box">
+      <div class="v" id="st-rev" style="color:var(--accent)">S/.0</div><div class="l">Ingresos</div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <h2 style="margin:0;font-size:1.1rem">📋 Vouchers y Pagos</h2>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.72rem;color:var(--muted)">
+          <span class="auto-dot"></span> Auto cada 6s
+        </span>
+        <button class="btn btn-ghost btn-sm" onclick="testEmail()">
+          📧 Probar email
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input class="inp" type="text" id="search"
+             placeholder="🔍 Nombre, código, email, referencia…"
+             oninput="filterTable()" style="flex:1;min-width:180px">
+      <select class="inp" id="f-status" onchange="filterTable()">
+        <option value="all">Todos los estados</option>
+        <option value="pending_review">⏳ En revisión</option>
+        <option value="manual_approved">✅ Aprobado</option>
+        <option value="rejected">❌ Rechazado</option>
+        <option value="pending">🔘 Sin comprobante</option>
+      </select>
+      <select class="inp" id="f-btype" onchange="filterTable()">
+        <option value="all">Todos los tipos</option>
+        <option value="1sol">🟡 1 Sol</option>
+        <option value="5soles">🔵 5 Soles</option>
+        <option value="10soles">💎 10 Soles</option>
+      </select>
+      <button class="btn btn-ghost" onclick="refresh()">🔄</button>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Cliente</th>
+            <th>Email</th>
+            <th>Tipo</th>
+            <th>Precio</th>
+            <th>Método / Ref.</th>
+            <th>Estado</th>
+            <th>Email enviado</th>
+            <th>Cartillas</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tb">
+          <tr><td colspan="11" style="text-align:center;color:var(--muted);padding:30px">
+            Cargando…
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de confirmación de aprobación -->
+<div class="modal-back" id="modal-aprobar">
+  <div class="modal-box">
+    <h3>✅ Aprobar Pago</h3>
+    <div id="modal-detalle" style="margin-bottom:16px"></div>
+
+    <div style="background:rgba(0,229,180,.07);border:1px solid rgba(0,229,180,.2);
+                border-radius:10px;padding:12px;font-size:.83rem;margin-bottom:16px">
+      <strong style="color:var(--accent)">📧 Se enviará email automáticamente</strong>
+      <br>El jugador recibirá su código en el email registrado.
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label style="color:var(--muted);font-size:.78rem;display:block;margin-bottom:5px">
+        Nota opcional (ej: "Verificado Yape ✓")
+      </label>
+      <input type="text" id="modal-nota" class="inp"
+             style="width:100%;background:var(--card)"
+             placeholder="Nota para el registro…">
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ok" style="flex:1" onclick="confirmarAprobacion()">
+        ✅ Confirmar aprobación + enviar email
+      </button>
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const BT = {
+  "1sol":    {nombre:"Bingo 1 Sol",    color:"#f4d03f", emoji:"🟡"},
+  "5soles":  {nombre:"Bingo 5 Soles",  color:"#5dade2", emoji:"🔵"},
+  "10soles": {nombre:"Bingo 10 Soles", color:"#00e5b4", emoji:"💎"},
+};
+const METHOD_ICON = {
+  yape:'💜', plin:'💙', transferencia:'🏦',
+  interbank:'🏦', efectivo:'💵', manual:'✍️',
+};
+
+let allVouchers  = [];
+let dupRefs      = new Set();
+let pendingApprove = null;   // código que está en proceso de aprobación
+
+// ── Toast ──────────────────────────────────────────────
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Verificar estado del email al cargar ───────────────
+async function checkEmailStatus() {
+  try {
+    const res  = await fetch('/api/admin/config');
+    const data = await res.json();
+    const bar  = document.getElementById('email-status-bar');
+    if (data.email_configurado) {
+      bar.className   = 'email-status-bar email-ok';
+      bar.innerHTML   = `📧 Email configurado: <strong>${esc(data.email_from)}</strong>
+        &nbsp;·&nbsp; Los códigos se envían automáticamente al aprobar.`;
+      bar.style.display = 'flex';
+    } else {
+      bar.className   = 'email-status-bar email-no';
+      bar.innerHTML   = `⚠️ Email NO configurado — los códigos no se enviarán automáticamente.
+        Configura <strong>EMAIL_FROM</strong> y <strong>EMAIL_PASS</strong> en el archivo .env.`;
+      bar.style.display = 'flex';
+    }
+  } catch(e) {}
+}
+
+// ── Detectar referencias duplicadas ───────────────────
+function detectDuplicates(vouchers) {
+  const refMap = {};
+  dupRefs = new Set();
+  vouchers.forEach(v => {
+    const ref = (v.payment_ref||'').trim().toUpperCase();
+    const met = v.payment_method||'';
+    if (!ref || ref.length < 4) return;
+    const key = `${met}:${ref}`;
+    if (!refMap[key]) refMap[key] = [];
+    refMap[key].push(v.code);
+  });
+  Object.entries(refMap).forEach(([,codes]) => {
+    if (codes.length > 1) codes.forEach(c => dupRefs.add(c));
+  });
+}
+
+// ── Cargar datos ───────────────────────────────────────
+async function refresh() {
+  try {
+    const [vRes, stRes] = await Promise.all([
+      fetch('/api/admin/vouchers'),
+      fetch('/api/stats'),
+    ]);
+    allVouchers = (await vRes.json()).vouchers || [];
+    await stRes.json();
+
+    const paid    = allVouchers.filter(v => ['approved','manual_approved'].includes(v.payment_status)).length;
+    const pend    = allVouchers.filter(v => v.payment_status === 'pending_review').length;
+    const rej     = allVouchers.filter(v => v.payment_status === 'rejected').length;
+    const revenue = allVouchers
+      .filter(v => ['approved','manual_approved'].includes(v.payment_status))
+      .reduce((s,v) => s + (v.precio||0), 0);
+
+    document.getElementById('st-total').textContent = allVouchers.length;
+    document.getElementById('st-paid').textContent  = paid;
+    document.getElementById('st-pend').textContent  = pend;
+    document.getElementById('st-rej').textContent   = rej;
+    document.getElementById('st-rev').textContent   = `S/.${revenue.toFixed(2)}`;
+    document.title = pend > 0
+      ? `(${pend} pendiente${pend>1?'s':''}) 💰 Pagos — Bingo Pro`
+      : '💰 Pagos — Bingo Pro';
+
+    detectDuplicates(allVouchers);
+    filterTable();
+  } catch(e) { showToast('❌ Error al cargar datos'); }
+}
+
+// ── Filtrar y renderizar tabla ─────────────────────────
+function filterTable() {
+  const q   = document.getElementById('search').value.toLowerCase();
+  const fst = document.getElementById('f-status').value;
+  const fbt = document.getElementById('f-btype').value;
+
+  let list = allVouchers;
+  if (fst !== 'all') list = list.filter(v => v.payment_status === fst);
+  if (fbt !== 'all') list = list.filter(v => v.bingo_type === fbt);
+  if (q) list = list.filter(v =>
+    v.code?.toLowerCase().includes(q) ||
+    v.nombres?.toLowerCase().includes(q) ||
+    v.apellidos?.toLowerCase().includes(q) ||
+    v.email?.toLowerCase().includes(q) ||
+    v.payment_ref?.toLowerCase().includes(q)
+  );
+
+  // Pendientes primero
+  list = [...list].sort((a,b) => {
+    const o = {pending_review:0, pending:1, approved:2, manual_approved:2, rejected:3};
+    return (o[a.payment_status]??9) - (o[b.payment_status]??9);
+  });
+
+  const tb = document.getElementById('tb');
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="11"
+      style="text-align:center;color:var(--muted);padding:24px">
+      Sin resultados</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = list.map(v => {
+    const who    = [v.nombres, v.apellidos].filter(Boolean).join(' ');
+    const bt     = BT[v.bingo_type] || BT['1sol'];
+    const dt     = (v.payment_submitted_at||v.created||'').replace('T',' ').slice(0,16);
+    const pst    = v.payment_status||'pending';
+    const isDup  = dupRefs.has(v.code);
+    const mIcon  = METHOD_ICON[v.payment_method||''] || '💳';
+
+    const badgeMap = {
+      manual_approved: `<span class="badge b-manual">✅ Aprobado</span>`,
+      approved:        `<span class="badge b-ok">✅ Aprobado</span>`,
+      pending_review:  `<span class="badge b-pend">⏳ En revisión</span>`,
+      pending:         `<span class="badge b-wait">🔘 Sin comprobante</span>`,
+      rejected:        `<span class="badge b-rej">❌ Rechazado</span>`,
+    };
+    const badge = badgeMap[pst] || `<span class="badge">${pst}</span>`;
+
+    const ref    = v.payment_ref||'';
+    const refHtml = ref
+      ? (isDup
+        ? `<div class="ref-dup">⚠️ DUP</div><div style="font-size:.72rem;color:var(--danger)">${esc(ref.slice(0,25))}</div>`
+        : `<div style="font-size:.75rem;color:var(--muted)">${mIcon} ${esc(ref.slice(0,25))}</div>`)
+      : `<span style="color:var(--muted);font-size:.75rem">—</span>`;
+
+    // Email enviado
+    const emailSent = v.email_codigo_enviado
+      ? `<span class="email-sent">✅ Enviado</span>`
+      : ((['approved','manual_approved'].includes(pst))
+        ? `<span class="email-not-sent">⚠️ No enviado</span>`
+        : `<span class="email-not-sent">—</span>`);
+
+    // Cartillas
+    const cAct  = (v.cartillas||[]).length;
+    const cMax  = v.bingo_type==='1sol' ? 3 : 5;
+    const cHtml = `<span style="color:${cAct>0?'var(--accent)':'var(--muted)'}">
+      ${cAct}/${cMax}</span>`;
+
+    // Origen (jugador o admin)
+    const origen = v.creado_por === 'jugador'
+      ? '<span style="font-size:.65rem;color:var(--accent)">🙋 Jugador</span>'
+      : '<span style="font-size:.65rem;color:var(--muted)">✍️ Admin</span>';
+
+    // Botones de acción
+    const isApproved = ['approved','manual_approved'].includes(pst);
+    const btnAprobar = !isApproved
+      ? `<button class="btn btn-ok btn-sm" onclick="abrirModalAprobacion('${v.code}')">✅ Aprobar</button>`
+      : '';
+    const btnRechazar = (pst !== 'rejected')
+      ? `<button class="btn btn-no btn-sm" onclick="rechazarVoucher('${v.code}')">❌ Rechazar</button>`
+      : '';
+    const btnReenviar = (isApproved && v.email)
+      ? `<button class="btn btn-blue btn-sm" onclick="reenviarEmail('${v.code}')"
+                 title="Reenviar email con código">📧</button>`
+      : '';
+    const btnDel = `<button class="btn btn-ghost btn-sm" onclick="eliminarVoucher('${v.code}')">🗑</button>`;
+
+    const rowClass = pst==='pending_review' ? 'row-review'
+                   : pst==='rejected'        ? 'row-rejected'
+                   : '';
+
+    return `<tr class="${rowClass}">
+      <td>
+        <span class="code-mono">${v.code}</span>
+        <div>${origen}</div>
+        ${isDup?'<div style="font-size:.65rem;color:var(--danger)">⚠️ Ref. duplicada</div>':''}
+      </td>
+      <td style="font-size:.82rem">${esc(who)||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:.78rem;color:var(--muted);max-width:140px;word-break:break-all">
+        ${v.email ? `<a href="mailto:${esc(v.email)}" style="color:var(--accent)">${esc(v.email)}</a>` : '—'}
+        ${v.celular ? `<div style="font-size:.7rem;margin-top:2px">${esc(v.celular)}</div>` : ''}
+      </td>
+      <td><span style="color:${bt.color};font-weight:700;font-size:.82rem">
+        ${bt.emoji} ${bt.nombre}</span>
+      </td>
+      <td style="color:var(--accent);font-weight:700">S/. ${(v.precio||0).toFixed(2)}</td>
+      <td>
+        <div style="font-size:.8rem;color:var(--muted)">${mIcon} ${esc(v.payment_method||'—')}</div>
+        ${refHtml}
+      </td>
+      <td>${badge}</td>
+      <td>${emailSent}</td>
+      <td style="text-align:center">${cHtml}</td>
+      <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${dt||'—'}</td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${btnAprobar}${btnRechazar}${btnReenviar}${btnDel}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal de aprobación ────────────────────────────────
+function abrirModalAprobacion(code) {
+  const v = allVouchers.find(x => x.code === code);
+  if (!v) return;
+  pendingApprove = code;
+  const bt  = BT[v.bingo_type]||BT['1sol'];
+  const who = [v.nombres, v.apellidos].filter(Boolean).join(' ') || '—';
+
+  document.getElementById('modal-detalle').innerHTML = `
+    <div class="detail-row">
+      <span>Código</span>
+      <span class="code-mono">${v.code}</span>
+    </div>
+    <div class="detail-row">
+      <span>Jugador</span>
+      <span style="font-weight:600">${esc(who)}</span>
+    </div>
+    ${v.email?`
+    <div class="detail-row">
+      <span>Email</span>
+      <span style="color:var(--accent)">${esc(v.email)}</span>
+    </div>`:''}
+    <div class="detail-row">
+      <span>Tipo de bingo</span>
+      <span style="color:${bt.color};font-weight:700">
+        ${bt.emoji} ${bt.nombre}
+      </span>
+    </div>
+    <div class="detail-row">
+      <span>Monto</span>
+      <span style="font-weight:700;color:var(--accent)">
+        S/. ${(v.precio||0).toFixed(2)}
+      </span>
+    </div>
+    <div class="detail-row">
+      <span>N° operación</span>
+      <span style="color:var(--muted)">${esc(v.payment_ref||'—')}</span>
+    </div>`;
+
+  document.getElementById('modal-nota').value = '';
+  document.getElementById('modal-aprobar').classList.add('show');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-aprobar').classList.remove('show');
+  pendingApprove = null;
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modal-aprobar')
+  .addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+  });
+
+async function confirmarAprobacion() {
+  if (!pendingApprove) return;
+  const nota = document.getElementById('modal-nota').value.trim();
+  const btn  = document.querySelector('#modal-aprobar .btn-ok');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Aprobando y enviando email…';
+
+  try {
+    const res  = await fetch(`/api/admin/voucher/${pendingApprove}/approve`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ note: nota }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast('❌ Error al aprobar');
+      btn.disabled    = false;
+      btn.textContent = '✅ Confirmar aprobación + enviar email';
+      return;
+    }
+
+    cerrarModal();
+
+    // Mostrar resultado del email
+    const er = data.email_result || {};
+    if (er.sent) {
+      showToast(`✅ Pago aprobado · 📧 Email enviado con el código`);
+    } else if (er.error) {
+      showToast(`✅ Pago aprobado · ⚠️ Email falló: ${er.error}`);
+    } else {
+      showToast(`✅ Pago aprobado`);
+    }
+    refresh();
+  } catch(e) {
+    showToast('❌ Error de conexión');
+    btn.disabled    = false;
+    btn.textContent = '✅ Confirmar aprobación + enviar email';
+  }
+}
+
+// ── Rechazar voucher ───────────────────────────────────
+async function rechazarVoucher(code) {
+  const reason = prompt(`Rechazar pago de ${code}\nMotivo (visible para el jugador):`, '') ?? null;
+  if (reason === null) return;
+  const res = await fetch(`/api/admin/voucher/${code}/reject`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ reason }),
+  });
+  if (res.ok) { showToast(`❌ ${code} rechazado`); refresh(); }
+  else showToast('❌ Error al rechazar');
+}
+
+// ── Reenviar email ─────────────────────────────────────
+async function reenviarEmail(code) {
+  if (!confirm(`¿Reenviar el email con el código a este jugador?`)) return;
+  const btn = document.querySelector(`button[onclick="reenviarEmail('${code}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    const res  = await fetch(`/api/admin/voucher/${code}/resend_email`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}',
+    });
+    const data = await res.json();
+    if (res.ok) { showToast(`📧 Email reenviado: ${data.message}`); refresh(); }
+    else showToast(`❌ ${data.message || 'Error al reenviar'}`);
+  } catch(e) {
+    showToast('❌ Error de conexión');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📧'; }
+  }
+}
+
+// ── Eliminar voucher ───────────────────────────────────
+async function eliminarVoucher(code) {
+  if (!confirm(`¿Eliminar voucher ${code}? Esta acción no se puede deshacer.`)) return;
+  const res = await fetch(`/api/admin/voucher/${code}/delete`, { method:'DELETE' });
+  if (res.ok) { showToast('🗑 Eliminado'); refresh(); }
+  else showToast('❌ Error al eliminar');
+}
+
+// ── Probar email ───────────────────────────────────────
+async function testEmail() {
+  const dest = prompt('¿A qué email enviar el test?', '') ?? null;
+  if (!dest) return;
+  showToast('⏳ Enviando email de prueba…');
+  try {
+    const res  = await fetch('/api/admin/email/test', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: dest }),
+    });
+    const data = await res.json();
+    if (res.ok) showToast(`✅ ${data.message}`);
+    else        showToast(`❌ ${data.message}`);
+  } catch(e) {
+    showToast('❌ Error de conexión');
+  }
+}
+
+// ── Logout ─────────────────────────────────────────────
+async function logout() {
+  await fetch('/api/admin/logout', { method:'POST' });
+  location.href = '/admin/login';
+}
+
+// ── Init ───────────────────────────────────────────────
+checkEmailStatus();
+refresh();
+setInterval(refresh, 6000);
+</script>
+</body>
+</html>

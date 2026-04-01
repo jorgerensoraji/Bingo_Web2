@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 Sesiones — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:1300px;margin:0 auto;padding:20px}
+
+/* Stats rápidas */
+.stats-top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:700px){.stats-top{grid-template-columns:repeat(2,1fr)}}
+.stat-mini{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+           padding:14px;text-align:center}
+.stat-mini .v{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--accent)}
+.stat-mini .l{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+
+/* Layout dos columnas */
+.layout{display:grid;grid-template-columns:360px 1fr;gap:16px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+
+/* Tarjeta genérica */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+      padding:20px;margin-bottom:14px}
+.card h2{margin:0 0 6px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+
+/* Formulario */
+.label{display:block;margin:10px 0 5px;color:var(--muted);
+       font-size:.78rem;letter-spacing:.5px;text-transform:uppercase}
+.inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+     background:var(--card);color:var(--text);outline:none;
+     font-family:'Outfit',sans-serif;font-size:.9rem;
+     transition:border-color .2s;box-sizing:border-box}
+.inp:focus{border-color:var(--accent)}
+
+/* Selector de tipo de bingo */
+.btype-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.btype-card{
+  border:2px solid var(--border);border-radius:12px;padding:12px 8px;
+  cursor:pointer;transition:all .2s;text-align:center;background:var(--card);
+}
+.btype-card:hover{transform:scale(1.03)}
+.btype-card.selected{transform:scale(1.04)}
+.btype-card .emoji{font-size:1.5rem;margin-bottom:4px}
+.btype-card .price{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;line-height:1}
+.btype-card .name{font-size:.7rem;color:var(--muted);margin-top:2px}
+
+/* Botones */
+.btn{padding:10px 16px;border-radius:10px;border:none;font-weight:900;cursor:pointer;
+     font-family:'Outfit',sans-serif;font-size:.9rem;transition:filter .15s}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-accent{background:var(--accent);color:#041015}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-ok{background:#27ae60;color:white}
+.btn-warn{background:var(--warning);color:#041015}
+.btn-no{background:var(--danger);color:white}
+.btn-sm{padding:5px 10px;font-size:.78rem;border-radius:7px}
+
+/* Tarjeta de sesión */
+.session-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:16px;margin-bottom:10px;
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;
+  transition:border-color .3s,background .3s;
+}
+.session-card.active   {border-color:var(--accent);background:rgba(0,229,180,.04)}
+.session-card.preparing{border-color:var(--warning);background:rgba(246,195,67,.04)}
+.session-card.finished {opacity:.65}
+.session-card.cancelled{opacity:.4}
+
+.s-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.s-type-badge{font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:20px}
+.s-status{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:700}
+.s-status.scheduled {background:rgba(246,195,67,.15);color:var(--warning)}
+.s-status.preparing {background:rgba(246,195,67,.3);color:#041015}
+.s-status.active    {background:rgba(0,229,180,.15);color:var(--accent)}
+.s-status.finished  {background:rgba(149,165,166,.12);color:var(--muted)}
+.s-status.cancelled {background:rgba(231,76,60,.1);color:var(--danger)}
+
+.s-datetime{font-size:1rem;font-weight:700;margin-bottom:4px}
+.s-desc{font-size:.82rem;color:var(--muted);margin-bottom:8px}
+.s-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Pozo de premios */
+.prize-box{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:12px;margin-top:10px;font-size:.84rem;
+}
+.prize-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:4px 0;border-bottom:1px solid rgba(26,49,72,.4);
+}
+.prize-row:last-child{border:none;font-weight:700;color:var(--accent);padding-top:6px}
+
+/* Vista previa del pozo al crear */
+.preview-box{
+  background:rgba(0,229,180,.06);border:1px solid rgba(0,229,180,.2);
+  border-radius:10px;padding:14px;margin-top:12px;display:none;
+}
+.preview-box.show{display:block}
+
+/* ── COUNTDOWN v7.1 ── */
+.countdown-box{
+  background:rgba(246,195,67,.08);border:1px solid rgba(246,195,67,.3);
+  border-radius:12px;padding:14px;margin:10px 0;text-align:center;
+}
+.countdown-num{
+  font-family:'Bebas Neue',sans-serif;font-size:4.5rem;
+  color:var(--warning);line-height:1;letter-spacing:3px;
+  transition:color .3s;
+}
+.countdown-sub{
+  font-size:.68rem;color:var(--muted);
+  letter-spacing:2px;text-transform:uppercase;margin-top:4px;
+}
+.countdown-emails{
+  font-size:.75rem;color:var(--muted);margin-top:6px;
+}
+
+/* Filtros */
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filter-row .inp{width:auto;flex:1}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:12px 24px;font-size:.9rem;
+  z-index:1000;transition:transform .3s;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📅 Sesiones</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Stats rápidas -->
+  <div class="stats-top">
+    <div class="stat-mini">
+      <div class="v" id="st-total">0</div>
+      <div class="l">Sesiones total</div>
+    </div>
+    <div class="stat-mini">
+      <div class="v" id="st-active" style="color:var(--accent)">0</div>
+      <div class="l">Activa ahora</div>
+    </div>
+    <div class="stat-mini">
+      <div class="v" id="st-upcoming" style="color:var(--warning)">0</div>
+      <div class="l">Próximas</div>
+    </div>
+    <div class="stat-mini">
+      <div class="v" id="st-revenue" style="color:#27ae60">S/.0</div>
+      <div class="l">Recaudado hoy</div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- Columna izquierda: crear sesión -->
+    <div>
+      <div class="card">
+        <h2>➕ Nueva Sesión</h2>
+
+        <label class="label">Tipo de Bingo</label>
+        <div class="btype-grid" id="btype-grid"></div>
+        <input type="hidden" id="sel-btype" value="1sol">
+
+        <label class="label">Fecha y hora</label>
+        <input type="datetime-local" id="inp-datetime" class="inp">
+
+        <label class="label">Descripción (opcional)</label>
+        <input type="text" id="inp-desc" class="inp"
+               placeholder="Ej: Bingo nocturno especial 🎉">
+
+        <label class="label">Máx. jugadores (0 = sin límite)</label>
+        <input type="number" id="inp-max" class="inp" value="0" min="0">
+
+        <!-- Vista previa del pozo estimado -->
+        <div class="preview-box" id="preview-box">
+          <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);
+                      text-transform:uppercase;margin-bottom:8px">
+            💰 Distribución del pozo (estimado)
+          </div>
+          <div id="preview-body"></div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-accent" onclick="createSession()">
+            📅 Crear sesión
+          </button>
+          <button class="btn btn-ghost" onclick="loadSessions()">
+            🔄 Actualizar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: lista de sesiones -->
+    <div>
+      <div class="card">
+        <h2>🗓 Sesiones</h2>
+
+        <div class="filter-row">
+          <select id="f-type" class="inp" onchange="renderSessions()">
+            <option value="all">Todos los tipos</option>
+            <option value="1sol">🟡 1 Sol</option>
+            <option value="5soles">🔵 5 Soles</option>
+            <option value="10soles">💎 10 Soles</option>
+          </select>
+          <select id="f-status" class="inp" onchange="renderSessions()">
+            <option value="all">Todos los estados</option>
+            <option value="scheduled">Programadas</option>
+            <option value="preparing">⏳ En countdown</option>
+            <option value="active">Activas</option>
+            <option value="finished">Finalizadas</option>
+            <option value="cancelled">Canceladas</option>
+          </select>
+        </div>
+
+        <div id="sessions-list">
+          <div style="color:var(--muted);text-align:center;padding:30px">
+            Cargando…
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const BINGO_TYPES = {
+  "1sol":    { nombre:"Bingo 1 Sol",    precio:1,  color:"#f4d03f", emoji:"🟡",
+               prize_pct:.70, linea_pct:.10 },
+  "5soles":  { nombre:"Bingo 5 Soles",  precio:5,  color:"#5dade2", emoji:"🔵",
+               prize_pct:.75, linea_pct:.08 },
+  "10soles": { nombre:"Bingo 10 Soles", precio:10, color:"#00e5b4", emoji:"💎",
+               prize_pct:.80, linea_pct:.05 },
+};
+
+let allSessions  = [];
+let selBtype     = "1sol";
+let cdTimers     = {};   // sid → intervalId de countdown
+
+// ── Toast ──────────────────────────────────────────────
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Construir selector de tipo de bingo ───────────────
+function buildBtypes() {
+  const g = document.getElementById('btype-grid');
+  g.innerHTML = Object.entries(BINGO_TYPES).map(([k, v]) => `
+    <div class="btype-card ${k === selBtype ? 'selected' : ''}" id="bcard-${k}"
+         onclick="selectBtype('${k}')"
+         style="${k === selBtype
+           ? `border-color:${v.color};box-shadow:0 0 12px ${v.color}44`
+           : ''}">
+      <div class="emoji">${v.emoji}</div>
+      <div class="price" style="color:${v.color}">S/.${v.precio}</div>
+      <div class="name">${v.nombre}</div>
+    </div>`
+  ).join('');
+  updatePreview();
+}
+
+function selectBtype(k) {
+  selBtype = k;
+  document.getElementById('sel-btype').value = k;
+  buildBtypes();
+}
+
+// ── Vista previa de distribución del pozo ─────────────
+function updatePreview() {
+  const bt   = BINGO_TYPES[selBtype];
+  const max  = parseInt(document.getElementById('inp-max')?.value) || 0;
+  const box  = document.getElementById('preview-box');
+  const body = document.getElementById('preview-body');
+  if (!bt) return;
+
+  const ejemplo = max > 0 ? max : 10;
+  const gross   = ejemplo * bt.precio;
+  const bingo   = gross * bt.prize_pct;
+  const linea   = gross * bt.linea_pct;
+  const casa    = gross - bingo - linea;
+  const label   = max > 0 ? `${max} jugadores (límite)` : `${ejemplo} jugadores (ejemplo)`;
+
+  body.innerHTML = `
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">${label}</div>
+    <div class="prize-row">
+      <span>Recaudado total</span>
+      <span style="font-weight:700">S/. ${gross.toFixed(2)}</span>
+    </div>
+    <div class="prize-row">
+      <span>🎉 Premio BINGO (${(bt.prize_pct*100).toFixed(0)}%)</span>
+      <span style="color:var(--accent)">S/. ${bingo.toFixed(2)}</span>
+    </div>
+    <div class="prize-row">
+      <span>⭐ Premio LÍNEA (${(bt.linea_pct*100).toFixed(0)}%)</span>
+      <span style="color:var(--warning)">S/. ${linea.toFixed(2)}</span>
+    </div>
+    <div class="prize-row">
+      <span>💼 Casa / Organización</span>
+      <span style="color:#27ae60">S/. ${casa.toFixed(2)}</span>
+    </div>`;
+  box.classList.add('show');
+}
+
+// ── Cargar sesiones ────────────────────────────────────
+async function loadSessions() {
+  try {
+    const [sRes, stRes] = await Promise.all([
+      fetch('/api/admin/sessions'),
+      fetch('/api/stats'),
+    ]);
+    const sData  = await sRes.json();
+    const stData = await stRes.json();
+    allSessions  = sData.sessions || [];
+
+    document.getElementById('st-total').textContent    = allSessions.length;
+    document.getElementById('st-active').textContent   = stData.sessions?.active   || 0;
+    document.getElementById('st-upcoming').textContent = stData.sessions?.upcoming || 0;
+    document.getElementById('st-revenue').textContent  = `S/.${(stData.revenue||0).toFixed(2)}`;
+
+    renderSessions();
+  } catch(e) {
+    showToast('❌ Error al cargar sesiones');
+  }
+}
+
+// ── Renderizar lista de sesiones ──────────────────────
+function renderSessions() {
+  const ftype   = document.getElementById('f-type').value;
+  const fstatus = document.getElementById('f-status').value;
+  let list = allSessions;
+  if (ftype   !== 'all') list = list.filter(s => s.bingo_type === ftype);
+  if (fstatus !== 'all') list = list.filter(s => s.status === fstatus);
+
+  const el = document.getElementById('sessions-list');
+  if (!list.length) {
+    el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:30px">
+      No hay sesiones con ese filtro.</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(s => {
+    const bt    = BINGO_TYPES[s.bingo_type] || BINGO_TYPES['1sol'];
+    const dt    = s.datetime_iso ? s.datetime_iso.replace('T',' ').slice(0,16) : '—';
+    const prize = s.prize_info;
+
+    // Información del pozo (cuando la sesión ya fue iniciada)
+    const pinfo = prize ? `
+      <div class="prize-box">
+        <div class="prize-row">
+          <span>Jugadores pagados</span>
+          <span><strong>${prize.total_players}</strong></span>
+        </div>
+        <div class="prize-row">
+          <span>Recaudado</span>
+          <span><strong>S/. ${(prize.gross||0).toFixed(2)}</strong></span>
+        </div>
+        <div class="prize-row">
+          <span>🎉 Premio BINGO (${((prize.prize_pct||0)*100).toFixed(0)}%)</span>
+          <span style="color:var(--accent)">S/. ${(prize.prize_amount||0).toFixed(2)}</span>
+        </div>
+        <div class="prize-row">
+          <span>⭐ Premio LÍNEA (${((prize.linea_pct||0)*100).toFixed(0)}%)</span>
+          <span style="color:var(--warning)">S/. ${(prize.linea_amount||0).toFixed(2)}</span>
+        </div>
+        <div class="prize-row">
+          <span>💼 Ganancia casa</span>
+          <span style="color:#27ae60">S/. ${(prize.house_cut||0).toFixed(2)}</span>
+        </div>
+      </div>` : '';
+
+    // Countdown box (solo en estado "preparing")
+    const cdBox = s.status === 'preparing' ? `
+      <div class="countdown-box">
+        <div class="countdown-num" id="cd-${s.id}">--</div>
+        <div class="countdown-sub">segundos para el inicio</div>
+        <div class="countdown-emails" id="cd-emails-${s.id}"></div>
+      </div>` : '';
+
+    // Ganadores
+    const winners = s.winners_final || [];
+    const winfo   = winners.length ? `
+      <div style="margin-top:8px;font-size:.82rem;color:var(--accent)">
+        🏆 ${winners.map(w => esc(w.nombre || w.id)).join(', ')}
+      </div>` : '';
+
+    // Acciones según estado
+    const actions = buildActions(s);
+
+    const statusLabel = {
+      scheduled: '📋 Programada',
+      preparing: '⏳ Countdown',
+      active:    '🟢 Activa',
+      finished:  '✅ Finalizada',
+      cancelled: '❌ Cancelada',
+    }[s.status] || s.status;
+
+    return `<div class="session-card ${s.status}">
+      <div>
+        <div class="s-header">
+          <span class="s-type-badge"
+                style="background:${bt.color}22;color:${bt.color}">
+            ${bt.emoji} ${bt.nombre}
+          </span>
+          <span class="s-status ${s.status}">${statusLabel}</span>
+          <span style="font-size:.7rem;color:var(--muted);margin-left:auto">
+            #${s.id}
+          </span>
+        </div>
+        <div class="s-datetime">📅 ${dt}</div>
+        ${s.descripcion
+          ? `<div class="s-desc">${esc(s.descripcion)}</div>`
+          : ''}
+        ${s.max_players > 0
+          ? `<div style="font-size:.75rem;color:var(--muted);margin-bottom:6px">
+               Límite: ${s.max_players} jugadores
+             </div>`
+          : ''}
+        ${cdBox}
+        ${pinfo}${winfo}
+      </div>
+      <div>${actions}</div>
+    </div>`;
+  }).join('');
+
+  // Activar countdowns para sesiones en "preparing"
+  list.filter(s => s.status === 'preparing' && s.prepare_at && s.prepare_secs)
+      .forEach(s => activarCountdown(s.id, s.prepare_at, s.prepare_secs));
+}
+
+// ── Construir botones de acción ────────────────────────
+function buildActions(s) {
+  const bt  = BINGO_TYPES[s.bingo_type] || BINGO_TYPES['1sol'];
+  const msg = encodeURIComponent(
+    `🎱 *${bt.nombre}* — S/. ${bt.precio}\n` +
+    `📅 Fecha: ${s.datetime_iso?.replace('T',' ').slice(0,16) || '—'}\n` +
+    `${s.descripcion ? '📝 ' + s.descripcion + '\n' : ''}` +
+    `\nRegistra tu pago en /cartillas`
+  );
+  const waBtn = `<a class="btn btn-ghost btn-sm"
+    href="https://wa.me/?text=${msg}" target="_blank"
+    style="text-decoration:none">📲 WA</a>`;
+
+  // Botón eliminar — bloqueado si activa o en countdown
+  const canDelete = !['active','preparing'].includes(s.status);
+  const delBtn = canDelete
+    ? `<button class="btn btn-no btn-sm" onclick="deleteSession('${s.id}')">🗑</button>`
+    : `<button class="btn btn-ghost btn-sm" disabled
+               title="No se puede eliminar una sesión activa o en countdown">🗑</button>`;
+
+  let btns = '';
+  if (s.status === 'scheduled') {
+    btns = `
+      <button class="btn btn-warn btn-sm" onclick="prepararInicio('${s.id}')">
+        ⏰ Preparar
+      </button>
+      <button class="btn btn-ok btn-sm" onclick="startSession('${s.id}')">
+        ▶ Iniciar
+      </button>
+      <button class="btn btn-no btn-sm" onclick="cancelSession('${s.id}')">
+        ✕ Cancelar
+      </button>`;
+  } else if (s.status === 'preparing') {
+    btns = `
+      <button class="btn btn-ok btn-sm" onclick="startSession('${s.id}')">
+        ▶ Iniciar ahora
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelarPreparacion('${s.id}')">
+        ✕ Cancelar countdown
+      </button>`;
+  } else if (s.status === 'active') {
+    btns = `
+      <button class="btn btn-warn btn-sm" onclick="finishSession('${s.id}')">
+        ⏹ Finalizar
+      </button>
+      <a class="btn btn-ghost btn-sm" href="/admin/game" target="_blank"
+         style="text-decoration:none">🎮 Ir al juego</a>`;
+  } else if (s.status === 'finished') {
+    btns = `<button class="btn btn-ghost btn-sm" onclick="showPrize('${s.id}')">
+      💰 Pozo
+    </button>`;
+  }
+
+  return `<div class="s-actions">
+    ${btns}
+    <button class="btn btn-ghost btn-sm" onclick="goVouchers('${s.id}')">
+      🎫 Vouchers
+    </button>
+    ${waBtn}
+    ${delBtn}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  NUEVO v7.1 — Preparar inicio con countdown
+// ═══════════════════════════════════════════════════════
+
+async function prepararInicio(sid) {
+  const t = prompt(
+    'Tiempo del countdown en segundos:\n\n' +
+    '  30  → 30 segundos\n' +
+    '  60  → 1 minuto  (recomendado)\n' +
+    '  120 → 2 minutos\n' +
+    '  300 → 5 minutos\n\n' +
+    'Ingresa los segundos:',
+    '60'
+  );
+  if (t === null) return;
+  const secs = parseInt(t);
+  if (isNaN(secs) || secs < 10 || secs > 300) {
+    showToast('⚠️ Usa un valor entre 10 y 300 segundos');
+    return;
+  }
+
+  const res  = await fetch(`/api/admin/session/${sid}/prepare`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ segundos: secs }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    showToast('❌ ' + (data.message || data.error || 'Error'));
+    return;
+  }
+
+  const mins  = secs >= 60 ? `${Math.floor(secs/60)} min` : `${secs} s`;
+  const njug  = data.emails_enviando || 0;
+  showToast(`⏰ Countdown de ${mins} iniciado · 📧 Enviando email a ${njug} jugador(es)`);
+  loadSessions();
+}
+
+// ── Countdown visual ───────────────────────────────────
+function activarCountdown(sid, prepareAtISO, totalSecs) {
+  if (cdTimers[sid]) clearInterval(cdTimers[sid]);
+  const startTs = new Date(prepareAtISO).getTime();
+
+  function tick() {
+    const el = document.getElementById(`cd-${sid}`);
+    if (!el) { clearInterval(cdTimers[sid]); delete cdTimers[sid]; return; }
+
+    const elapsed = (Date.now() - startTs) / 1000;
+    const left    = Math.max(0, Math.ceil(totalSecs - elapsed));
+
+    el.textContent = left;
+    el.style.color = left <= 5  ? 'var(--danger)'
+                   : left <= 15 ? '#e67e22'
+                   : 'var(--warning)';
+
+    if (left <= 0) {
+      clearInterval(cdTimers[sid]);
+      delete cdTimers[sid];
+      el.textContent = '¡YA!';
+      el.style.color = 'var(--danger)';
+      // Recargar para reflejar el nuevo estado
+      setTimeout(() => loadSessions(), 1500);
+    }
+  }
+
+  tick();
+  cdTimers[sid] = setInterval(tick, 500);
+}
+
+// ── Cancelar countdown ─────────────────────────────────
+async function cancelarPreparacion(sid) {
+  if (!confirm('¿Cancelar el countdown? La sesión vuelve a estado "Programada".')) return;
+  if (cdTimers[sid]) { clearInterval(cdTimers[sid]); delete cdTimers[sid]; }
+  const res = await fetch(`/api/admin/session/${sid}/cancel_prepare`, { method: 'POST' });
+  if (res.ok) { showToast('✅ Countdown cancelado'); loadSessions(); }
+  else showToast('❌ Error al cancelar');
+}
+
+// ═══════════════════════════════════════════════════════
+//  Acciones de sesión
+// ═══════════════════════════════════════════════════════
+
+async function startSession(sid) {
+  if (!confirm('¿Iniciar esta sesión? Se reiniciará el juego actual.')) return;
+  if (cdTimers[sid]) { clearInterval(cdTimers[sid]); delete cdTimers[sid]; }
+  const res  = await fetch(`/api/admin/session/${sid}/start`, { method: 'POST' });
+  const data = await res.json();
+  if (!res.ok) { showToast('❌ ' + (data.message || data.error || 'Error')); return; }
+
+  const prize = data.prize_info;
+  const msg   = prize
+    ? `🟢 Sesión iniciada! · 👥 ${prize.total_players} jug. · 💰 S/. ${prize.gross?.toFixed(2)}`
+    : '🟢 ¡Sesión iniciada!';
+  showToast(msg);
+  loadSessions();
+  setTimeout(() => { location.href = '/admin/game'; }, 1500);
+}
+
+async function finishSession(sid) {
+  if (!confirm('¿Finalizar esta sesión?')) return;
+  const res = await fetch(`/api/admin/session/${sid}/finish`, { method: 'POST' });
+  if (res.ok) { showToast('✅ Sesión finalizada'); loadSessions(); }
+  else showToast('❌ Error al finalizar');
+}
+
+async function cancelSession(sid) {
+  if (!confirm('¿Cancelar esta sesión?')) return;
+  const res = await fetch(`/api/admin/session/${sid}/cancel`, { method: 'POST' });
+  if (res.ok) { showToast('❌ Sesión cancelada'); loadSessions(); }
+  else showToast('❌ Error');
+}
+
+async function deleteSession(sid) {
+  if (!confirm('¿Eliminar permanentemente esta sesión?')) return;
+  const res  = await fetch(`/api/admin/session/${sid}/delete`, { method: 'DELETE' });
+  const data = await res.json();
+  if (res.ok) { showToast('🗑 Sesión eliminada'); loadSessions(); }
+  else showToast('❌ ' + (data.message || 'Error al eliminar'));
+}
+
+async function createSession() {
+  const dt   = document.getElementById('inp-datetime').value;
+  const desc = document.getElementById('inp-desc').value.trim();
+  const max  = parseInt(document.getElementById('inp-max').value) || 0;
+  if (!dt) { showToast('⚠️ Elige fecha y hora'); return; }
+
+  const res  = await fetch('/api/admin/session', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      bingo_type: selBtype, datetime: dt,
+      descripcion: desc, max_players: max,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showToast('❌ ' + (data.error || 'Error')); return; }
+  showToast(`✅ Sesión #${data.session.id} creada`);
+  document.getElementById('inp-desc').value = '';
+  loadSessions();
+}
+
+// ── Ver pozo de sesión finalizada ─────────────────────
+async function showPrize(sid) {
+  try {
+    const res  = await fetch(`/api/admin/session/${sid}/prize`);
+    const data = await res.json();
+    alert(
+      `💰 POZO SESIÓN #${sid}\n` +
+      `Jugadores: ${data.total_players}\n` +
+      `Recaudado: S/. ${data.gross?.toFixed(2)}\n` +
+      `Premio BINGO (${((data.prize_pct||0)*100).toFixed(0)}%): S/. ${data.prize_amount?.toFixed(2)}\n` +
+      `Premio LÍNEA (${((data.linea_pct||0)*100).toFixed(0)}%): S/. ${data.linea_amount?.toFixed(2)}\n` +
+      `Casa: S/. ${data.house_cut?.toFixed(2)}`
+    );
+  } catch(e) {
+    showToast('❌ Error al cargar pozo');
+  }
+}
+
+function goVouchers(sid) {
+  location.href = `/admin?session_id=${sid}`;
+}
+
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.href = '/admin/login';
+}
+
+// ── Init ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Fecha por defecto: ahora + 1 hora redondeada
+  const d = new Date();
+  d.setHours(d.getHours() + 1, 0, 0, 0);
+  document.getElementById('inp-datetime').value = d.toISOString().slice(0, 16);
+
+  // Actualizar preview al cambiar max jugadores
+  document.getElementById('inp-max')?.addEventListener('input', updatePreview);
+
+  buildBtypes();
+  loadSessions();
+  setInterval(loadSessions, 8000);
+});
+</script>
+</body>
+</html>

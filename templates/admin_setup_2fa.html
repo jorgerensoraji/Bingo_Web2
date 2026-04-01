@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Configurar 2FA — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:600px;margin:0 auto;padding:40px 20px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:16px}
+.step{display:flex;gap:14px;margin-bottom:20px;align-items:flex-start}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#041015;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;flex-shrink:0;margin-top:2px}
+.step-body h3{margin:0 0 4px;font-size:1rem;color:var(--text)}
+.step-body p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.6}
+.qr-wrap{background:#fff;border-radius:12px;padding:16px;display:inline-block;margin:16px 0}
+.secret-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'Courier New',monospace;font-size:1.1rem;letter-spacing:4px;color:var(--accent);text-align:center;margin:10px 0;word-break:break-all}
+.inp{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none;font-family:'Outfit',sans-serif;font-size:1.1rem;letter-spacing:6px;text-align:center;transition:border-color .2s;box-sizing:border-box}
+.inp:focus{border-color:var(--accent)}
+.btn{padding:12px 24px;border-radius:10px;border:none;font-weight:900;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.95rem;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn-ok{background:var(--accent);color:#041015}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.status-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#27ae60;padding:12px 16px;border-radius:10px;margin-top:10px;display:none}
+.status-err{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--danger);padding:12px 16px;border-radius:10px;margin-top:10px;display:none}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 24px;font-size:.9rem;z-index:1000;transition:transform .3s;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🔐 2FA Setup</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div style="margin-bottom:24px">
+    <h1 style="font-family:'Bebas Neue',sans-serif;color:var(--accent);letter-spacing:3px;font-size:2.2rem;margin:0 0 4px">
+      Autenticación de dos factores
+    </h1>
+    <p style="color:var(--muted);font-size:.9rem">
+      Protege tu cuenta de admin con Google Authenticator u otra app TOTP.
+    </p>
+  </div>
+
+  <div class="card" id="card-notconfigured" style="display:none">
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
+      <h2 style="color:var(--warning);font-family:'Bebas Neue',sans-serif;font-size:1.8rem;margin:0 0 8px">
+        2FA no configurado en .env
+      </h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">
+        Agrega <strong style="color:var(--accent)">TOTP_SECRET</strong> a tu archivo .env para activar 2FA.
+      </p>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:left;margin-bottom:16px">
+        <div style="color:var(--muted);font-size:.75rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Genera un secreto:</div>
+        <code style="color:var(--accent);font-size:.85rem">
+          python -c "from security import totp_new_secret; print(totp_new_secret())"
+        </code>
+      </div>
+      <a href="/admin" class="btn btn-ghost" style="text-decoration:none">← Volver al admin</a>
+    </div>
+  </div>
+
+  <div id="card-setup">
+    <div class="card">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Instala una app autenticadora</h3>
+          <p>
+            Descarga <strong>Google Authenticator</strong>, <strong>Authy</strong>,
+            o cualquier app compatible con TOTP en tu celular.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Escanea el código QR</h3>
+          <p>Abre la app y escanea este código QR:</p>
+          <div style="text-align:center">
+            <div class="qr-wrap" id="qr-container">
+              <canvas id="qr-canvas"></canvas>
+            </div>
+            <div style="color:var(--muted);font-size:.78rem;margin-bottom:6px">
+              ¿No puedes escanear? Ingresa este código manualmente:
+            </div>
+            <div class="secret-box" id="secret-display">Cargando…</div>
+            <button class="btn btn-ghost" style="font-size:.78rem;padding:6px 12px" onclick="copySecret()">
+              📋 Copiar secreto
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Verifica que funciona</h3>
+          <p>Ingresa el código de 6 dígitos que muestra tu app:</p>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <input type="text" id="verify-code" class="inp"
+                   placeholder="000000" maxlength="6"
+                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)"
+                   onkeydown="if(event.key==='Enter')verifyCode()">
+            <button class="btn btn-ok" onclick="verifyCode()">✅ Verificar</button>
+          </div>
+          <div class="status-ok" id="status-ok">
+            ✅ ¡Código correcto! El 2FA está activo. Necesitarás este código cada vez que inicies sesión.
+          </div>
+          <div class="status-err" id="status-err">
+            ❌ Código incorrecto. Verifica que la hora de tu teléfono está sincronizada.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="background:rgba(231,76,60,.05);border-color:rgba(231,76,60,.3)">
+      <h3 style="color:var(--danger);margin:0 0 10px;font-size:1rem">⚠️ Guarda el secreto de forma segura</h3>
+      <p style="color:var(--muted);font-size:.85rem;margin:0;line-height:1.7">
+        El secreto TOTP es el valor de <strong style="color:var(--text)">TOTP_SECRET</strong> en tu .env.<br>
+        Si pierdes acceso a tu app autenticadora y no tienes este secreto guardado,
+        <strong style="color:var(--danger)">perderás acceso al admin permanentemente</strong>.<br>
+        Guárdalo en un lugar seguro (gestor de contraseñas, papel bajo llave, etc).
+      </p>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <a href="/admin" class="btn btn-ghost" style="text-decoration:none">← Volver al admin</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+let _secret = '';
+
+async function loadQR() {
+  try {
+    const res  = await fetch('/api/admin/2fa/qr');
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      document.getElementById('card-setup').style.display = 'none';
+      document.getElementById('card-notconfigured').style.display = 'block';
+      return;
+    }
+
+    _secret = data.secret || '';
+    const secretFmt = (_secret.match(/.{1,4}/g) || []).join(' ');
+    document.getElementById('secret-display').textContent = secretFmt;
+
+    // Render QR
+    const qr = new QRious({
+      element:   document.getElementById('qr-canvas'),
+      value:     data.uri,
+      size:      200,
+      background:'#ffffff',
+      foreground:'#000000',
+      level:     'M',
+    });
+  } catch(e) {
+    document.getElementById('secret-display').textContent = 'Error al cargar';
+  }
+}
+
+async function verifyCode() {
+  const code = document.getElementById('verify-code').value.trim();
+  if (code.length !== 6) { showToast('Ingresa un código de 6 dígitos'); return; }
+
+  const res  = await fetch('/api/admin/2fa/verify', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ code }),
+  });
+  const data = await res.json();
+
+  if (data.valid) {
+    document.getElementById('status-ok').style.display  = 'block';
+    document.getElementById('status-err').style.display = 'none';
+    showToast('✅ 2FA verificado y activo');
+  } else {
+    document.getElementById('status-err').style.display = 'block';
+    document.getElementById('status-ok').style.display  = 'none';
+  }
+}
+
+function copySecret() {
+  navigator.clipboard.writeText(_secret)
+    .then(() => showToast('📋 Secreto copiado'))
+    .catch(() => showToast('No se pudo copiar'));
+}
+
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+loadQR();
+</script>
+</body>
+</html>

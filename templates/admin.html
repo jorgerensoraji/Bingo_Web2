@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛠 Admin — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:1300px;margin:0 auto;padding:20px}
+.grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+@media(max-width:980px){.grid2{grid-template-columns:1fr}}
+
+/* Tarjeta */
+.card{background:var(--panel);border:1px solid var(--border);
+      border-radius:18px;padding:20px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:1.05rem}
+
+/* Alertas */
+.alert-bar{display:none;padding:10px 16px;border-radius:10px;
+           margin-bottom:14px;font-size:.87rem;font-weight:700}
+.alert-bar.show{display:flex;align-items:center;gap:10px}
+.alert-pending{background:rgba(246,195,67,.12);border:1px solid rgba(246,195,67,.3);
+               color:var(--warning)}
+
+/* Info del flujo */
+.flow-info{
+  background:rgba(0,229,180,.06);border:1px solid rgba(0,229,180,.2);
+  border-radius:12px;padding:14px;margin-bottom:16px;font-size:.83rem;
+  color:var(--muted);line-height:1.7;
+}
+.flow-info strong{color:var(--accent)}
+
+/* Formulario */
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>div{flex:1;min-width:160px}
+.inp{
+  width:100%;padding:11px 12px;border-radius:10px;
+  border:1px solid var(--border);background:var(--card);color:var(--text);
+  outline:none;font-family:'Outfit',sans-serif;font-size:.9rem;
+  transition:border-color .2s;box-sizing:border-box;
+}
+.inp:focus{border-color:var(--accent)}
+.inp.error{border-color:var(--danger)!important;background:rgba(231,76,60,.05)}
+.inp.ok{border-color:#27ae60}
+.label{display:block;margin:10px 0 5px;color:var(--muted);
+       font-size:.78rem;letter-spacing:.5px;text-transform:uppercase}
+.required-star{color:var(--danger);margin-left:2px}
+.field-hint{font-size:.72rem;margin-top:3px;min-height:14px}
+.field-hint.err{color:var(--danger)}
+.field-hint.ok{color:#27ae60}
+
+/* Selector de tipo de bingo */
+.btype-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.btype-tab{
+  padding:7px 14px;border-radius:20px;border:2px solid var(--border);
+  background:var(--card);color:var(--muted);font-weight:700;
+  cursor:pointer;font-size:.82rem;transition:all .2s;
+  font-family:'Outfit',sans-serif;
+}
+.btype-tab.sel{color:#041015}
+
+/* Info del tipo seleccionado */
+.type-info{
+  font-size:.78rem;color:var(--muted);padding:8px 12px;
+  background:var(--card);border-radius:8px;margin-bottom:10px;line-height:1.6;
+}
+
+/* Botones */
+.btn{
+  padding:10px 16px;border-radius:10px;border:1px solid var(--border);
+  background:var(--accent);color:#041015;font-weight:900;cursor:pointer;
+  font-family:'Outfit',sans-serif;transition:filter .15s;font-size:.9rem;
+}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.btn-ghost{background:transparent;color:var(--text)}
+.btn-ok{background:#27ae60;color:white;border-color:#27ae60}
+.btn-no{background:var(--danger);color:white;border-color:var(--danger)}
+.btn-sm{padding:5px 10px;font-size:.78rem;border-radius:7px}
+
+/* Validación global del formulario */
+.form-valid-hint{
+  padding:10px 14px;border-radius:10px;margin-bottom:12px;
+  font-size:.82rem;font-weight:700;display:none;
+}
+.form-valid-hint.show{display:block}
+.fvh-error{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);
+           color:var(--danger)}
+.fvh-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);
+        color:#27ae60}
+
+/* Caja de código generado */
+.code-box{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  margin-top:12px;padding:14px;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+}
+.code-pill{
+  font-family:'Courier New',monospace;font-size:1.6rem;
+  font-weight:900;color:var(--accent);letter-spacing:4px;
+}
+
+/* Stats */
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.stat-box{flex:1;min-width:80px;background:var(--card);border:1px solid var(--border);
+          border-radius:10px;padding:10px;text-align:center}
+.stat-box .v{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--accent)}
+.stat-box .l{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+
+/* Tabla vouchers */
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.83rem}
+th,td{border-bottom:1px solid var(--border);padding:9px 10px;text-align:left}
+th{color:var(--muted);font-size:.62rem;letter-spacing:2px;
+   text-transform:uppercase;background:var(--card)}
+tr:hover td{background:rgba(17,31,46,.5)}
+.empty-row{text-align:center;color:var(--muted);padding:20px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;
+       transform:translateX(-50%) translateY(100px);
+       background:var(--panel);border:1px solid var(--border);
+       border-radius:12px;padding:12px 24px;font-size:.9rem;
+       z-index:1000;transition:transform .3s;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛠 Admin</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos
+      <span id="pending-badge" style="display:none;background:var(--warning);
+        color:#041015;border-radius:20px;padding:1px 7px;
+        font-size:.7rem;font-weight:900;margin-left:4px"></span>
+    </a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/cartillas">🎴 Cartillas</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Alerta de pagos pendientes -->
+  <div class="alert-bar alert-pending" id="alert-pending">
+    <span style="font-size:1.2rem">⚠️</span>
+    <span id="alert-pending-text"></span>
+    <a href="/admin/payments"
+       style="color:var(--warning);margin-left:auto;font-size:.82rem;text-decoration:underline">
+      Revisar pagos →
+    </a>
+  </div>
+
+  <div class="grid2">
+
+    <!-- Generar voucher para pago en efectivo / presencial -->
+    <div class="card">
+      <h2>🎫 Registrar jugador (pago presencial)</h2>
+
+      <!-- Explicación del flujo -->
+      <div class="flow-info">
+        <strong>¿Cuándo usar este formulario?</strong><br>
+        Solo para jugadores que pagan <strong>en persona</strong> (efectivo u otro método
+        presencial) y necesitan ayuda para registrarse.<br><br>
+        Los jugadores que pagan por <strong>Yape / Plin / transferencia</strong>
+        se registran solos desde
+        <a href="/cartillas" target="_blank" style="color:var(--accent)">/cartillas</a>
+        y el código les llega por email automáticamente al aprobar su pago.
+      </div>
+
+      <!-- Tipo de bingo -->
+      <label class="label">Tipo de Bingo</label>
+      <div class="btype-tabs" id="btype-tabs"></div>
+      <input type="hidden" id="sel-btype" value="1sol">
+      <div class="type-info" id="type-info"></div>
+
+      <!-- Sesión -->
+      <label class="label">Sesión (opcional)</label>
+      <select id="sel-session" class="inp">
+        <option value="">Sin sesión específica</option>
+      </select>
+
+      <!-- ══ DATOS OBLIGATORIOS ══ -->
+      <div style="margin:14px 0 8px;padding:8px 12px;
+                  background:rgba(231,76,60,.06);border-left:3px solid var(--danger);
+                  border-radius:0 8px 8px 0;font-size:.8rem;color:var(--danger);
+                  font-weight:700">
+        Los siguientes campos son obligatorios para identificar al jugador
+      </div>
+
+      <div class="row">
+        <div>
+          <label class="label">
+            Nombres <span class="required-star">*</span>
+          </label>
+          <input id="c-nom" class="inp"
+                 placeholder="Ej: Juan Carlos"
+                 oninput="validarCampo('c-nom','nom-hint','Ingresa el nombre')"
+                 onblur="validarCampo('c-nom','nom-hint','Ingresa el nombre')">
+          <div class="field-hint" id="nom-hint"></div>
+        </div>
+        <div>
+          <label class="label">
+            Apellidos <span class="required-star">*</span>
+          </label>
+          <input id="c-ape" class="inp"
+                 placeholder="Ej: Pérez López"
+                 oninput="validarCampo('c-ape','ape-hint','Ingresa los apellidos')"
+                 onblur="validarCampo('c-ape','ape-hint','Ingresa los apellidos')">
+          <div class="field-hint" id="ape-hint"></div>
+        </div>
+      </div>
+
+      <label class="label">
+        Email <span class="required-star">*</span>
+        <span style="color:var(--muted);font-weight:400;text-transform:none;
+                     letter-spacing:0;font-size:.75rem">
+          (el código se enviará aquí al aprobar)
+        </span>
+      </label>
+      <input id="c-email" class="inp" type="email"
+             placeholder="jugador@email.com"
+             oninput="validarEmail()"
+             onblur="validarEmail()">
+      <div class="field-hint" id="email-hint"></div>
+
+      <label class="label">
+        Celular
+        <span style="color:var(--muted);font-weight:400;text-transform:none;
+                     letter-spacing:0;font-size:.75rem">(opcional)</span>
+      </label>
+      <input id="c-cel" class="inp" placeholder="Ej: 987654321" maxlength="20">
+
+      <label class="label">
+        N° de ticket / referencia
+        <span style="color:var(--muted);font-weight:400;text-transform:none;
+                     letter-spacing:0;font-size:.75rem">(opcional)</span>
+      </label>
+      <input id="c-ref" class="inp"
+             placeholder="N° de recibo, ticket o referencia del pago">
+
+      <!-- Indicador de validación global -->
+      <div class="form-valid-hint fvh-error" id="form-hint-error">
+        ⚠️ Completa nombre, apellidos y email para poder generar el código.
+      </div>
+      <div class="form-valid-hint fvh-ok" id="form-hint-ok">
+        ✅ Datos completos — puedes generar el código.
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="btn-generar" onclick="createVoucher()" disabled>
+          🎫 Generar código
+        </button>
+        <button class="btn btn-ghost" onclick="refresh()">🔄 Actualizar</button>
+        <a class="btn btn-ghost" href="/admin/sessions"
+           style="text-decoration:none">📅 Sesiones</a>
+      </div>
+
+      <div style="margin-top:8px;font-size:.75rem;color:var(--muted)">
+        ⚠️ El código se genera en estado <strong>pendiente</strong>.
+        Debes ir a
+        <a href="/admin/payments" style="color:var(--accent)">Pagos</a>
+        y aprobarlo para que el jugador reciba su código por email.
+      </div>
+
+      <!-- Código generado -->
+      <div class="code-box" id="codeBox" style="display:none">
+        <div>
+          <div style="color:var(--muted);font-size:.72rem;margin-bottom:4px;
+                      letter-spacing:1px;text-transform:uppercase">
+            Código generado — pendiente de aprobación
+          </div>
+          <div class="code-pill" id="lastCode">—</div>
+          <div id="lastInfo" style="font-size:.78rem;color:var(--muted);margin-top:4px"></div>
+        </div>
+        <button class="btn btn-ghost" onclick="copyCode()">📋 Copiar</button>
+        <a href="/admin/payments" class="btn btn-ok btn-sm"
+           style="text-decoration:none">
+          💰 Ir a aprobar →
+        </a>
+      </div>
+    </div>
+
+    <!-- Estado del juego -->
+    <div>
+      <div class="card">
+        <h2>📊 Estado actual</h2>
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="v" id="st-drawn">0</div>
+            <div class="l">Sorteadas</div>
+          </div>
+          <div class="stat-box">
+            <div class="v" id="st-rem">90</div>
+            <div class="l">Restantes</div>
+          </div>
+          <div class="stat-box">
+            <div class="v" id="st-last">—</div>
+            <div class="l">Última</div>
+          </div>
+          <div class="stat-box">
+            <div class="v" id="st-rev" style="color:var(--warning)">S/.0</div>
+            <div class="l">Ingresos</div>
+          </div>
+        </div>
+        <div id="active-bingo-type"
+             style="margin-top:12px;font-size:.88rem;color:var(--muted)">—</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <a href="/admin/game" class="btn btn-ghost btn-sm"
+             style="text-decoration:none">🎮 Control juego</a>
+          <a href="/admin/payments" class="btn btn-ghost btn-sm"
+             style="text-decoration:none">💰 Ver pagos</a>
+          <a href="/admin/caja" class="btn btn-ghost btn-sm"
+             style="text-decoration:none">💼 Caja</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tabla de vouchers generados -->
+  <div class="card">
+    <h2>
+      📋 Vouchers registrados
+      <span id="session-filter-label"
+            style="font-size:.75rem;color:var(--muted);font-weight:400"></span>
+    </h2>
+    <div style="color:var(--muted);font-size:.78rem;margin-bottom:10px">
+      Verde = aprobado y email enviado &nbsp;·&nbsp;
+      Amarillo = pendiente de revisión &nbsp;·&nbsp;
+      Gris = sin comprobante
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <select id="f-session" class="inp" style="flex:1;min-width:160px"
+              onchange="refresh()">
+        <option value="">Todas las sesiones</option>
+      </select>
+      <select id="f-btype-v" class="inp" style="flex:1;min-width:140px"
+              onchange="refresh()">
+        <option value="">Todos los tipos</option>
+        <option value="1sol">🟡 1 Sol</option>
+        <option value="5soles">🔵 5 Soles</option>
+        <option value="10soles">💎 10 Soles</option>
+      </select>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Jugador</th>
+            <th>Email</th>
+            <th>Tipo</th>
+            <th>Precio</th>
+            <th>Cartillas</th>
+            <th>Origen</th>
+            <th>Estado</th>
+            <th>Email</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const BINGO_TYPES = {
+  "1sol":    {nombre:"Bingo 1 Sol",    precio:1,  color:"#f4d03f",
+              emoji:"🟡", prize_pct:.70, linea_pct:.10, max_cartillas:3},
+  "5soles":  {nombre:"Bingo 5 Soles",  precio:5,  color:"#5dade2",
+              emoji:"🔵", prize_pct:.75, linea_pct:.08, max_cartillas:5},
+  "10soles": {nombre:"Bingo 10 Soles", precio:10, color:"#00e5b4",
+              emoji:"💎", prize_pct:.80, linea_pct:.05, max_cartillas:5},
+};
+
+let selBtype = "1sol";
+
+// ── Toast ──────────────────────────────────────────────
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════
+//  VALIDACIÓN EN TIEMPO REAL
+// ══════════════════════════════════════════════════════
+function validarCampo(inputId, hintId, errorMsg) {
+  const inp  = document.getElementById(inputId);
+  const hint = document.getElementById(hintId);
+  const val  = inp.value.trim();
+  if (!val) {
+    inp.classList.add('error'); inp.classList.remove('ok');
+    hint.textContent = errorMsg; hint.className = 'field-hint err';
+  } else {
+    inp.classList.remove('error'); inp.classList.add('ok');
+    hint.textContent = '✓'; hint.className = 'field-hint ok';
+  }
+  actualizarBoton();
+}
+
+function validarEmail() {
+  const inp  = document.getElementById('c-email');
+  const hint = document.getElementById('email-hint');
+  const val  = inp.value.trim();
+  if (!val) {
+    inp.classList.add('error'); inp.classList.remove('ok');
+    hint.textContent = 'El email es obligatorio (el código se enviará aquí)';
+    hint.className   = 'field-hint err';
+  } else if (!val.includes('@') || !val.includes('.')) {
+    inp.classList.add('error'); inp.classList.remove('ok');
+    hint.textContent = 'Ingresa un email válido';
+    hint.className   = 'field-hint err';
+  } else {
+    inp.classList.remove('error'); inp.classList.add('ok');
+    hint.textContent = '✓';
+    hint.className   = 'field-hint ok';
+  }
+  actualizarBoton();
+}
+
+function formularioValido() {
+  const nom   = document.getElementById('c-nom').value.trim();
+  const ape   = document.getElementById('c-ape').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  return nom.length > 0 &&
+         ape.length > 0 &&
+         email.includes('@') &&
+         email.includes('.');
+}
+
+function actualizarBoton() {
+  const btn      = document.getElementById('btn-generar');
+  const hintErr  = document.getElementById('form-hint-error');
+  const hintOk   = document.getElementById('form-hint-ok');
+  const valid    = formularioValido();
+  btn.disabled   = !valid;
+  hintErr.classList.toggle('show',  !valid);
+  hintOk.classList.toggle('show',   valid);
+}
+
+// ── Tipo de bingo ──────────────────────────────────────
+function buildBtypeTabs() {
+  const g = document.getElementById('btype-tabs');
+  g.innerHTML = Object.entries(BINGO_TYPES).map(([k, v]) => `
+    <div class="btype-tab ${k===selBtype?'sel':''}" id="btab-${k}"
+         onclick="selectBtype('${k}')"
+         style="${k===selBtype
+           ? `border-color:${v.color};background:${v.color}22;color:${v.color}`
+           : ''}">
+      ${v.emoji} ${v.nombre}
+    </div>`
+  ).join('');
+  updateTypeInfo();
+}
+
+function selectBtype(k) {
+  selBtype = k;
+  document.getElementById('sel-btype').value = k;
+  buildBtypeTabs();
+}
+
+function updateTypeInfo() {
+  const bt = BINGO_TYPES[selBtype];
+  const el = document.getElementById('type-info');
+  if (!bt || !el) return;
+  el.innerHTML = `
+    <strong style="color:${bt.color}">${bt.emoji} ${bt.nombre}</strong> —
+    S/. ${bt.precio.toFixed(2)} por cartilla ·
+    Máx. <strong>${bt.max_cartillas} cartillas</strong> por jugador ·
+    Premio bingo: <strong>${(bt.prize_pct*100).toFixed(0)}%</strong> ·
+    Premio línea: <strong>${(bt.linea_pct*100).toFixed(0)}%</strong>
+  `;
+}
+
+// ── Sesiones ───────────────────────────────────────────
+async function loadSessions() {
+  try {
+    const res  = await fetch('/api/admin/sessions');
+    const data = await res.json();
+    const ss   = (data.sessions||[]).filter(s =>
+      ['scheduled','active'].includes(s.status));
+    const opts = ss.map(s => {
+      const dt = s.datetime_iso?.replace('T',' ').slice(0,16)||'';
+      const bt = BINGO_TYPES[s.bingo_type]||BINGO_TYPES['1sol'];
+      return `<option value="${s.id}">${bt.emoji} ${dt} — #${s.id}</option>`;
+    }).join('');
+    ['sel-session','f-session'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML =
+        `<option value="">${id==='f-session'?'Todas las sesiones':'Sin sesión específica'}</option>`
+        + opts;
+    });
+  } catch(e) {}
+}
+
+// ── Refresh datos ──────────────────────────────────────
+async function refresh() {
+  await loadSessions();
+  try {
+    const sessionFilter = document.getElementById('f-session').value;
+    const btypeFilter   = document.getElementById('f-btype-v').value;
+    const url = sessionFilter
+      ? `/api/admin/vouchers?session_id=${sessionFilter}`
+      : '/api/admin/vouchers';
+
+    const [vRes, sRes, stRes] = await Promise.all([
+      fetch(url), fetch('/api/state'), fetch('/api/stats'),
+    ]);
+    const v  = await vRes.json();
+    const s  = await sRes.json();
+    const st = await stRes.json();
+
+    // Stats
+    document.getElementById('st-drawn').textContent = (s.drawn||[]).length;
+    document.getElementById('st-rem').textContent   = s.remaining ?? '—';
+    document.getElementById('st-last').textContent  = s.last ?? '—';
+    document.getElementById('st-rev').textContent   = `S/.${(st.revenue||0).toFixed(2)}`;
+    document.getElementById('active-bingo-type').innerHTML = s.bingo_type
+      ? `Tipo activo: <strong style="color:${s.bingo_color}">${s.bingo_nombre}</strong>
+         &nbsp;·&nbsp; Entrada: S/. ${s.bingo_precio?.toFixed(2)}
+         &nbsp;·&nbsp; Pozo: <strong style="color:var(--accent)">S/. ${(s.prize_pool||0).toFixed(2)}</strong>`
+      : '—';
+
+    // Badge y alerta pendientes
+    const pend    = st.vouchers?.pending || 0;
+    const alertEl = document.getElementById('alert-pending');
+    const alertTx = document.getElementById('alert-pending-text');
+    const badge   = document.getElementById('pending-badge');
+    if (pend > 0) {
+      alertEl.classList.add('show');
+      alertTx.textContent = `Tienes ${pend} pago${pend>1?'s':''} pendiente${pend>1?'s':''} de revisión.`;
+      badge.textContent   = pend;
+      badge.style.display = 'inline';
+    } else {
+      alertEl.classList.remove('show');
+      badge.style.display = 'none';
+    }
+
+    // Tabla
+    let list = v.vouchers || [];
+    if (btypeFilter) list = list.filter(x => x.bingo_type === btypeFilter);
+
+    document.getElementById('session-filter-label').textContent =
+      sessionFilter ? `(sesión ${sessionFilter})` : '';
+
+    const tb = document.getElementById('tb');
+    if (!list.length) {
+      tb.innerHTML = `<tr><td colspan="11" class="empty-row">No hay vouchers.</td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = list.map(x => {
+      const who  = [x.nombres, x.apellidos].filter(Boolean).join(' ');
+      const dt   = (x.created||'').replace('T',' ').slice(0,16);
+      const bt   = BINGO_TYPES[x.bingo_type]||BINGO_TYPES['1sol'];
+      const pst  = x.payment_status||'pending';
+
+      const pstLabel = {
+        manual_approved: `<span style="color:var(--accent)">✅ Aprobado</span>`,
+        approved:        `<span style="color:#27ae60">✅ Aprobado</span>`,
+        pending_review:  `<span style="color:var(--warning)">⏳ Revisión</span>`,
+        pending:         `<span style="color:var(--muted)">🔘 Pendiente</span>`,
+        rejected:        `<span style="color:var(--danger)">❌ Rechazado</span>`,
+      }[pst] || pst;
+
+      // Cartillas
+      const cAct  = (x.cartillas||[]).length;
+      const cMax  = bt.max_cartillas||5;
+      const cHtml = `<span style="color:${cAct>0?'var(--accent)':'var(--muted)'}">
+        ${cAct}/${cMax}</span>`;
+
+      // Origen
+      const origen = x.creado_por==='jugador'
+        ? `<span style="font-size:.7rem;color:var(--accent)">🙋 Jugador</span>`
+        : `<span style="font-size:.7rem;color:var(--muted)">✍️ Admin</span>`;
+
+      // Email enviado
+      const isAppr = ['approved','manual_approved'].includes(pst);
+      const emailBadge = isAppr
+        ? (x.email_codigo_enviado
+          ? `<span style="font-size:.7rem;color:#27ae60">✅ Enviado</span>`
+          : `<span style="font-size:.7rem;color:var(--warning)">⚠️ No enviado</span>`)
+        : `<span style="font-size:.7rem;color:var(--muted)">—</span>`;
+
+      return `<tr>
+        <td>
+          <span style="font-family:'Courier New',monospace;font-weight:900;
+                       color:${pst==='rejected'?'var(--muted)':'var(--accent)'};
+                       letter-spacing:1px">${x.code}</span>
+        </td>
+        <td style="font-size:.82rem;font-weight:600">
+          ${esc(who)||'<span style="color:var(--danger);font-size:.75rem">⚠️ Sin nombre</span>'}
+        </td>
+        <td style="font-size:.75rem;color:var(--muted);max-width:140px;word-break:break-all">
+          ${x.email
+            ? `<a href="mailto:${esc(x.email)}" style="color:var(--accent)">${esc(x.email)}</a>`
+            : '<span style="color:var(--danger);font-size:.75rem">⚠️ Sin email</span>'}
+        </td>
+        <td>
+          <span style="color:${bt.color};font-weight:700;font-size:.82rem">
+            ${bt.emoji} ${bt.nombre}
+          </span>
+        </td>
+        <td style="color:var(--accent);font-weight:700">
+          S/. ${(x.precio||0).toFixed(2)}
+        </td>
+        <td style="text-align:center">${cHtml}</td>
+        <td>${origen}</td>
+        <td>${pstLabel}</td>
+        <td>${emailBadge}</td>
+        <td style="color:var(--muted);font-size:.78rem">${dt}</td>
+        <td>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            ${!isAppr
+              ? `<button class="btn btn-ok btn-sm"
+                         onclick="aprobarRapido('${x.code}')">✅</button>`
+              : ''}
+            ${pst!=='rejected'
+              ? `<button class="btn btn-no btn-sm"
+                         onclick="rechazarVoucher('${x.code}')">❌</button>`
+              : ''}
+            <button class="btn btn-ghost btn-sm"
+                    onclick="deleteVoucher('${x.code}')">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { showToast('❌ Error al cargar datos'); }
+}
+
+// ── Crear voucher (con validación obligatoria) ─────────
+async function createVoucher() {
+  // Doble validación antes de enviar
+  if (!formularioValido()) {
+    // Marcar todos los campos vacíos como error
+    validarCampo('c-nom', 'nom-hint', 'Ingresa el nombre');
+    validarCampo('c-ape', 'ape-hint', 'Ingresa los apellidos');
+    validarEmail();
+    showToast('⚠️ Completa nombre, apellidos y email');
+    return;
+  }
+
+  const nombres    = document.getElementById('c-nom').value.trim();
+  const apellidos  = document.getElementById('c-ape').value.trim();
+  const email      = document.getElementById('c-email').value.trim().toLowerCase();
+  const celular    = document.getElementById('c-cel').value.trim();
+  const ref        = document.getElementById('c-ref').value.trim();
+  const bingo_type = document.getElementById('sel-btype').value;
+  const session_id = document.getElementById('sel-session').value;
+
+  const btn = document.getElementById('btn-generar');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Generando…';
+
+  const res  = await fetch('/api/admin/voucher', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      nombres, apellidos, email, celular,
+      bingo_type, session_id,
+      payment_ref:    ref,
+      payment_method: 'efectivo',
+    }),
+  });
+  const data = await res.json();
+
+  btn.disabled    = false;
+  btn.textContent = '🎫 Generar código';
+
+  if (!res.ok) { showToast('❌ ' + (data.error||'No se pudo generar')); return; }
+
+  const code = data.voucher.code;
+  const bt   = BINGO_TYPES[bingo_type]||BINGO_TYPES['1sol'];
+
+  document.getElementById('lastCode').textContent = code;
+  document.getElementById('lastInfo').innerHTML   =
+    `${bt.emoji} ${bt.nombre} — S/. ${bt.precio.toFixed(2)}<br>
+     <span style="color:var(--warning)">⚠️ Pendiente — ve a
+     <a href="/admin/payments" style="color:var(--accent)">Pagos</a>
+     para aprobar y enviar el email a ${esc(email)}</span>`;
+  document.getElementById('codeBox').style.display = 'flex';
+
+  showToast(`✅ Código ${code} generado para ${nombres} ${apellidos}`);
+  refresh();
+
+  // Limpiar campos
+  ['c-nom','c-ape','c-email','c-cel','c-ref'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+    el.classList.remove('ok','error');
+  });
+  ['nom-hint','ape-hint','email-hint'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = ''; el.className = 'field-hint';
+  });
+  actualizarBoton();
+}
+
+// ── Aprobar rápido desde la tabla ──────────────────────
+async function aprobarRapido(code) {
+  if (!confirm(`¿Aprobar el pago de ${code}?\nSe enviará el email automáticamente.`)) return;
+  const res  = await fetch(`/api/admin/voucher/${code}/approve`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}',
+  });
+  const data = await res.json();
+  if (res.ok) {
+    const er = data.email_result||{};
+    if (er.sent) showToast(`✅ ${code} aprobado · 📧 Email enviado`);
+    else          showToast(`✅ ${code} aprobado · ⚠️ Email: ${er.error||'no enviado'}`);
+    refresh();
+  } else {
+    showToast('❌ Error al aprobar');
+  }
+}
+
+// ── Rechazar y eliminar ────────────────────────────────
+async function rechazarVoucher(code) {
+  const reason = prompt(`Rechazar ${code}\nMotivo:`, '') ?? null;
+  if (reason === null) return;
+  const res = await fetch(`/api/admin/voucher/${code}/reject`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ reason }),
+  });
+  if (res.ok) { showToast(`❌ ${code} rechazado`); refresh(); }
+  else showToast('❌ Error');
+}
+
+async function deleteVoucher(code) {
+  if (!confirm(`¿Eliminar código ${code}?`)) return;
+  const res = await fetch(`/api/admin/voucher/${code}/delete`, { method:'DELETE' });
+  if (res.ok) { showToast('🗑️ Código eliminado'); refresh(); }
+  else showToast('❌ No se pudo eliminar');
+}
+
+function copyCode() {
+  const code = document.getElementById('lastCode').textContent.trim();
+  navigator.clipboard.writeText(code)
+    .then(() => showToast('📋 Código copiado'))
+    .catch(() => showToast('❌ No se pudo copiar'));
+}
+
+async function logout() {
+  await fetch('/api/admin/logout', { method:'POST' });
+  location.href = '/admin/login';
+}
+
+// ── Init ───────────────────────────────────────────────
+const urlParams    = new URLSearchParams(window.location.search);
+const sessionParam = urlParams.get('session_id');
+
+buildBtypeTabs();
+actualizarBoton();   // botón deshabilitado al inicio
+refresh().then(() => {
+  if (sessionParam) {
+    document.getElementById('f-session').value = sessionParam;
+    refresh();
+  }
+});
+setInterval(refresh, 8000);
+
+// Enter en los inputs ejecuta si el formulario es válido
+['c-nom','c-ape','c-email','c-cel','c-ref'].forEach(id => {
+  document.getElementById(id)?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && formularioValido()) createVoucher();
+  });
+});
+</script>
+</body>
+</html>
