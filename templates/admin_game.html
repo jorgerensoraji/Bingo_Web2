@@ -279,7 +279,7 @@ setInterval(async function() {
 
     // Detectar pausa por ganador (sin esperar al próximo sorteo)
     if (data.paused && typeof showPausedBanner === 'function') {
-      showPausedBanner(data.winners || []);
+      showPausedBanner(data.winners || [], data.linea_winners || []);
     }
 
     // Sincronizar winners_limit select

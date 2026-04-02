@@ -175,7 +175,7 @@ async function fetchDraw() {
     if (data.status === 'paused') {
       isDrawing = false;
       setDrawBtnState(true);
-      showPausedBanner(data.winners || []);
+      showPausedBanner(data.winners || [], data.linea_winners || []);
       return;
     }
 
@@ -541,7 +541,7 @@ async function loadExistingState() {
     if (!startTime) { startTime = Date.now(); startClock(); }
 
     if (data.paused) {
-      showPausedBanner(data.winners || []);
+      showPausedBanner(data.winners || [], data.linea_winners || []);
       showToast('⏸ Juego pausado — hay ganador(es)');
     } else {
       showToast('✅ Juego en curso: ' + drawn.length + ' bolillas ya sorteadas');
@@ -604,7 +604,7 @@ function startPlayerPolling() {
 }
 
 // ── PAUSA POR GANADOR ────────────────────────────
-function showPausedBanner(winners) {
+function showPausedBanner(winners, lineaWinners) {
   stopAuto();
 
   let existing = document.getElementById('paused-banner');
@@ -620,7 +620,7 @@ function showPausedBanner(winners) {
     document.body.appendChild(existing);
   }
 
-  const names = (winners || []).map(function(w) {
+  const bingoCards = (winners || []).map(function(w) {
     const yape = w.yape_plin ? (
       '<div style="margin-top:6px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.3);' +
       'border-radius:8px;padding:8px 14px;display:inline-block">' +
@@ -629,21 +629,32 @@ function showPausedBanner(winners) {
       '</div>'
     ) : '<div style="font-size:.78rem;color:var(--muted);margin-top:4px">Sin numero Yape/Plin — buscar en /admin/payments</div>';
     const prize = w.prize ? '<span style="color:var(--accent);font-weight:900"> · S/. ' + Number(w.prize).toFixed(2) + '</span>' : '';
-    return '<div style="margin:10px 0;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;">' +
+    return '<div style="margin:8px 0;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;">' +
       '<div style="font-size:1.05rem;color:var(--text);">🏆 ' + escHtml(w.nombre || w.id) + prize + '</div>' +
       '<div style="font-size:.8rem;color:var(--muted);margin-top:2px">Cartilla: ' + w.id + '</div>' +
-      yape +
+      yape + '</div>';
+  }).join('');
+
+  const lineaCards = (lineaWinners || []).map(function(w) {
+    const prize = w.linea_prize ? '<span style="color:var(--warning);font-weight:900"> · S/. ' + Number(w.linea_prize).toFixed(2) + '</span>' : '';
+    return '<div style="margin:6px 0;padding:10px;background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);border-radius:10px;">' +
+      '<div style="font-size:.95rem;color:var(--text);">⭐ ' + escHtml(w.nombre || w.id) + prize + '</div>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Línea · Cartilla: ' + w.id + '</div>' +
       '</div>';
   }).join('');
 
   existing.innerHTML = `
-    <div style="max-width:480px;">
+    <div style="max-width:500px;overflow-y:auto;max-height:90vh;">
       <div style="font-size:4rem;margin-bottom:8px;">🎉</div>
       <h1 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;color:var(--accent);
                  letter-spacing:4px;text-shadow:0 0 30px rgba(0,229,180,.5);margin-bottom:12px;">
         ¡GANADOR!
       </h1>
-      <div style="margin-bottom:20px;">${names || '<div style="color:var(--muted);">Verificando ganador…</div>'}</div>
+      <div style="margin-bottom:12px;">${bingoCards || '<div style="color:var(--muted);">Verificando ganador…</div>'}</div>
+      ${lineaCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(246,195,67,.2);padding-top:10px;">
+        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Premio Línea</div>
+        ${lineaCards}
+      </div>` : ''}
       <div style="color:var(--muted);font-size:.9rem;margin-bottom:20px;">
         El juego está <strong style="color:var(--warning);">pausado</strong>.<br>
         Como admin puedes continuar o iniciar un nuevo juego.

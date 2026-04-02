@@ -331,7 +331,7 @@ async function syncState() {
     if (serverDrawn.length === drawnLocal.length) {
       // Aun sin cambio, actualizar pozo y ganadores en vivo
       updatePrizeDisplay(data);
-      updateWinnersDisplay(data.winners || []);
+      updateWinnersDisplay(data.winners || [], data.linea_winners || []);
       if (data.paused) {
         showPausedOverlay(data.winners || []);
       } else {
@@ -372,7 +372,7 @@ async function syncState() {
     updateRecent();
     updateStats(serverDrawn.length, data.remaining);
     updatePrizeDisplay(data);
-    updateWinnersDisplay(data.winners || []);
+    updateWinnersDisplay(data.winners || [], data.linea_winners || []);
     updateMyCartillaAutoMark();
 
     // Juego pausado por ganador
@@ -500,8 +500,8 @@ function updatePrizeDisplay(data) {
 }
 
 // ── v6: Mostrar ganadores en vivo ─────────────────────
-function updateWinnersDisplay(winners) {
-  if (!winners || !winners.length) return;
+function updateWinnersDisplay(winners, lineaWinners) {
+  if ((!winners || !winners.length) && (!lineaWinners || !lineaWinners.length)) return;
   let wEl = document.getElementById('live-winners-display');
   if (!wEl) {
     wEl = document.createElement('div');
@@ -512,11 +512,23 @@ function updateWinnersDisplay(winners) {
       statusEl.parentNode.appendChild(wEl);
     }
   }
-  wEl.innerHTML = '🏆 <strong>Ganador(es):</strong> ' +
-    winners.map(function(w) {
-      const p = Number(w.prize || 0).toFixed(2);
-      return '<span style="color:var(--accent)">' + (w.nombre || w.id) + '</span> (S/. ' + p + ')';
-    }).join(', ');
+  let html = '';
+  if (winners && winners.length) {
+    html += '🏆 <strong>BINGO:</strong> ' +
+      winners.map(function(w) {
+        const p = Number(w.prize || 0).toFixed(2);
+        return '<span style="color:var(--accent)">' + (w.nombre || w.id) + '</span> (S/. ' + p + ')';
+      }).join(', ');
+  }
+  if (lineaWinners && lineaWinners.length) {
+    if (html) html += '<br>';
+    html += '⭐ <strong>LÍNEA:</strong> ' +
+      lineaWinners.map(function(w) {
+        const p = Number(w.linea_prize || 0).toFixed(2);
+        return '<span style="color:var(--warning)">' + (w.nombre || w.id) + '</span> (S/. ' + p + ')';
+      }).join(', ');
+  }
+  wEl.innerHTML = html;
 }
 
 // ── RELOJ ─────────────────────────────────────────────
