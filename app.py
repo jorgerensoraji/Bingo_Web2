@@ -2252,6 +2252,9 @@ def api_session_auto_start(sid):
                 return jsonify({"status": "ok", "session": s})
     return jsonify({"error": "not_found"}), 404
 
+# Ejecutar al importar (gunicorn) y también al correr directo
+_startup()
+
 if __name__ == "__main__":
     ip = get_local_ip()
 
