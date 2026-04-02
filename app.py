@@ -13,7 +13,7 @@ CHANGES v8.0 (SQLite migration):
   ✅ Foundation ready for payment webhooks (v8.2)
 """
 
-import asyncio, json, os, random, socket, smtplib, tempfile
+import asyncio, json, os, random, socket, tempfile
 import threading, time, uuid
 from security import (
     apply_security_headers, get_csrf_token, csrf_required,
@@ -48,12 +48,11 @@ except ModuleNotFoundError:
 from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
 
+import requests as http_requests
 import edge_tts
 from flask import Flask, jsonify, render_template, request, send_file, session, redirect
 from num2words import num2words
@@ -122,36 +121,54 @@ def db_session():
     finally:
         db.close()
 
-# ─── Configuración de Email ───────────────────────────────────────────────────
-EMAIL_FROM   = os.environ.get("EMAIL_FROM", "")
-EMAIL_PASS   = os.environ.get("EMAIL_PASS", "")
-EMAIL_NOMBRE = os.environ.get("EMAIL_NOMBRE", "Bingo Pro")
-SMTP_HOST    = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT    = int(os.environ.get("SMTP_PORT", "587"))
+# ─── Configuración de Email (Brevo HTTP API) ──────────────────────────────────
+EMAIL_FROM    = os.environ.get("EMAIL_FROM", "")
+EMAIL_PASS    = os.environ.get("EMAIL_PASS", "")   # Brevo SMTP key = API key
+EMAIL_NOMBRE  = os.environ.get("EMAIL_NOMBRE", "Bingo Pro")
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 def email_configurado() -> bool:
     return bool(EMAIL_FROM and EMAIL_PASS)
 
 def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
     if not email_configurado():
-        return False, "Email no configurado en .env"
+        return False, "Email no configurado. Agrega EMAIL_FROM y EMAIL_PASS en las variables de entorno."
     if not destinatario or "@" not in destinatario:
         return False, "Email del destinatario inválido"
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = asunto
-        msg["From"]    = f"{EMAIL_NOMBRE} <{EMAIL_FROM}>"
-        msg["To"]      = destinatario
-        msg.attach(MIMEText(cuerpo_html, "html", "utf-8"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.ehlo(); server.starttls()
-            server.login(EMAIL_FROM, EMAIL_PASS)
-            server.sendmail(EMAIL_FROM, destinatario, msg.as_string())
-        return True, ""
-    except smtplib.SMTPAuthenticationError:
-        return False, "Error de autenticación Gmail."
-    except smtplib.SMTPException as e:
-        return False, f"Error SMTP: {e}"
+        payload = {
+            "sender":      {"name": EMAIL_NOMBRE, "email": EMAIL_FROM},
+            "to":          [{"email": destinatario}],
+            "subject":     asunto,
+            "htmlContent": cuerpo_html,
+        }
+        headers = {
+            "api-key":      EMAIL_PASS,
+            "Content-Type": "application/json",
+            "Accept":       "application/json",
+        }
+        # Forzar IPv4 para evitar "Network unreachable" en servidores sin IPv6
+        session = http_requests.Session()
+        session.mount("https://", http_requests.adapters.HTTPAdapter())
+        old_getaddrinfo = socket.getaddrinfo
+        def _ipv4_getaddrinfo(host, port, family=0, *args, **kwargs):
+            return old_getaddrinfo(host, port, socket.AF_INET, *args, **kwargs)
+        socket.getaddrinfo = _ipv4_getaddrinfo
+        try:
+            resp = session.post(BREVO_API_URL, json=payload, headers=headers, timeout=20)
+        finally:
+            socket.getaddrinfo = old_getaddrinfo
+
+        if resp.status_code in (200, 201):
+            return True, ""
+        try:
+            err_body = resp.json()
+            err_msg  = err_body.get("message", resp.text[:200])
+        except Exception:
+            err_msg = resp.text[:200]
+        return False, f"Brevo API error {resp.status_code}: {err_msg}"
+    except http_requests.exceptions.Timeout:
+        return False, "Timeout al conectar con Brevo API."
     except Exception as e:
         return False, f"Error al enviar email: {e}"
 
@@ -308,17 +325,17 @@ BINGO_TYPES = {
     "1sol": {
         "id": "1sol", "nombre": "Bingo 1 Sol", "precio": 1.00,
         "color": "#f4d03f", "emoji": "🟡", "descripcion": "Entrada básica",
-        "prize_pct": 0.70, "linea_pct": 0.10, "max_cartillas_per_voucher": 3,
+        "prize_pct": 0.70, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
     },
     "5soles": {
         "id": "5soles", "nombre": "Bingo 5 Soles", "precio": 5.00,
         "color": "#5dade2", "emoji": "🔵", "descripcion": "Entrada estándar",
-        "prize_pct": 0.75, "linea_pct": 0.08, "max_cartillas_per_voucher": 5,
+        "prize_pct": 0.75, "linea_pct": 0.08, "max_cartillas_per_voucher": 1,
     },
     "10soles": {
         "id": "10soles", "nombre": "Bingo 10 Soles", "precio": 10.00,
         "color": "#00e5b4", "emoji": "💎", "descripcion": "Entrada premium",
-        "prize_pct": 0.80, "linea_pct": 0.05, "max_cartillas_per_voucher": 5,
+        "prize_pct": 0.80, "linea_pct": 0.05, "max_cartillas_per_voucher": 1,
     },
 }
 
@@ -525,6 +542,7 @@ class GameState:
         self.game_id           = str(uuid.uuid4())[:8].upper()
         self.claimed_winners   = set()
         self.linea_claimed     = set()
+        self.linea_drawn_at    = None   # drawn_count cuando se reclamó la 1ª línea
         self.winners_log       = []
         self.linea_winners_log = []
         self.last_phrase       = None
@@ -558,6 +576,7 @@ class GameState:
                 "last": self.last, "game_id": self.game_id,
                 "claimed_winners": list(self.claimed_winners),
                 "linea_claimed":   list(self.linea_claimed),
+                "linea_drawn_at":  self.linea_drawn_at,
                 "winners_log":          self.winners_log,
                 "linea_winners_log":    self.linea_winners_log,
                 "last_phrase":     self.last_phrase,
@@ -607,6 +626,7 @@ class GameState:
             self.game_id           = data.get("game_id", self.game_id)
             self.claimed_winners   = set(data.get("claimed_winners", []))
             self.linea_claimed     = set(data.get("linea_claimed", []))
+            self.linea_drawn_at    = data.get("linea_drawn_at", None)
             self.winners_log       = data.get("winners_log", [])
             self.linea_winners_log = data.get("linea_winners_log", [])
             self.last_phrase       = data.get("last_phrase")
@@ -1981,13 +2001,17 @@ def api_winner_claim():
     # Fetch contact info from voucher (outside game lock)
     yape_plin    = ""
     winner_email = ""
+    celular      = ""
+    apellidos    = ""
     with db_session() as db:
         v_code = c.get("voucher_code", "")
         if v_code:
             v = db.query(Voucher).filter_by(code=v_code).first()
             if v:
-                yape_plin    = v.yape_plin or ""
-                winner_email = v.email or ""
+                yape_plin    = v.yape_plin    or ""
+                winner_email = v.email        or ""
+                celular      = v.celular      or ""
+                apellidos    = v.apellidos    or ""
 
     with game_lock:
         drawn2  = list(game.drawn)
@@ -2022,7 +2046,10 @@ def api_winner_claim():
         winner = {
             "id":           cid,
             "nombre":       c.get("nombre"),
+            "apellidos":    apellidos,
             "yape_plin":    yape_plin,
+            "email":        winner_email,
+            "celular":      celular,
             "claimed_at":   datetime.now().isoformat(),
             "drawn_count":  len(drawn2),
             "game_id":      gid,
@@ -2040,7 +2067,9 @@ def api_winner_claim():
     # Send winner email notification (outside lock)
     if winner_email:
         asunto = f"Felicidades! Ganaste S/. {prize_each:.2f} — {btype['nombre']}"
-        enviar_email(winner_email, asunto, _email_ganador(winner, btype))
+        ok, err = enviar_email(winner_email, asunto, _email_ganador(winner, btype))
+        if not ok:
+            print(f"[WARN] Email ganador no enviado a {winner_email}: {err}")
 
     return jsonify({
         "ok": True, "already": False, "game_id": gid, "winner": winner,
@@ -2055,6 +2084,21 @@ def api_winner_claim_linea():
     if not cid: return jsonify({"error": "missing_cid"}), 400
     c = load_cartilla(cid)
     if not c: return jsonify({"error": "not_found"}), 404
+
+    # Obtener datos de contacto del voucher (fuera del lock)
+    yape_plin    = ""
+    winner_email = ""
+    celular      = ""
+    apellidos    = ""
+    with db_session() as db:
+        v_code = c.get("voucher_code", "")
+        if v_code:
+            v = db.query(Voucher).filter_by(code=v_code).first()
+            if v:
+                yape_plin    = v.yape_plin    or ""
+                winner_email = v.email        or ""
+                celular      = v.celular      or ""
+                apellidos    = v.apellidos    or ""
 
     with game_lock:
         drawn2   = list(game.drawn)
@@ -2073,6 +2117,18 @@ def api_winner_claim_linea():
             entry = next((w for w in game.linea_winners_log if w["id"] == cid), None)
             return jsonify({"ok": True, "already": True, "winner": entry})
 
+        # Si ya hubo ganadores de línea en una bolilla anterior, cerrar nuevos reclamos
+        current_drawn = len(drawn2)
+        if game.linea_drawn_at is not None and current_drawn > game.linea_drawn_at:
+            return jsonify({
+                "ok": False, "error": "linea_closed",
+                "message": "La línea ya fue ganada en una bolilla anterior. No se aceptan más reclamos.",
+            }), 400
+
+        # Registrar en qué bolilla se reclamó la primera línea
+        if game.linea_drawn_at is None:
+            game.linea_drawn_at = current_drawn
+
         linea_cl.add(cid)
         n_linea   = len(linea_cl)
         linea_each = round(game.linea_pool / n_linea, 2)
@@ -2086,6 +2142,10 @@ def api_winner_claim_linea():
         linea_winner = {
             "id":           cid,
             "nombre":       c.get("nombre"),
+            "apellidos":    apellidos,
+            "yape_plin":    yape_plin,
+            "email":        winner_email,
+            "celular":      celular,
             "claimed_at":   datetime.now().isoformat(),
             "drawn_count":  len(drawn2),
             "game_id":      gid,
