@@ -390,6 +390,11 @@ def validate_voucher_for_cartilla(code: str) -> tuple:
             return False, "bad_code"
         if v.payment_status not in ("approved", "manual_approved"):
             return False, "payment_pending"
+        # El voucher debe pertenecer a la sesión activa
+        with game_lock:
+            active_sid = game.session_id
+        if active_sid and v.session_id and v.session_id != active_sid:
+            return False, "session_mismatch"
         btype = BINGO_TYPES.get(v.bingo_type, BINGO_TYPES["1sol"])
         max_c = btype.get("max_cartillas_per_voucher", 5)
         if len(v.cartillas_list()) >= max_c:
@@ -1980,6 +1985,11 @@ def api_winner_claim():
         claimed = game.claimed_winners
         chk     = check_winner(c["grid"], drawn2)
 
+        # Validar que la cartilla pertenece a la sesión activa
+        if c.get("session_id") and game.session_id and c["session_id"] != game.session_id:
+            return jsonify({"error": "session_mismatch",
+                            "message": "Esta cartilla no pertenece a la sesión activa."}), 403
+
         if not chk.get("bingo"):
             return jsonify({"ok": False, "error": "not_bingo",
                             "marked": chk.get("marked"), "total": chk.get("total")}), 400
@@ -2041,6 +2051,11 @@ def api_winner_claim_linea():
         gid      = game.game_id
         linea_cl = game.linea_claimed
         chk      = check_winner(c["grid"], drawn2)
+
+        # Validar que la cartilla pertenece a la sesión activa
+        if c.get("session_id") and game.session_id and c["session_id"] != game.session_id:
+            return jsonify({"error": "session_mismatch",
+                            "message": "Esta cartilla no pertenece a la sesión activa."}), 403
 
         if not chk.get("linea"):
             return jsonify({"ok": False, "error": "not_linea"}), 400

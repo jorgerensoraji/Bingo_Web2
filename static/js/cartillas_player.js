@@ -56,35 +56,53 @@ function getCode()  { return (document.getElementById('inp-code')?.value  || '')
 function getName()  { return (document.getElementById('inp-name')?.value  || '').trim() || 'Jugador'; }
 
 // ── MY CARTILLAS (localStorage) ───────────────────
-function saveMyCartilla(cid) {
+function saveMyCartilla(cid, sessionId) {
   try {
-    const arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-    if (!arr.includes(cid)) arr.unshift(cid);
+    let arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+    // Migrar entradas antiguas (string) al nuevo formato (objeto)
+    arr = arr.map(e => typeof e === 'string' ? { id: e, session_id: '' } : e);
+    if (!arr.find(e => e.id === cid)) arr.unshift({ id: cid, session_id: sessionId || '' });
     localStorage.setItem('my_cartillas', JSON.stringify(arr.slice(0, 30)));
   } catch(e) { /* storage may be unavailable */ }
 }
 
-function loadMyCartillas() {
+async function loadMyCartillas() {
   const listEl = document.getElementById('mylist');
   if (!listEl) return;
 
   let arr = [];
   try { arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) {}
+  // Migrar entradas antiguas (string) al nuevo formato (objeto)
+  arr = arr.map(e => typeof e === 'string' ? { id: e, session_id: '' } : e);
 
   if (!arr.length) {
     listEl.innerHTML = '<div style="color:var(--muted);margin-top:10px;">Aún no has generado cartillas.</div>';
     return;
   }
 
-  listEl.innerHTML = arr.map(cid => {
+  // Obtener sesión activa para marcar cartillas expiradas
+  let activeSid = '';
+  try {
+    const st = await fetch('/api/state');
+    const sd = await st.json();
+    activeSid = sd.session_id || '';
+  } catch(e) {}
+
+  listEl.innerHTML = arr.map(entry => {
+    const cid = entry.id;
+    const expired = activeSid && entry.session_id && entry.session_id !== activeSid;
     const pdf = `/api/cartilla/${cid}/pdf`;
     const png = `/api/cartilla/${cid}/png`;
     const msg = encodeURIComponent(`¡Hola! Esta es mi cartilla de Bingo.\nID: ${cid}\nDescarga tu cartilla en PNG o PDF desde el servidor.`);
     const wa  = `https://wa.me/?text=${msg}`;
-    return `<div class="myitem">
+    const expiredBadge = expired
+      ? '<div style="color:#e74c3c;font-size:.72rem;font-weight:700;margin-top:2px;">⛔ Sesión anterior — ya no es válida</div>'
+      : '';
+    return `<div class="myitem" style="${expired ? 'opacity:.5;' : ''}">
       <div class="meta">
         <div style="font-weight:900;font-size:1rem;">Cartilla ${cid}</div>
         <div class="hint">Guarda el ID — lo necesitarás para verificar</div>
+        ${expiredBadge}
       </div>
       <div class="actions">
         <a class="btn btn-ghost btn-sm" href="${png}" target="_blank" rel="noopener">🖼 PNG</a>
@@ -100,7 +118,8 @@ function loadMyCartillas() {
 function removeMyCartilla(cid) {
   try {
     let arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-    arr = arr.filter(c => c !== cid);
+    arr = arr.map(e => typeof e === 'string' ? { id: e, session_id: '' } : e);
+    arr = arr.filter(e => e.id !== cid);
     localStorage.setItem('my_cartillas', JSON.stringify(arr));
     loadMyCartillas();
     showToast('🗑️ Cartilla eliminada de tu lista');
@@ -123,15 +142,17 @@ async function generateAuto() {
     const data = await res.json();
     if (!res.ok) {
       const msgs = {
-        bad_code:     '❌ Código inválido. Pide uno al administrador.',
-        used_code:    '⚠️ Ese código ya fue usado.',
-        game_started: '⛔ El juego ya empezó. No se pueden crear más cartillas.',
+        bad_code:        '❌ Código inválido. Pide uno al administrador.',
+        used_code:       '⚠️ Ese código ya fue usado.',
+        game_started:    '⛔ El juego ya empezó. No se pueden crear más cartillas.',
+        session_mismatch:'⛔ Este código es de otra sesión. Solicita un código nuevo.',
       };
       showToast(msgs[data.error] || '❌ ' + (data.error || 'Error'));
       return;
     }
     const cid = data.cartillas[0].id;
-    saveMyCartilla(cid);
+    const sid = data.cartillas[0].session_id || '';
+    saveMyCartilla(cid, sid);
     showToast(`✅ ¡Cartilla ${cid} creada!`);
     loadMyCartillas();
     // Clear the code so it can't be reused in the UI

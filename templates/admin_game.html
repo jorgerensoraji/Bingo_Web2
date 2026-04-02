@@ -277,6 +277,11 @@ setInterval(async function() {
     const btn = document.getElementById('btn-resume');
     if (btn) btn.style.display = data.paused ? 'block' : 'none';
 
+    // Detectar pausa por ganador (sin esperar al próximo sorteo)
+    if (data.paused && typeof showPausedBanner === 'function') {
+      showPausedBanner(data.winners || []);
+    }
+
     // Sincronizar winners_limit select
     const sel = document.getElementById('winners-limit-select');
     if (sel && data.winners_limit) sel.value = String(data.winners_limit);
