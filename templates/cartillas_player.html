@@ -208,7 +208,7 @@
         <!-- Sesión -->
         <div class="form-group">
           <label>Sesión</label>
-          <select id="inp-session">
+          <select id="inp-session" onchange="onSessionChange()">
             <option value="">Sin sesión específica</option>
           </select>
         </div>
@@ -503,47 +503,67 @@ async function loadBingoTypes() {
 function selectBtype(id) {
   selBtype = id;
   loadBingoTypes();
+  renderSessions(); // filtrar sesiones al cambiar tipo
 }
 
 // ── Cargar sesiones ─────────────────────────────────────
+let allSessions = [];
+
 async function loadSessions() {
   try {
     const res = await fetch('/api/sessions/upcoming');
     const data = await res.json();
-    const ss = data.sessions || [];
-    const el = document.getElementById('sessions-list');
-    // Llenar selector de sesión
-    const sel = document.getElementById('inp-session');
-    sel.innerHTML = '<option value="">Sin sesión específica</option>' +
-      ss.map(s => {
-        const dt = new Date(s.datetime_iso);
-        const dstr = isNaN(dt) ? s.datetime_iso :
-          dt.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}) +
-          ' ' + dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-        return `<option value="${s.id}">${s.bingo_nombre} — ${dstr}</option>`;
-      }).join('');
-    if (!ss.length) {
-      el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sin sesiones programadas.</div>';
-      return;
-    }
-    el.innerHTML = ss.map(s => {
-      const col  = s.bingo_color || '#00e5b4';
-      const dt   = new Date(s.datetime_iso);
-      const dstr = isNaN(dt) ? s.datetime_iso :
-        dt.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'}) +
-        ' · ' + dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-      return `<div class="session-card">
-        <div style="color:${col};font-weight:700;font-size:.9rem;margin-bottom:4px">
-          ${esc(s.bingo_nombre)}
-        </div>
-        <div style="font-size:.88rem;font-weight:600">📅 ${esc(dstr)}</div>
-        ${s.descripcion?`<div style="color:var(--muted);font-size:.78rem;margin-top:4px">${esc(s.descripcion)}</div>`:''}
-        <div style="font-size:.78rem;color:var(--muted);margin-top:6px">
-          Precio: <strong style="color:${col}">S/. ${s.bingo_precio}</strong>
-        </div>
-      </div>`;
-    }).join('');
+    allSessions = data.sessions || [];
+    renderSessions();
   } catch(e) {}
+}
+
+function renderSessions() {
+  const ss  = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
+  const el  = document.getElementById('sessions-list');
+  const sel = document.getElementById('inp-session');
+
+  // Llenar selector de sesión (filtrado por tipo activo)
+  sel.innerHTML = '<option value="">Sin sesión específica</option>' +
+    ss.map(s => {
+      const dt = new Date(s.datetime_iso);
+      const dstr = isNaN(dt) ? s.datetime_iso :
+        dt.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}) +
+        ' ' + dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+      return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
+    }).join('');
+
+  if (!ss.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sin sesiones para este tipo de bingo.</div>';
+    return;
+  }
+  el.innerHTML = ss.map(s => {
+    const col  = s.bingo_color || '#00e5b4';
+    const dt   = new Date(s.datetime_iso);
+    const dstr = isNaN(dt) ? s.datetime_iso :
+      dt.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'}) +
+      ' · ' + dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="session-card">
+      <div style="color:${col};font-weight:700;font-size:.9rem;margin-bottom:4px">
+        ${esc(s.bingo_nombre)}
+      </div>
+      <div style="font-size:.88rem;font-weight:600">📅 ${esc(dstr)}</div>
+      ${s.descripcion?`<div style="color:var(--muted);font-size:.78rem;margin-top:4px">${esc(s.descripcion)}</div>`:''}
+      <div style="font-size:.78rem;color:var(--muted);margin-top:6px">
+        Precio: <strong style="color:${col}">S/. ${s.bingo_precio}</strong>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onSessionChange() {
+  const sel = document.getElementById('inp-session');
+  const opt = sel.options[sel.selectedIndex];
+  const btype = opt ? opt.getAttribute('data-btype') : null;
+  if (btype && btype !== selBtype) {
+    selBtype = btype;
+    loadBingoTypes(); // re-render tipo con el correcto seleccionado
+  }
 }
 
 // ── Enviar solicitud de participación ──────────────────
@@ -593,6 +613,8 @@ async function enviarSolicitud() {
         missing_ref:         '⚠️ Ingresa el número de operación.',
         duplicate_reference: '⚠️ ' + (data.message || 'Referencia duplicada.'),
         invalid_bingo_type:  '⚠️ Tipo de bingo inválido.',
+        invalid_session:     '⚠️ La sesión seleccionada no existe.',
+        bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con la sesión.'),
         rate_limited:        '⏳ Demasiados intentos. Espera un momento.',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);

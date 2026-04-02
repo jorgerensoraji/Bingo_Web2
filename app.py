@@ -1085,6 +1085,16 @@ def api_player_solicitar():
         return jsonify({"error": "terms_not_accepted", "message": "Debes aceptar los términos y condiciones."}), 400
     if bingo_type not in BINGO_TYPES:
         return jsonify({"error": "invalid_bingo_type"}), 400
+    # Si se especificó sesión, el bingo_type debe coincidir con el de la sesión
+    if session_id:
+        s = get_session(session_id)
+        if not s:
+            return jsonify({"error": "invalid_session",
+                            "message": "La sesión seleccionada no existe."}), 400
+        if s.get("bingo_type") != bingo_type:
+            return jsonify({"error": "bingo_type_mismatch",
+                            "message": f"Esta sesión es de {s.get('bingo_nombre')}. "
+                                       f"Selecciona el tipo correcto."}), 400
     if method != "efectivo" and not ref:
         return jsonify({"error": "missing_ref", "message": "Ingresa el número de operación."}), 400
     if method != "efectivo" and ref and _is_duplicate_payment_ref(ref, method, session_id):
