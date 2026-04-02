@@ -121,67 +121,45 @@ def db_session():
     finally:
         db.close()
 
-# ─── Configuración de Email (Brevo SMTP con IPv4 forzado) ─────────────────────
-EMAIL_FROM   = os.environ.get("EMAIL_FROM", "")
-EMAIL_PASS   = os.environ.get("EMAIL_PASS", "")   # Brevo SMTP key (xsmtpsib-...)
-EMAIL_NOMBRE = os.environ.get("EMAIL_NOMBRE", "Bingo Pro")
-SMTP_USER    = os.environ.get("SMTP_USER", "")    # login Brevo: a6fe8a001@smtp-brevo.com
-SMTP_HOST    = "smtp-relay.brevo.com"
-SMTP_PORT    = 587
+# ─── Configuración de Email (Brevo HTTP API — puerto 443, nunca bloqueado) ────
+EMAIL_FROM    = os.environ.get("EMAIL_FROM", "")
+EMAIL_PASS    = os.environ.get("EMAIL_PASS", "")   # Brevo API Key v3 (xkeysib-...)
+EMAIL_NOMBRE  = os.environ.get("EMAIL_NOMBRE", "Bingo Pro")
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 def email_configurado() -> bool:
     return bool(EMAIL_FROM and EMAIL_PASS)
-
-def _smtp_ipv4_connect(host, port, timeout):
-    """Resuelve el host a IPv4 y abre conexión TCP directa."""
-    infos = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
-    if not infos:
-        raise OSError(f"No se pudo resolver {host} en IPv4")
-    ip = infos[0][4][0]
-    sock = socket.create_connection((ip, port), timeout=timeout)
-    return sock
 
 def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
     if not email_configurado():
         return False, "Email no configurado. Agrega EMAIL_FROM y EMAIL_PASS en las variables de entorno."
     if not destinatario or "@" not in destinatario:
         return False, "Email del destinatario inválido"
-    smtp_login = SMTP_USER or EMAIL_FROM
     try:
-        import smtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = asunto
-        msg["From"]    = f"{EMAIL_NOMBRE} <{EMAIL_FROM}>"
-        msg["To"]      = destinatario
-        msg.attach(MIMEText(cuerpo_html, "html", "utf-8"))
-
-        # Conectar directamente por IPv4 para evitar "Network unreachable"
-        sock   = _smtp_ipv4_connect(SMTP_HOST, SMTP_PORT, timeout=20)
-        server = smtplib.SMTP(timeout=20)
-        server.sock   = sock
-        server.file   = sock.makefile("rb")
-        server._host  = SMTP_HOST
-        # Leer banner de bienvenida
-        code, msg_b = server.getreply()
-        if code != 220:
-            server.close()
-            return False, f"SMTP sin banner 220: {code}"
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(smtp_login, EMAIL_PASS)
-        server.sendmail(EMAIL_FROM, destinatario, msg.as_string())
-        server.quit()
-        return True, ""
-    except smtplib.SMTPAuthenticationError:
-        return False, "Error de autenticación Brevo. Verifica SMTP_USER y EMAIL_PASS."
-    except smtplib.SMTPException as e:
-        return False, f"Error SMTP: {e}"
+        payload = {
+            "sender":      {"name": EMAIL_NOMBRE, "email": EMAIL_FROM},
+            "to":          [{"email": destinatario}],
+            "subject":     asunto,
+            "htmlContent": cuerpo_html,
+        }
+        headers = {
+            "api-key":      EMAIL_PASS,
+            "Content-Type": "application/json",
+            "Accept":       "application/json",
+        }
+        resp = http_requests.post(BREVO_API_URL, json=payload, headers=headers, timeout=20)
+        if resp.status_code in (200, 201):
+            return True, ""
+        try:
+            err_body = resp.json()
+            err_msg  = err_body.get("message", resp.text[:200])
+        except Exception:
+            err_msg = resp.text[:200]
+        return False, f"Brevo error {resp.status_code}: {err_msg}"
+    except http_requests.exceptions.Timeout:
+        return False, "Timeout conectando con Brevo."
     except Exception as e:
-        return False, f"Error al enviar email: {e}"
+        return False, f"Error: {e}"
 
 # ─── Email templates (unchanged from v7.2) ───────────────────────────────────
 def _email_codigo_voucher(voucher_dict: dict, url_base: str) -> str:
