@@ -34,6 +34,7 @@ class Voucher(Base):
     email_codigo_enviado = Column(Boolean,     default=False)
     email_enviado_at     = Column(String(30),  nullable=True)
     email_reenviado_at   = Column(String(30),  nullable=True)
+    access_pin           = Column(String(64),  default="")   # SHA-256 del PIN de 4 dígitos
     creado_por           = Column(String(20),  default="admin")
     # JSON-encoded list of cartilla IDs  e.g. '["AB12", "CD34"]'
     cartillas_ids        = Column(Text,        default="[]")
@@ -80,6 +81,7 @@ class Voucher(Base):
             "creado_por":             self.creado_por,
             "cartillas":              self.cartillas_list(),
             "created":                self.created,
+            "has_pin":                bool(self.access_pin),
         }
 
 

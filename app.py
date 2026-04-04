@@ -13,7 +13,7 @@ CHANGES v8.0 (SQLite migration):
   ✅ Foundation ready for payment webhooks (v8.2)
 """
 
-import asyncio, json, os, random, socket, tempfile
+import asyncio, hashlib, json, os, random, socket, tempfile
 import threading, time, uuid
 from security import (
     apply_security_headers, get_csrf_token, csrf_required,
@@ -130,6 +130,10 @@ BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 def email_configurado() -> bool:
     return bool(EMAIL_FROM and EMAIL_PASS)
 
+def hash_pin(pin: str) -> str:
+    """SHA-256 del PIN. Nunca guardamos el PIN en texto claro."""
+    return hashlib.sha256(pin.strip().encode()).hexdigest()
+
 def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
     if not email_configurado():
         return False, "Email no configurado. Agrega EMAIL_FROM y EMAIL_PASS en las variables de entorno."
@@ -162,12 +166,24 @@ def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
         return False, f"Error: {e}"
 
 # ─── Email templates (unchanged from v7.2) ───────────────────────────────────
-def _email_codigo_voucher(voucher_dict: dict, url_base: str) -> str:
+def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = "") -> str:
     bt     = BINGO_TYPES.get(voucher_dict.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     code   = voucher_dict.get("code", "")
     nombre = voucher_dict.get("nombres", "Jugador")
+    celular= voucher_dict.get("celular", "")
     precio = bt["precio"]
     url_cartillas = f"{url_base}/cartillas"
+    url_juego     = f"{url_base}/"
+
+    pin_block = ""
+    if plain_pin:
+        pin_block = f"""
+    <div style="background:#111f2e;border:2px solid #f6c343;border-radius:12px;padding:18px;text-align:center;margin-bottom:20px">
+      <div style="font-size:.72rem;color:#4a6b85;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px">🔑 Tu PIN de acceso</div>
+      <div style="font-family:'Courier New',monospace;font-size:2.6rem;font-weight:900;color:#f6c343;letter-spacing:10px">{plain_pin}</div>
+      <div style="font-size:.75rem;color:#4a6b85;margin-top:6px">Úsalo junto con tu celular <strong style="color:#ddeeff">{celular}</strong><br>para ver tus cartillas desde cualquier dispositivo</div>
+    </div>"""
+
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
 <div style="max-width:520px;margin:0 auto;padding:32px 24px">
@@ -177,26 +193,39 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str) -> str:
   </div>
   <div style="background:#0d1825;border:1px solid #1a3148;border-radius:14px;padding:24px;margin-bottom:20px">
     <p style="margin:0 0 8px;color:#4a6b85;font-size:.85rem">Hola, <strong style="color:#ddeeff">{nombre}</strong></p>
-    <p style="margin:0 0 20px;color:#ddeeff">¡Tu pago fue confirmado! Aquí está tu código:</p>
+    <p style="margin:0 0 20px;color:#ddeeff">¡Tu pago fue confirmado! Aquí están tus datos de acceso:</p>
     <div style="background:#111f2e;border:2px solid #00e5b4;border-radius:12px;padding:20px;text-align:center;margin-bottom:20px">
-      <div style="font-size:.75rem;color:#4a6b85;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Tu código</div>
+      <div style="font-size:.75rem;color:#4a6b85;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Tu código de voucher</div>
       <div style="font-family:'Courier New',monospace;font-size:2.4rem;font-weight:900;color:#00e5b4;letter-spacing:8px">{code}</div>
       <div style="font-size:.78rem;color:#4a6b85;margin-top:8px">{bt['emoji']} {bt['nombre']} — S/. {precio:.2f}</div>
     </div>
+    {pin_block}
     <div style="background:#0a1520;border-radius:10px;padding:14px;font-size:.85rem;color:#4a6b85;margin-bottom:20px">
-      <strong style="color:#ddeeff">¿Cómo usar tu código?</strong><br><br>
-      1. Entra a <a href="{url_cartillas}" style="color:#00e5b4">{url_cartillas}</a><br>
-      2. Ingresa el código <strong style="color:#00e5b4">{code}</strong><br>
-      3. Genera tu cartilla y descárgala<br>
-      4. ¡Espera el inicio del juego!
+      <strong style="color:#ddeeff">¿Cómo participar?</strong><br><br>
+      1. Ve a <a href="{url_cartillas}" style="color:#00e5b4">{url_cartillas}</a> e ingresa tu código <strong style="color:#00e5b4">{code}</strong> para generar tu cartilla<br><br>
+      2. El día del juego entra a <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a><br>
+      {"3. Ingresa tu celular <strong style='color:#ddeeff'>" + celular + "</strong> y PIN <strong style='color:#f6c343'>" + plain_pin + "</strong> para cargar tus cartillas desde cualquier dispositivo<br><br>" if plain_pin else ""}
+      {("4" if plain_pin else "3")}. ¡Disfruta el juego y que ganes! 🎉
     </div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin:0">Bingo Pro Web v8.0 · {EMAIL_NOMBRE}</p>
 </div></body></html>"""
 
-def _email_pago_recibido(voucher_dict: dict) -> str:
-    bt     = BINGO_TYPES.get(voucher_dict.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
-    nombre = voucher_dict.get("nombres", "Jugador")
+def _email_pago_recibido(voucher_dict: dict, plain_pin: str = "") -> str:
+    bt      = BINGO_TYPES.get(voucher_dict.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
+    nombre  = voucher_dict.get("nombres", "Jugador")
+    celular = voucher_dict.get("celular", "")
+    pin_block = ""
+    if plain_pin:
+        pin_block = f"""
+    <div style="background:#111f2e;border:2px solid #f6c343;border-radius:12px;padding:16px;text-align:center;margin-top:16px">
+      <div style="font-size:.72rem;color:#4a6b85;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px">🔑 Tu PIN de acceso</div>
+      <div style="font-family:'Courier New',monospace;font-size:2.4rem;font-weight:900;color:#f6c343;letter-spacing:10px">{plain_pin}</div>
+      <div style="font-size:.75rem;color:#4a6b85;margin-top:6px">
+        Junto con tu celular <strong style="color:#ddeeff">{celular}</strong> podrás ver tus cartillas desde cualquier dispositivo.<br>
+        <strong style="color:#f6c343">¡Guarda este PIN!</strong>
+      </div>
+    </div>"""
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
 <div style="max-width:520px;margin:0 auto;padding:32px 24px">
@@ -205,13 +234,14 @@ def _email_pago_recibido(voucher_dict: dict) -> str:
   </div>
   <div style="background:#0d1825;border:1px solid #1a3148;border-radius:14px;padding:24px">
     <p style="margin:0 0 12px">Hola <strong style="color:#ddeeff">{nombre}</strong>,</p>
-    <p style="color:#ddeeff;margin:0 0 16px">Recibimos tu comprobante para
+    <p style="color:#ddeeff;margin:0 0 16px">Recibimos tu solicitud para
       <strong style="color:{bt['color']}">{bt['emoji']} {bt['nombre']}</strong> (S/. {bt['precio']:.2f}).
     </p>
     <div style="background:#111f2e;border-radius:10px;padding:14px;font-size:.85rem;color:#4a6b85">
-      Estamos verificando tu pago. En cuanto sea aprobado recibirás otro email con tu código.<br><br>
+      Estamos verificando tu pago. En cuanto sea aprobado recibirás otro email con tu código de cartilla.<br><br>
       <strong style="color:#f6c343">Tiempo estimado: menos de 30 minutos.</strong>
     </div>
+    {pin_block}
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin-top:20px">Bingo Pro Web v8.0 · {EMAIL_NOMBRE}</p>
 </div></body></html>"""
@@ -1077,6 +1107,7 @@ def api_player_solicitar():
     celular        = (data.get("celular")       or "").strip()[:20]
     yape_plin      = (data.get("yape_plin")     or "").strip()[:20]
     terms_accepted = bool(data.get("terms_accepted", False))
+    plain_pin      = (data.get("access_pin")    or "").strip()[:4]
     bingo_type     = data.get("bingo_type", "1sol")
     session_id     = data.get("session_id", "")
     method         = (data.get("method")        or "").strip()
@@ -1119,6 +1150,7 @@ def api_player_solicitar():
             bingo_type=bingo_type, bingo_nombre=btype["nombre"],
             precio=btype["precio"], session_id=session_id,
             payment_method=method, payment_ref=ref,
+            access_pin=hash_pin(plain_pin) if plain_pin else "",
             payment_status="pending_review",
             payment_submitted_at=datetime.now().isoformat(),
             created=datetime.now().isoformat(),
@@ -1130,7 +1162,8 @@ def api_player_solicitar():
 
     if email:
         asunto  = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
-        ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
+        ok, err = enviar_email(email, asunto,
+                               _email_pago_recibido(v_dict, plain_pin=plain_pin))
         if not ok:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
@@ -1540,6 +1573,36 @@ def api_list_sessions():
 @app.route("/api/sessions/upcoming", methods=["GET"])
 def api_upcoming_sessions():
     return jsonify({"sessions": get_upcoming_sessions(20)})
+
+@app.route("/api/cartillas/by_access", methods=["POST"])
+@rate_limit(max_calls=10, window_seconds=60)
+def api_cartillas_by_access():
+    """Devuelve las cartillas de un cliente dado su celular + PIN."""
+    data    = request.get_json() or {}
+    celular = (data.get("celular") or "").strip()
+    pin     = (data.get("pin")     or "").strip()
+    if not celular or not pin:
+        return jsonify({"error": "Ingresa tu celular y PIN"}), 400
+    if len(pin) != 4 or not pin.isdigit():
+        return jsonify({"error": "El PIN debe ser de 4 dígitos"}), 400
+    hashed = hash_pin(pin)
+    with db_session() as db:
+        vouchers = db.query(Voucher).filter(
+            Voucher.celular       == celular,
+            Voucher.access_pin    == hashed,
+            Voucher.payment_status == "approved",
+        ).all()
+    if not vouchers:
+        return jsonify({"error": "No se encontraron cartillas. Verifica tu celular y PIN."}), 404
+    import json as _json
+    cartilla_ids = []
+    for v in vouchers:
+        try:
+            ids = _json.loads(v.cartillas_ids or "[]")
+            cartilla_ids.extend(ids)
+        except Exception:
+            pass
+    return jsonify({"cartillas": cartilla_ids, "vouchers": len(vouchers)})
 
 @app.route("/api/admin/session", methods=["POST"])
 def api_create_session():
