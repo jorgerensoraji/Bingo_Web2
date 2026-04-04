@@ -1283,7 +1283,7 @@ def api_test_email():
         dest, "✅ Test de email — Bingo Pro",
         f"<html><body style='font-family:Arial;background:#070d14;color:#ddeeff;padding:32px'>"
         f"<h2 style='color:#00e5b4'>🎱 Test de email exitoso</h2>"
-        f"<p>Enviado desde: {EMAIL_FROM}<br>SMTP: {SMTP_HOST}:{SMTP_PORT}</p></body></html>"
+        f"<p>Enviado desde: <strong>{EMAIL_FROM}</strong><br>API: Brevo v3</p></body></html>"
     )
     if ok:
         return jsonify({"status": "ok", "message": f"Email de prueba enviado a {dest}"})
