@@ -656,7 +656,15 @@ async function createSession() {
     }),
   });
   const data = await res.json();
-  if (!res.ok) { showToast('❌ ' + (data.error || 'Error')); return; }
+  if (!res.ok) {
+    const msg = data.error || 'Error al crear la sesión';
+    if (res.status === 409) {
+      alert('⚠️ ' + msg);
+    } else {
+      showToast('❌ ' + msg);
+    }
+    return;
+  }
   showToast(`✅ Sesión #${data.session.id} creada`);
   document.getElementById('inp-desc').value = '';
   loadSessions();

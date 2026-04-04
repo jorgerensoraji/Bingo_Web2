@@ -1553,6 +1553,32 @@ def api_create_session():
     if not dt_str:
         return jsonify({"error": "datetime required"}), 400
     btype = BINGO_TYPES[bingo_type]
+
+    # ── Validar que no haya otra sesión dentro de 1 hora ──────────────────────
+    try:
+        new_dt = datetime.fromisoformat(dt_str)
+    except ValueError:
+        return jsonify({"error": "Formato de fecha inválido"}), 400
+
+    with db_session() as db:
+        conflictos = db.query(BingoSession).filter(
+            BingoSession.status.notin_(["cancelled", "finished"])
+        ).all()
+        for c in conflictos:
+            try:
+                c_dt = datetime.fromisoformat(c.datetime_iso)
+            except Exception:
+                continue
+            diff_min = abs((new_dt - c_dt).total_seconds()) / 60
+            if diff_min < 60:
+                c_dstr = c_dt.strftime("%d/%m/%Y %H:%M")
+                return jsonify({
+                    "error": f"Conflicto de horario: ya existe '{c.bingo_nombre}' "
+                             f"a las {c_dstr} (diferencia: {int(diff_min)} min). "
+                             f"Debe haber al menos 1 hora entre sesiones."
+                }), 409
+    # ─────────────────────────────────────────────────────────────────────────
+
     sid   = str(uuid.uuid4())[:8].upper()
     s_dict = {}
     with db_session() as db:
