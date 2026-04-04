@@ -306,30 +306,56 @@
   }
   .btn-guia-cta:hover { transform:scale(1.04); box-shadow:0 6px 30px rgba(0,229,180,.65); }
 
-  /* ── Cartilla mini grid ── */
-  .cartilla-mini-wrap {
-    margin-top:6px;
+  /* ── Multi-cartilla panels ── */
+  #mis-cartillas-wrap { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .mc-panel {
     background:var(--card); border:1px solid var(--border);
-    border-radius:10px; padding:7px; overflow:hidden;
+    border-radius:11px; overflow:hidden;
   }
-  .cartilla-mini-cols { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; margin-bottom:3px; }
-  .cartilla-mini-col-label {
-    font-size:.5rem; font-weight:700; text-align:center;
-    padding:2px 0; border-radius:3px;
+  .mc-header {
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;
+    padding:7px 10px; background:rgba(255,255,255,.03);
+    border-bottom:1px solid var(--border);
   }
-  #my-cartilla-grid { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; }
-  .c-cell {
+  .mc-id   { font-size:.8rem; font-weight:900; color:var(--text); }
+  .mc-count{ font-size:.72rem; color:var(--muted); }
+  .mc-badge{ font-size:.6rem; font-weight:900; padding:2px 8px; border-radius:10px; letter-spacing:.5px; }
+  .mc-badge-bingo  { background:rgba(0,229,180,.15);  color:var(--accent); animation:pulseCircle 1s ease-in-out infinite; }
+  .mc-badge-linea  { background:rgba(246,195,67,.15); color:#f6c343; }
+  .mc-badge-almost { background:rgba(231,76,60,.15);  color:var(--danger); }
+  .mc-grid-wrap  { padding:5px 5px 3px; }
+  .mc-grid-cols  { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; margin-bottom:2px; }
+  .mc-col-label  { font-size:.42rem; font-weight:700; text-align:center; padding:2px 0; border-radius:3px; }
+  .mc-grid       { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; }
+  .mc-cell {
     aspect-ratio:1; display:flex; align-items:center; justify-content:center;
-    font-size:.72rem; font-weight:700; border-radius:5px;
-    border:1px solid transparent; transition:all .3s;
+    font-size:.68rem; font-weight:700; border-radius:4px;
+    border:1px solid transparent; transition:all .25s;
     background:var(--sub); color:var(--muted);
   }
-  .c-cell.empty { background:rgba(10,18,26,.5); color:transparent; border:1px dashed var(--border); }
-  .c-cell.marked { transform:scale(1.06); border-color:currentColor; }
-  .c-cell.marked span {
-    width:76%; height:76%; border-radius:50%;
+  .mc-cell.empty  { background:rgba(10,18,26,.5); color:transparent; border:1px dashed var(--border); }
+  .mc-cell.marked { border-color:currentColor; }
+  .mc-cell.marked span {
+    width:78%; height:78%; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    color:#060d12; font-size:.66rem;
+    color:#060d12; font-size:.62rem;
+  }
+  .mc-actions { padding:5px 6px 7px; display:flex; flex-direction:column; gap:5px; }
+  .mc-claim-btn {
+    width:100%; padding:11px; border:none; border-radius:10px;
+    font-family:'Outfit',sans-serif; font-weight:900; font-size:.95rem; cursor:pointer;
+  }
+  .mc-claim-bingo {
+    background:linear-gradient(135deg,#00e5b4,#2f80ed); color:#041015;
+    animation:glowBingo 1.8s ease-in-out infinite;
+  }
+  .mc-claim-linea {
+    background:linear-gradient(135deg,#f6c343,#e67e22); color:#041015;
+    animation:glowLinea 1.8s ease-in-out infinite;
+  }
+  @keyframes glowLinea {
+    0%,100%{ box-shadow:0 0 8px rgba(246,195,67,.4); }
+    50%    { box-shadow:0 0 22px rgba(246,195,67,.9); }
   }
 
 
@@ -522,14 +548,8 @@
     <div class="panel">
       <div class="section-title">Mi Cartilla</div>
 
-      <div class="c-select-row">
-        <select id="my-cartilla-select">
-          <option value="">Cargando cartillas…</option>
-        </select>
-      </div>
-
       <div class="c-btns">
-        <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar</button>
+        <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar mis cartillas</button>
       </div>
 
       <!-- Banner comprar cartilla -->
@@ -548,13 +568,8 @@
         </div>
       </div>
 
-      <div id="my-cartilla-meta"></div>
-      <div id="my-cartilla-status">💡 Selecciona tu cartilla para marcarla en tiempo real.</div>
-
-      <div class="cartilla-mini-wrap" id="cartilla-mini-wrap" style="display:none;">
-        <div class="cartilla-mini-cols" id="cartilla-mini-cols"></div>
-        <div id="my-cartilla-grid"></div>
-      </div>
+      <div id="my-cartilla-status" style="font-size:.76rem;color:var(--muted);min-height:.9rem;margin-top:4px"></div>
+      <div id="mis-cartillas-wrap"></div>
     </div>
 
   </div>

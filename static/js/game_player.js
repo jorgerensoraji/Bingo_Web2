@@ -46,7 +46,6 @@ let adminWasOnline = true;
 let resetPending   = false;
 
 // ── MI CARTILLA ───────────────────────────────────────
-let myCartillaId  = null;
 let myCartilla    = null;
 let myBingoFired  = false;
 let claimedBingo  = false;   // v6 — reclamo de bingo
@@ -579,358 +578,232 @@ function launchConfetti() {
   }
 }
 
-// ── CARTILLA UI ───────────────────────────────────────
+// ── CARTILLA UI (multi-cartilla v8) ─────────────────────
 function getMyCartillasFromStorage() {
   try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]') || []; }
   catch(e) { return []; }
 }
 
-function populateMyCartillaSelect() {
-  const sel = document.getElementById('my-cartilla-select');
-  if (!sel) return;
-  const arr = getMyCartillasFromStorage();
-  sel.innerHTML = '';
-  const opt0 = document.createElement('option');
-  opt0.value = '';
-  opt0.textContent = arr.length
-    ? '— Selecciona tu cartilla —'
-    : 'Aún no tienes cartillas en este dispositivo';
-  sel.appendChild(opt0);
-  arr.forEach(function(cid) {
-    const o = document.createElement('option');
-    o.value = cid; o.textContent = 'Cartilla ' + cid;
-    sel.appendChild(o);
-  });
-  const last = localStorage.getItem('active_cartilla') || '';
-  if (last && arr.includes(last)) sel.value = last;
+function removeClaimButtons() {
+  cartillaStates = {};
 }
 
-function renderMyCartilla(grid, drawnSet) {
-  const wrap = document.getElementById('my-cartilla-grid');
-  if (!wrap) return;
-  wrap.innerHTML = '';
+async function loadAllCartillas() {
+  const ids = getMyCartillasFromStorage();
+  if (!ids.length) { showToast('⚠️ No tienes cartillas guardadas en este dispositivo'); return; }
+  showToast('⏳ Cargando ' + ids.length + ' cartilla(s)…');
+  const results = await Promise.allSettled(
+    ids.map(function(cid) {
+      return fetch('/api/cartilla/' + cid.trim().toUpperCase())
+        .then(function(r) { return r.ok ? r.json() : null; });
+    })
+  );
+  myCartillas = results
+    .filter(function(r) { return r.status === 'fulfilled' && r.value && r.value.grid; })
+    .map(function(r) { return r.value; });
+  cartillaStates = {};
+  if (!myCartillas.length) { showToast("❌ No se encontraron cartillas válidas"); return; }
+  const banner = document.getElementById('banner-comprar');
+  if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
+  updateMyCartillaAutoMark(true);
+  showToast('✅ ' + myCartillas.length + ' cartilla(s) cargada(s)');
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch(e) {}
+}
 
-  const miniWrap = document.getElementById('cartilla-mini-wrap');
-  if (miniWrap) miniWrap.style.display = 'block';
-
-  const colsEl = document.getElementById('cartilla-mini-cols');
-  if (colsEl && !colsEl.dataset.built) {
-    colsEl.dataset.built = '1';
-    colsEl.innerHTML = '';
-    COL_LABELS_MINI.forEach(function(lbl, ci) {
-      var d = document.createElement('div');
-      d.className   = 'cartilla-mini-col-label';
-      d.textContent = lbl;
-      d.style.color      = GROUP_COLORS[ci].fg;
-      d.style.background = GROUP_COLORS[ci].bg;
-      colsEl.appendChild(d);
-    });
+// ── Actualizar cartillas del jugador (todas) ──────────
+function updateMyCartillaAutoMark(force) {
+  const wrap   = document.getElementById('mis-cartillas-wrap');
+  const status = document.getElementById('my-cartilla-status');
+  if (!myCartillas.length) {
+    if (status) status.textContent = gameStarted
+      ? '💡 El juego ya empezó. Carga tus cartillas para marcar automáticamente.'
+      : 'Haz clic en "Cargar mis cartillas" para empezar.';
+    if (wrap) wrap.innerHTML = '';
+    return;
   }
-
-  for (let ri = 0; ri < 3; ri++) {
-    for (let ci = 0; ci < 9; ci++) {
-      const num  = grid[ri][ci];
-      const g    = GROUP_COLORS[ci];
-      const cell = document.createElement('div');
-      cell.className = 'c-cell';
-      if (num === null || num === undefined) {
-        cell.classList.add('empty'); cell.textContent = '·';
-      } else {
-        cell.classList.add('filled');
-        if (drawnSet && drawnSet.has(num)) {
+  if (status) status.textContent = '';
+  const drawnSet = new Set(drawnLocal);
+  const voice = (document.getElementById('player-voice-select') || {}).value || 'es-PE-CamilaNeural';
+  myCartillas.forEach(function(cart) {
+    const state   = getCartillaState(cart.id);
+    const panelId = 'mc-panel-' + cart.id;
+    let panel = document.getElementById(panelId);
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id        = panelId;
+      panel.className = 'mc-panel';
+      if (wrap) wrap.appendChild(panel);
+    }
+    const nums = [];
+    for (const row of cart.grid) for (const n of row) if (n !== null && n !== undefined) nums.push(n);
+    const marked  = nums.filter(function(n) { return drawnSet.has(n); }).length;
+    const isBingo = nums.length > 0 && nums.every(function(n) { return drawnSet.has(n); });
+    const isLinea = cart.grid.some(function(row) {
+      const rn = row.filter(function(n) { return n !== null && n !== undefined; });
+      return rn.length > 0 && rn.every(function(n) { return drawnSet.has(n); });
+    });
+    const isAlmost = !isBingo && (nums.length - marked === 1);
+    if (isBingo && !state.bingoFired) {
+      state.bingoFired = true;
+      playWinAlert();
+      showToast('🎉 BINGO en cartilla ' + cart.id + '! Toca el botón para reclamar.', 5000);
+      showWinNotification('🎉 BINGO!', 'Cartilla ' + cart.id);
+    }
+    if (isAlmost && !state.almostSpoken) {
+      state.almostSpoken = true;
+      if (soundEnabled) playPhrase('¡Falta uno!', voice);
+    }
+    const badge = isBingo  ? '<span class="mc-badge mc-badge-bingo">🎉 BINGO</span>'
+                : isLinea  ? '<span class="mc-badge mc-badge-linea">⭐ LÍNEA</span>'
+                : isAlmost ? '<span class="mc-badge mc-badge-almost">🔥 FALTA 1</span>'
+                : '';
+    let header = panel.querySelector('.mc-header');
+    if (!header) {
+      header = document.createElement('div');
+      header.className = 'mc-header';
+      panel.insertBefore(header, panel.firstChild);
+    }
+    header.innerHTML = '<div><span class="mc-id">Cartilla ' + cart.id + '</span>' +
+      '<span class="mc-count"> · ' + marked + '/15</span></div>' + badge;
+    let gridWrap = panel.querySelector('.mc-grid-wrap');
+    if (!gridWrap) {
+      gridWrap = document.createElement('div');
+      gridWrap.className = 'mc-grid-wrap';
+      const colsDiv = document.createElement('div');
+      colsDiv.className = 'mc-grid-cols';
+      COL_LABELS_MINI.forEach(function(lbl, ci) {
+        const d = document.createElement('div');
+        d.className = 'mc-col-label';
+        d.textContent = lbl.split('-')[0];
+        d.style.color      = GROUP_COLORS[ci].fg;
+        d.style.background = GROUP_COLORS[ci].bg;
+        colsDiv.appendChild(d);
+      });
+      gridWrap.appendChild(colsDiv);
+      const gridDiv = document.createElement('div');
+      gridDiv.className = 'mc-grid';
+      for (let i = 0; i < 27; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'mc-cell';
+        gridDiv.appendChild(cell);
+      }
+      gridWrap.appendChild(gridDiv);
+      panel.appendChild(gridWrap);
+    }
+    const cells = panel.querySelectorAll('.mc-cell');
+    let idx = 0;
+    for (let ri = 0; ri < 3; ri++) {
+      for (let ci = 0; ci < 9; ci++) {
+        const num  = cart.grid[ri][ci];
+        const g    = GROUP_COLORS[ci];
+        const cell = cells[idx++];
+        if (!cell) continue;
+        cell.className = 'mc-cell';
+        cell.innerHTML = '';
+        cell.style.borderColor = '';
+        if (num === null || num === undefined) {
+          cell.classList.add('empty');
+          cell.textContent = '·';
+        } else if (drawnSet.has(num)) {
           cell.classList.add('marked');
           cell.style.borderColor = g.fg;
           const s = document.createElement('span');
           s.textContent = num; s.style.background = g.fg;
           cell.appendChild(s);
         } else {
-          cell.textContent = num; cell.style.color = g.fg + '44';
+          cell.textContent = num;
+          cell.style.color = g.fg + '44';
         }
       }
-      wrap.appendChild(cell);
     }
-  }
-}
-
-async function loadSelectedCartilla() {
-  const sel = document.getElementById('my-cartilla-select');
-  const cid = (sel ? sel.value : '').trim().toUpperCase();
-  if (!cid) { showToast('🎴 Selecciona una cartilla'); return; }
-  myCartillaId  = cid;
-  claimedBingo  = false;
-  claimedLinea  = false;
-  almostSpoken  = false;
-  myBingoFired  = false;
-  localStorage.setItem('active_cartilla', cid);
-  try {
-    const res  = await fetch('/api/cartilla/' + cid);
-    const data = await res.json();
-    if (!res.ok) { showToast('❌ No se encontró esa cartilla'); return; }
-    myCartilla = data;
-    const meta = document.getElementById('my-cartilla-meta');
-    if (meta) meta.innerHTML = 'ID: <strong style="color:var(--text)">' + data.id + '</strong>';
-    updateMyCartillaAutoMark(true);
-    showToast('✅ Cartilla ' + cid + ' cargada');
-    const banner = document.getElementById('banner-comprar');
-    if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
-    try {
-      if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    } catch(e) {}
-  } catch(e) { showToast('❌ Error al cargar cartilla'); }
-}
-
-function isMyCartillaBingo(drawnSet) {
-  if (!myCartilla || !myCartilla.grid) return false;
-  const nums = [];
-  for (const row of myCartilla.grid) for (const n of row) if (n !== null && n !== undefined) nums.push(n);
-  return nums.length && nums.every(function(n) { return drawnSet.has(n); });
-}
-
-function isMyCartillaLinea(drawnSet) {
-  if (!myCartilla || !myCartilla.grid) return false;
-  for (const row of myCartilla.grid) {
-    const rowNums = row.filter(function(n) { return n !== null && n !== undefined; });
-    if (rowNums.length && rowNums.every(function(n) { return drawnSet.has(n); })) return true;
-  }
-  return false;
-}
-
-function countMarked(drawnSet) {
-  if (!myCartilla || !myCartilla.grid) return 0;
-  let c = 0;
-  for (const row of myCartilla.grid) for (const n of row) if (n && drawnSet.has(n)) c++;
-  return c;
-}
-
-// ── v6: Botones de reclamo ────────────────────────────
-function removeClaimButtons() {
-  ['claim-bingo-btn','claim-linea-btn','almost-alert'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.remove();
-  });
-}
-
-function manageClaimButtons(isBingo, isLinea, isAlmost, voice) {
-  const status = document.getElementById('my-cartilla-status');
-  if (!status) return;
-
-  // ── Botón BINGO ──
-  if (isBingo && !claimedBingo) {
-    let btn = document.getElementById('claim-bingo-btn');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.id = 'claim-bingo-btn';
-      btn.style.cssText = [
-        'width:100%;padding:14px;margin-top:10px;border:none;border-radius:12px;',
-        'background:linear-gradient(135deg,#00e5b4,#2f80ed);',
-        'color:#041015;font-family:Outfit,sans-serif;font-weight:900;',
-        'font-size:1.1rem;cursor:pointer;',
-        'animation:glowBingo 1.8s ease-in-out infinite;',
-      ].join('');
+    let actions = panel.querySelector('.mc-actions');
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.className = 'mc-actions';
+      panel.appendChild(actions);
+    }
+    actions.innerHTML = '';
+    if (isBingo && !state.claimedBingo) {
+      const btn = document.createElement('button');
+      btn.className = 'mc-claim-btn mc-claim-bingo';
       btn.innerHTML = '🎉 ¡RECLAMAR BINGO!';
-      btn.onclick = claimBingo;
-      status.parentNode.insertBefore(btn, status.nextSibling);
+      btn.onclick   = (function(cid) { return function() { claimBingo(cid); }; })(cart.id);
+      actions.appendChild(btn);
     }
-  }
-
-  // ── Botón LÍNEA ──
-  if (isLinea && !claimedLinea) {
-    let btn = document.getElementById('claim-linea-btn');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.id = 'claim-linea-btn';
-      btn.style.cssText = [
-        'width:100%;padding:12px;margin-top:8px;border:none;border-radius:10px;',
-        'background:linear-gradient(135deg,#f6c343,#e59866);',
-        'color:#1a0a00;font-family:Outfit,sans-serif;font-weight:900;',
-        'font-size:.95rem;cursor:pointer;',
-      ].join('');
+    if (isLinea && !state.claimedLinea) {
+      const btn = document.createElement('button');
+      btn.className = 'mc-claim-btn mc-claim-linea';
       btn.innerHTML = '⭐ ¡RECLAMAR LÍNEA!';
-      btn.onclick = claimLinea;
-      status.parentNode.insertBefore(btn, status.nextSibling);
+      btn.onclick   = (function(cid) { return function() { claimLinea(cid); }; })(cart.id);
+      actions.appendChild(btn);
     }
-  }
-
-  // ── Alerta Falta 1 ──
-  if (isAlmost && !isBingo) {
-    let al = document.getElementById('almost-alert');
-    if (!al) {
-      al = document.createElement('div');
-      al.id = 'almost-alert';
-      al.style.cssText = [
-        'background:rgba(246,195,67,.1);border:2px solid var(--warning);',
-        'border-radius:12px;padding:14px;text-align:center;margin-top:10px;',
-      ].join('');
-      al.innerHTML = [
-        '<h3 style="color:var(--warning);font-family:Bebas Neue,sans-serif;',
-        'font-size:1.6rem;letter-spacing:2px;margin:0 0 4px;',
-        'animation:pulse 1s ease-in-out infinite">¡FALTA 1!</h3>',
-        '<p style="color:var(--muted);font-size:.82rem;margin:0">',
-        'Solo te falta un número para el BINGO</p>',
-      ].join('');
-      status.parentNode.insertBefore(al, status.nextSibling);
-      if (!almostSpoken) {
-        almostSpoken = true;
-        playAlmostAlert(voice);
-      }
-    }
-  } else {
-    // Quitar alerta si ya no falta 1
-    var alEl = document.getElementById('almost-alert');
-    if (alEl && !isAlmost) alEl.remove();
-    if (!isAlmost) almostSpoken = false;
-  }
-}
-
-// ── Audio de victoria ─────────────────────────────────
-function playWinAlert() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'sine'; o.frequency.value = 880;
-    o.connect(g); g.connect(ctx.destination);
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
-    o.start(); o.stop(ctx.currentTime + 1.25);
-    setTimeout(function() { ctx.close(); }, 1400);
-  } catch(e) {}
-  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]); } catch(e) {}
-}
-
-function showWinNotification(title, body) {
-  try {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') new Notification(title, { body: body });
-  } catch(e) {}
-}
-
-// ── Actualizar cartilla del jugador ──────────────────
-function updateMyCartillaAutoMark(force) {
-  const status = document.getElementById('my-cartilla-status');
-  const btnBuy = document.getElementById('btn-go-cartillas');
-  if (btnBuy) {
-    btnBuy.disabled    = gameStarted;
-    btnBuy.textContent = gameStarted ? 'Ver/Ya compré' : '🎴 Comprar cartilla';
-  }
-  if (!myCartilla || !myCartilla.grid) {
-    if (status) status.textContent = gameStarted
-      ? '💡 El juego ya empezó. Carga tu cartilla para marcar automáticamente.'
-      : '💡 Puedes comprar/generar tu cartilla antes de que empiece el juego.';
-    return;
-  }
-
-  const drawnSet = new Set(drawnLocal);
-  renderMyCartilla(myCartilla.grid, drawnSet);
-
-  const marked  = countMarked(drawnSet);
-  const isBingo = isMyCartillaBingo(drawnSet);
-  const isLinea = isMyCartillaLinea(drawnSet);
-  const total   = 15;
-  const isAlmost = !isBingo && (total - marked === 1);
-
-  if (status) {
-    if (isBingo) {
-      status.innerHTML = '<strong style="color:var(--accent)">🎉 ¡BINGO! Marcadas: ' + marked + '/15</strong>';
-    } else if (isAlmost) {
-      status.innerHTML = '<strong style="color:var(--warning)">🔥 ¡Solo falta 1 número!</strong>';
-    } else {
-      status.innerHTML = 'Marcadas: <strong style="color:var(--accent)">' + marked + ' / 15</strong>';
-    }
-  }
-
-  const voice = (document.getElementById('player-voice-select') || {}).value || 'es-PE-CamilaNeural';
-  manageClaimButtons(isBingo, isLinea, isAlmost, voice);
-
-  // Auto-trigger bingo alert (vibración + sonido) la primera vez
-  if (!myBingoFired && isBingo) {
-    myBingoFired = true;
-    playWinAlert();
-    showToast('🎉 ¡BINGO! Haz clic en el botón para reclamar.', 5000);
-    showWinNotification('🎉 ¡BINGO!', 'Haz clic en el botón para reclamar tu premio.');
-  }
+  });
 }
 
 function initMyCartillaUI() {
-  populateMyCartillaSelect();
   const btn = document.getElementById('btn-load-cartilla');
-  if (btn) btn.addEventListener('click', loadSelectedCartilla);
-  const sel = document.getElementById('my-cartilla-select');
-  if (sel) sel.addEventListener('change', function() {
-    const cid = (sel.value || '').trim();
-    if (cid) loadSelectedCartilla();
-  });
-  window.addEventListener('focus', populateMyCartillaSelect);
+  if (btn) btn.addEventListener('click', loadAllCartillas);
+  if (getMyCartillasFromStorage().length) loadAllCartillas();
 }
 
-// ── v7.2: Reclamar BINGO (pozo dividido) ─────────────
-async function claimBingo() {
-  if (!myCartilla) return;
+// ── v8: Reclamar BINGO (por cartilla) ────────────────
+async function claimBingo(cid) {
+  const state = getCartillaState(cid);
   try {
     const res  = await fetch('/api/winner/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cid: myCartilla.id }),
+      body: JSON.stringify({ cid: cid }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
       const msgs = {
-        not_bingo: '❌ Tu cartilla no tiene bingo todavía (' + (data.marked||0) + '/' + (data.total||15) + ')',
+        not_bingo: '❌ Cartilla ' + cid + ' sin bingo (' + (data.marked||0) + '/' + (data.total||15) + ')',
         not_found: '❌ Cartilla no encontrada',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);
       return;
     }
-    claimedBingo = true;
-    document.getElementById('claim-bingo-btn')?.remove();
-
-    const winner  = data.winner || {};
-    const prize   = Number(data.prize_each || winner.prize || 0).toFixed(2);
-    const nW      = data.n_winners || 1;
-
-    // v7.2 — mensaje según si hay empate o no
+    state.claimedBingo = true;
+    const winner = data.winner || {};
+    const prize  = Number(data.prize_each || winner.prize || 0).toFixed(2);
+    const nW     = data.n_winners || 1;
     if (data.split && nW > 1) {
-      showToast('🎉 ¡BINGO! Empate con ' + nW + ' ganadores — Tu premio: S/. ' + prize, 6000);
-      showWinNotification('🎉 ¡BINGO! — Empate',
-        'Compartes el pozo con ' + nW + ' ganadores. Tu parte: S/. ' + prize);
+      showToast('🎉 ¡BINGO! Empate con ' + nW + ' — S/. ' + prize + ' c/u', 6000);
+      showWinNotification('🎉 ¡BINGO! Empate', 'Cartilla ' + cid + ' — S/. ' + prize);
     } else {
-      showToast('🎉 ¡BINGO registrado! Premio: S/. ' + prize + '. El admin confirmará.', 5000);
+      showToast('🎉 ¡BINGO! Premio: S/. ' + prize + '. El admin confirmará.', 5000);
       showWinNotification('🎉 ¡BINGO!', 'Premio: S/. ' + prize);
     }
     showGameOverPlayer({ ...winner, prize: Number(prize), n_winners: nW, split: data.split });
   } catch(e) { showToast('❌ Error de conexión'); }
 }
 
-// ── v7.2: Reclamar LÍNEA (jugador puede ganar bingo también) ──
-async function claimLinea() {
-  if (!myCartilla) return;
+// ── v8: Reclamar LÍNEA (por cartilla) ────────────────
+async function claimLinea(cid) {
+  const state = getCartillaState(cid);
   try {
     const res  = await fetch('/api/winner/claim_linea', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cid: myCartilla.id }),
+      body: JSON.stringify({ cid: cid }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      if (data.error === 'not_linea')    showToast('❌ Tu cartilla no tiene línea completa');
-      else if (data.error === 'linea_closed') showToast('⛔ La línea ya fue ganada en una bolilla anterior');
-      else if (data.already)             showToast('ℹ️ Ya habías reclamado la línea');
-      else                               showToast('❌ ' + data.error);
+      if (data.error === 'not_linea')         showToast('❌ Cartilla ' + cid + ' sin línea completa');
+      else if (data.error === 'linea_closed') showToast('⛔ La línea ya fue ganada');
+      else if (data.already)                  showToast('ℹ️ Ya reclamaste la línea de esta cartilla');
+      else                                    showToast('❌ ' + data.error);
       return;
     }
-    claimedLinea = true;
-    document.getElementById('claim-linea-btn')?.remove();
-
+    state.claimedLinea = true;
     const lineaPrize = Number(data.linea_prize || 0).toFixed(2);
     const nWL        = data.n_winners || 1;
-
     if (data.split && nWL > 1) {
-      showToast('⭐ ¡Línea! Empate con ' + nWL + ' — Tu parte: S/. ' + lineaPrize + '. ¡Sigue jugando para el BINGO!', 5000);
+      showToast('⭐ ¡Línea! Empate con ' + nWL + ' — S/. ' + lineaPrize + '. ¡Sigue jugando!', 5000);
     } else {
-      showToast('⭐ ¡Línea registrada! Premio: S/. ' + lineaPrize + '. ¡Sigue jugando para el BINGO!', 5000);
+      showToast('⭐ ¡Línea! Premio: S/. ' + lineaPrize + '. ¡Sigue jugando!', 5000);
     }
-    // v7.2 — ganar LÍNEA NO impide reclamar BINGO después
-    claimedBingo = false;
   } catch(e) { showToast('❌ Error de conexión'); }
 }
 
@@ -971,7 +844,8 @@ function showPausedOverlay(winners) {
   if (pausedOverlayShown) return;
   pausedOverlayShown = true;
 
-  const iWon = myCartillaId && winners.some(function(w) { return w.id === myCartillaId; });
+  const myIds = myCartillas.map(function(c) { return c.id; });
+  const iWon  = myIds.length > 0 && winners.some(function(w) { return myIds.includes(w.id); });
 
   let existing = document.getElementById('player-paused-overlay');
   if (!existing) {
@@ -988,7 +862,7 @@ function showPausedOverlay(winners) {
   }
 
   if (iWon) {
-    const myWinner = winners.find(function(w) { return w.id === myCartillaId; });
+    const myWinner = winners.find(function(w) { return myIds.includes(w.id); });
     const prize    = myWinner ? Number(myWinner.prize || 0).toFixed(2) : '0.00';
     const nW       = myWinner ? (myWinner.n_winners || 1) : 1;
     const splitMsg = (myWinner && myWinner.split && nW > 1)
