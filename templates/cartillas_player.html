@@ -206,11 +206,22 @@
         </div>
 
         <!-- Sesión -->
-        <div class="form-group">
-          <label>Sesión</label>
-          <select id="inp-session" onchange="onSessionChange()">
-            <option value="">Sin sesión específica</option>
+        <div class="form-group" id="session-group">
+          <label id="session-label">
+            📅 ¿En qué sesión quieres jugar? <span id="session-req" style="color:var(--accent);display:none">*</span>
+          </label>
+          <select id="inp-session" onchange="onSessionChange()"
+                  style="border-color:var(--border);transition:border-color .2s">
+            <option value="">— Elige la sesión en que quieres jugar —</option>
           </select>
+          <div id="session-hint" style="font-size:.72rem;margin-top:4px;display:none;
+               color:var(--accent)">
+            ⚠️ Debes elegir una sesión para participar.
+          </div>
+          <div id="session-no-sessions" style="font-size:.75rem;margin-top:4px;
+               color:var(--muted);display:none">
+            ℹ️ No hay sesiones programadas para este tipo de bingo todavía.
+          </div>
         </div>
 
         <hr class="section-sep">
@@ -522,9 +533,12 @@ function renderSessions() {
   const ss  = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
   const el  = document.getElementById('sessions-list');
   const sel = document.getElementById('inp-session');
+  const req  = document.getElementById('session-req');
+  const hint = document.getElementById('session-hint');
+  const noSess = document.getElementById('session-no-sessions');
 
   // Llenar selector de sesión (filtrado por tipo activo)
-  sel.innerHTML = '<option value="">Sin sesión específica</option>' +
+  sel.innerHTML = '<option value="">— Elige la sesión en que quieres jugar —</option>' +
     ss.map(s => {
       const dt = new Date(s.datetime_iso);
       const dstr = isNaN(dt) ? s.datetime_iso :
@@ -533,8 +547,23 @@ function renderSessions() {
       return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
     }).join('');
 
+  // Indicar si la sesión es requerida u opcional
+  if (selBtype) {
+    if (ss.length > 0) {
+      if (req)   req.style.display   = 'inline';
+      if (hint)  hint.style.display  = 'none';
+      if (noSess) noSess.style.display = 'none';
+      sel.style.borderColor = 'rgba(0,229,180,.5)';
+    } else {
+      if (req)   req.style.display   = 'none';
+      if (hint)  hint.style.display  = 'none';
+      if (noSess) noSess.style.display = 'block';
+      sel.style.borderColor = 'var(--border)';
+    }
+  }
+
   if (!ss.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sin sesiones para este tipo de bingo.</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sin sesiones programadas para este tipo de bingo.</div>';
     return;
   }
   el.innerHTML = ss.map(s => {
@@ -557,7 +586,13 @@ function renderSessions() {
 }
 
 function onSessionChange() {
-  const sel = document.getElementById('inp-session');
+  const sel  = document.getElementById('inp-session');
+  const hint = document.getElementById('session-hint');
+  // Limpiar error visual cuando elige una sesión
+  if (sel.value) {
+    sel.style.borderColor = 'rgba(0,229,180,.5)';
+    if (hint) hint.style.display = 'none';
+  }
   const opt = sel.options[sel.selectedIndex];
   const btype = opt ? opt.getAttribute('data-btype') : null;
   if (btype && btype !== selBtype) {
@@ -583,6 +618,18 @@ async function enviarSolicitud() {
   if (!yape_plin)              { showToast('⚠️ Ingresa tu número de Yape/Plin'); return; }
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
   if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
+
+  // Validar sesión: si hay sesiones disponibles para el tipo elegido, es obligatorio elegir una
+  const sesionesDisponibles = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
+  if (sesionesDisponibles.length > 0 && !session_id) {
+    const hint = document.getElementById('session-hint');
+    const sel  = document.getElementById('inp-session');
+    if (hint) hint.style.display = 'block';
+    if (sel)  sel.style.borderColor = 'var(--danger)';
+    showToast('⚠️ Debes elegir la sesión en que quieres jugar');
+    document.getElementById('inp-session')?.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
   if (method !== 'efectivo' && !ref) {
     showToast('⚠️ Ingresa el número de operación de tu pago');
     return;
@@ -801,7 +848,7 @@ async function generateAuto() {
         bad_code:             '❌ Código inválido.',
         payment_pending:      '⏳ Pago pendiente de aprobación.',
         game_started:         '⛔ El juego ya empezó.',
-        max_cartillas_reached:'⚠️ Alcanzaste el límite de cartillas.',
+        max_cartillas_reached:'⚠️ Ya generaste la cartilla de este voucher. Cada pago da derecho a 1 cartilla.',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);
       return;

@@ -142,6 +142,170 @@
   #my-cartilla-meta   { font-size:.73rem; color:var(--muted); margin-bottom:6px; min-height:.9rem; }
   #my-cartilla-status { font-size:.8rem; color:var(--muted); margin-bottom:8px; min-height:1rem; }
 
+  /* ── Banner Comprar Cartilla ── */
+  #banner-comprar {
+    position:relative; overflow:hidden;
+    border-radius:18px; padding:26px 20px 22px;
+    background:linear-gradient(145deg,#062b20 0%,#083040 50%,#12103a 100%);
+    border:2px solid var(--accent);
+    box-shadow:0 0 32px rgba(0,229,180,.45), 0 0 80px rgba(0,229,180,.15);
+    animation:bannerGlow 2.2s ease-in-out infinite;
+    text-align:center; margin-bottom:0;
+  }
+  @keyframes bannerGlow {
+    0%,100% { box-shadow:0 0 24px rgba(0,229,180,.35), 0 0 60px rgba(0,229,180,.1); border-color:rgba(0,229,180,.75); }
+    50%      { box-shadow:0 0 52px rgba(0,229,180,.75), 0 0 110px rgba(0,229,180,.35); border-color:var(--accent); }
+  }
+  #banner-comprar::before {
+    content:''; position:absolute; top:-50%; left:-60%;
+    width:55%; height:200%; background:linear-gradient(90deg,transparent,rgba(0,229,180,.1),transparent);
+    animation:bannerShine 2.6s ease-in-out infinite;
+  }
+  @keyframes bannerShine {
+    0%   { left:-60%; }
+    100% { left:165%; }
+  }
+  .banner-badge {
+    display:inline-block; background:rgba(246,195,67,.15); border:1px solid rgba(246,195,67,.5);
+    color:#f6c343; font-size:.62rem; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+    border-radius:20px; padding:3px 11px; margin-bottom:8px;
+    animation:badgePop .6s ease-out;
+  }
+  @keyframes badgePop { 0%{transform:scale(.7);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  .banner-icon {
+    font-size:3.4rem; display:block;
+    animation:bannerBounce 1s ease-in-out infinite;
+    margin-bottom:6px; filter:drop-shadow(0 0 12px rgba(0,229,180,.6));
+  }
+  @keyframes bannerBounce {
+    0%,100% { transform:translateY(0) scale(1); }
+    50%      { transform:translateY(-8px) scale(1.1); }
+  }
+  .banner-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(1.7rem,4vw,2.3rem);
+    color:var(--accent); letter-spacing:4px;
+    text-shadow:0 0 22px rgba(0,229,180,.7);
+    margin-bottom:5px; line-height:1.05;
+  }
+  .banner-sub {
+    font-size:.8rem; color:rgba(200,255,240,.7);
+    margin-bottom:18px; letter-spacing:.5px; line-height:1.5;
+  }
+  .banner-btns {
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    position:relative; z-index:1;
+  }
+  .btn-banner-comprar {
+    display:inline-flex; align-items:center; justify-content:center; gap:9px;
+    padding:15px 36px; border-radius:14px; text-decoration:none; width:100%;
+    background:linear-gradient(135deg,#00e5b4,#00b890);
+    color:#041015; font-family:'Outfit',sans-serif;
+    font-weight:900; font-size:1.1rem; letter-spacing:.5px;
+    border:none; cursor:pointer;
+    box-shadow:0 4px 24px rgba(0,229,180,.5);
+    animation:btnPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes btnPulse {
+    0%,100% { transform:scale(1);    box-shadow:0 4px 20px rgba(0,229,180,.4); }
+    50%      { transform:scale(1.03); box-shadow:0 7px 36px rgba(0,229,180,.75); }
+  }
+  .btn-banner-comprar:hover {
+    animation:none; transform:scale(1.05);
+    box-shadow:0 10px 44px rgba(0,229,180,.85);
+  }
+  .btn-banner-guide {
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    padding:10px 22px; border-radius:12px; text-decoration:none; width:100%;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15);
+    color:rgba(200,255,240,.85); font-family:'Outfit',sans-serif;
+    font-weight:700; font-size:.85rem; cursor:pointer;
+    transition:all .2s;
+  }
+  .btn-banner-guide:hover {
+    background:rgba(0,229,180,.12); border-color:rgba(0,229,180,.4);
+    color:var(--accent);
+  }
+
+  /* ── Modal Guía ── */
+  #modal-guia {
+    display:none; position:fixed; inset:0; z-index:800;
+    background:rgba(4,16,21,.93); overflow-y:auto;
+    padding:20px 14px;
+  }
+  #modal-guia.open { display:block; }
+  .guia-box {
+    max-width:560px; margin:0 auto;
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:20px; overflow:hidden;
+  }
+  .guia-header {
+    background:linear-gradient(135deg,#062b20,#083040);
+    padding:22px 20px 18px; text-align:center;
+    border-bottom:1px solid var(--border); position:relative;
+  }
+  .guia-header h2 {
+    font-family:'Bebas Neue',sans-serif; font-size:1.9rem;
+    color:var(--accent); letter-spacing:3px; margin:0 0 4px;
+    text-shadow:0 0 18px rgba(0,229,180,.5);
+  }
+  .guia-header p { font-size:.78rem; color:var(--muted); margin:0; }
+  .guia-close {
+    position:absolute; top:14px; right:16px;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15);
+    color:var(--muted); border-radius:8px; padding:5px 10px;
+    cursor:pointer; font-size:.85rem; transition:all .2s;
+  }
+  .guia-close:hover { background:rgba(231,76,60,.2); border-color:var(--danger); color:var(--danger); }
+  .guia-body { padding:20px; }
+  .guia-section {
+    margin-bottom:22px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:14px; overflow:hidden;
+  }
+  .guia-section-header {
+    display:flex; align-items:center; gap:10px;
+    padding:13px 16px;
+    background:rgba(0,229,180,.06); border-bottom:1px solid var(--border);
+  }
+  .guia-section-num {
+    width:28px; height:28px; border-radius:50%; flex-shrink:0;
+    background:var(--accent); color:#041015;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:.85rem;
+  }
+  .guia-section-title {
+    font-weight:900; font-size:.95rem; color:var(--text);
+  }
+  .guia-steps { padding:14px 16px; display:flex; flex-direction:column; gap:11px; }
+  .guia-step {
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .guia-step-icon {
+    font-size:1.3rem; flex-shrink:0; margin-top:1px; line-height:1;
+  }
+  .guia-step-text { font-size:.82rem; color:var(--muted); line-height:1.55; }
+  .guia-step-text strong { color:var(--text); }
+  .guia-tip {
+    margin:0 16px 16px; padding:10px 14px;
+    background:rgba(246,195,67,.08); border:1px solid rgba(246,195,67,.25);
+    border-radius:10px; font-size:.76rem; color:rgba(246,195,67,.9); line-height:1.5;
+  }
+  .guia-cta {
+    padding:16px 20px; border-top:1px solid var(--border);
+    text-align:center;
+  }
+  .btn-guia-cta {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:13px 32px; border-radius:12px; text-decoration:none;
+    background:linear-gradient(135deg,var(--accent),#00b890);
+    color:#041015; font-family:'Outfit',sans-serif;
+    font-weight:900; font-size:1rem;
+    box-shadow:0 4px 20px rgba(0,229,180,.4);
+    transition:transform .15s,box-shadow .15s;
+  }
+  .btn-guia-cta:hover { transform:scale(1.04); box-shadow:0 6px 30px rgba(0,229,180,.65); }
+
   /* ── Cartilla mini grid ── */
   .cartilla-mini-wrap {
     margin-top:6px;
@@ -366,7 +530,22 @@
 
       <div class="c-btns">
         <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar</button>
-        <a class="btn-p" id="btn-go-cartillas" href="/cartillas">🎴 Comprar cartilla</a>
+      </div>
+
+      <!-- Banner comprar cartilla -->
+      <div id="banner-comprar">
+        <span class="banner-badge">⚡ ACCIÓN REQUERIDA</span>
+        <span class="banner-icon">🎴</span>
+        <div class="banner-title">¡COMPRA TU CARTILLA!</div>
+        <div class="banner-sub">Sin cartilla no participas — ¡asegura tu lugar ahora<br>y gana los premios de hoy!</div>
+        <div class="banner-btns">
+          <a class="btn-banner-comprar" id="btn-go-cartillas" href="/cartillas">
+            🛒 COMPRAR AHORA
+          </a>
+          <button class="btn-banner-guide" onclick="document.getElementById('modal-guia').classList.add('open')">
+            📖 ¿Cómo funciona? Ver guía paso a paso
+          </button>
+        </div>
       </div>
 
       <div id="my-cartilla-meta"></div>
@@ -383,6 +562,139 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- ══ Modal Guía del Jugador ══ -->
+<div id="modal-guia">
+  <div class="guia-box">
+
+    <div class="guia-header">
+      <button class="guia-close" onclick="document.getElementById('modal-guia').classList.remove('open')">✕ Cerrar</button>
+      <h2>📖 GUÍA DEL JUGADOR</h2>
+      <p>Todo lo que necesitas saber para participar y ganar</p>
+    </div>
+
+    <div class="guia-body">
+
+      <!-- PASO 1: Cómo comprar -->
+      <div class="guia-section">
+        <div class="guia-section-header">
+          <div class="guia-section-num">1</div>
+          <div class="guia-section-title">🛒 Cómo comprar tu cartilla</div>
+        </div>
+        <div class="guia-steps">
+          <div class="guia-step">
+            <span class="guia-step-icon">👆</span>
+            <div class="guia-step-text">Toca el botón <strong>COMPRAR AHORA</strong> o ve a <strong>/cartillas</strong> desde el menú.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">📋</span>
+            <div class="guia-step-text">Completa el formulario con tu <strong>nombre, apellidos, celular, email</strong> y número de <strong>Yape/Plin</strong> (para recibir premios).</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">🎱</span>
+            <div class="guia-step-text">Elige el <strong>tipo de bingo</strong> y la <strong>sesión</strong> en la que quieres jugar.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">💳</span>
+            <div class="guia-step-text">Selecciona tu <strong>método de pago</strong> (Yape, Plin o efectivo) y completa la información de pago.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">✅</span>
+            <div class="guia-step-text">Envía la solicitud. Recibirás un <strong>email de confirmación</strong> una vez que el administrador apruebe tu pago.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: Cómo pagar -->
+      <div class="guia-section">
+        <div class="guia-section-header">
+          <div class="guia-section-num">2</div>
+          <div class="guia-section-title">💸 Cómo realizar el pago</div>
+        </div>
+        <div class="guia-steps">
+          <div class="guia-step">
+            <span class="guia-step-icon">📲</span>
+            <div class="guia-step-text"><strong>Yape o Plin:</strong> Transfiere el monto al número indicado. Copia el <strong>número de operación</strong> que aparece en la app.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">💵</span>
+            <div class="guia-step-text"><strong>Efectivo:</strong> Paga directamente al organizador. Él ingresará tu pago manualmente.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">🔢</span>
+            <div class="guia-step-text">Ingresa el <strong>número de operación</strong> en el formulario. Esto permite verificar tu pago más rápido.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">⏳</span>
+            <div class="guia-step-text">Espera la <strong>aprobación del administrador</strong>. Recibirás tu código de cartilla por email.</div>
+          </div>
+        </div>
+        <div class="guia-tip">
+          💡 <strong>Tip:</strong> Asegúrate de tener bien escrito tu email, ya que ahí recibirás el código de tu cartilla.
+        </div>
+      </div>
+
+      <!-- PASO 3: Activar cartilla -->
+      <div class="guia-section">
+        <div class="guia-section-header">
+          <div class="guia-section-num">3</div>
+          <div class="guia-section-title">🎴 Cómo activar y usar tu cartilla</div>
+        </div>
+        <div class="guia-steps">
+          <div class="guia-step">
+            <span class="guia-step-icon">📧</span>
+            <div class="guia-step-text">Una vez aprobado el pago, recibirás un email con tu <strong>código único de cartilla</strong> (ej: <code style="background:rgba(0,229,180,.1);padding:1px 5px;border-radius:4px;font-size:.8rem">ABC123</code>).</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">🖥️</span>
+            <div class="guia-step-text">Ve a la página principal del juego. En la sección <strong>"Mi Cartilla"</strong>, selecciona tu cartilla del desplegable o escribe tu código.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">✅</span>
+            <div class="guia-step-text">Toca <strong>"Cargar"</strong> para activarla. Verás tu cartilla con todos sus números.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">🤖</span>
+            <div class="guia-step-text">Los números se marcan <strong>automáticamente</strong> conforme caen las bolillas. ¡No necesitas hacer nada!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4: Ganar -->
+      <div class="guia-section">
+        <div class="guia-section-header">
+          <div class="guia-section-num">4</div>
+          <div class="guia-section-title">🏆 Cómo ganar premios</div>
+        </div>
+        <div class="guia-steps">
+          <div class="guia-step">
+            <span class="guia-step-icon">⭐</span>
+            <div class="guia-step-text"><strong>Premio Línea:</strong> Completa una fila horizontal completa en tu cartilla. Pulsa el botón <strong>"¡Tengo Línea!"</strong> que aparecerá automáticamente.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">🎉</span>
+            <div class="guia-step-text"><strong>Premio Bingo:</strong> Completa <strong>todos los números</strong> de tu cartilla. Pulsa el botón <strong>"¡BINGO!"</strong> para reclamar.</div>
+          </div>
+          <div class="guia-step">
+            <span class="guia-step-icon">📲</span>
+            <div class="guia-step-text">El organizador verificará tu cartilla y enviará el premio a tu <strong>número Yape/Plin</strong> registrado.</div>
+          </div>
+        </div>
+        <div class="guia-tip">
+          ⚠️ <strong>Importante:</strong> ¡Reclama tu premio tan pronto completes línea o bingo! Solo el primero en reclamar gana.
+        </div>
+      </div>
+
+    </div><!-- /guia-body -->
+
+    <div class="guia-cta">
+      <a class="btn-guia-cta" href="/cartillas">
+        🛒 Comprar mi cartilla ahora
+      </a>
+    </div>
+
+  </div><!-- /guia-box -->
+</div><!-- /modal-guia -->
 
 <div id="gameover">
   <h1>🎉 ¡BINGO!</h1>
@@ -470,6 +782,12 @@
   // by patching the state response handler after game_player.js loads
   window._v71_cdHook = updateCDBanner;
 })();
+</script>
+<script>
+// Cerrar modal guía al hacer click fuera del box
+document.getElementById('modal-guia').addEventListener('click', function(e){
+  if (e.target === this) this.classList.remove('open');
+});
 </script>
 <script src="/static/js/game_player.js"></script>
 

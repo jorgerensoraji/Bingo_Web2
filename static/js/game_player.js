@@ -671,6 +671,8 @@ async function loadSelectedCartilla() {
     if (meta) meta.innerHTML = 'ID: <strong style="color:var(--text)">' + data.id + '</strong>';
     updateMyCartillaAutoMark(true);
     showToast('✅ Cartilla ' + cid + ' cargada');
+    const banner = document.getElementById('banner-comprar');
+    if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
     try {
       if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
     } catch(e) {}
@@ -910,9 +912,10 @@ async function claimLinea() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      if (data.error === 'not_linea') showToast('❌ Tu cartilla no tiene línea completa');
-      else if (data.already)         showToast('ℹ️ Ya habías reclamado la línea');
-      else                           showToast('❌ ' + data.error);
+      if (data.error === 'not_linea')    showToast('❌ Tu cartilla no tiene línea completa');
+      else if (data.error === 'linea_closed') showToast('⛔ La línea ya fue ganada en una bolilla anterior');
+      else if (data.already)             showToast('ℹ️ Ya habías reclamado la línea');
+      else                               showToast('❌ ' + data.error);
       return;
     }
     claimedLinea = true;

@@ -249,6 +249,27 @@ td{padding:10px 12px;vertical-align:middle}
 
 <div id="toast" class="toast"></div>
 
+<!-- Alerta de error de email (no desaparece automáticamente) -->
+<div id="email-error-alert" style="display:none;position:fixed;top:16px;left:50%;
+     transform:translateX(-50%);z-index:2000;max-width:500px;width:90%;
+     background:#1a0a0a;border:2px solid var(--danger);border-radius:14px;
+     padding:18px 20px;box-shadow:0 8px 32px rgba(231,76,60,.4)">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div>
+      <div style="font-weight:700;color:var(--danger);margin-bottom:6px;font-size:1rem">
+        ⚠️ Pago aprobado pero el email NO se envió
+      </div>
+      <div id="email-error-msg" style="font-size:.83rem;color:var(--muted);line-height:1.5"></div>
+      <div style="margin-top:10px;font-size:.8rem;color:var(--warning)">
+        💡 Puedes reenviar el código manualmente desde el botón <strong>"Reenviar email"</strong> en la tabla.
+      </div>
+    </div>
+    <button onclick="document.getElementById('email-error-alert').style.display='none'"
+            style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;
+                   flex-shrink:0;padding:0">✕</button>
+  </div>
+</div>
+
 <script>
 const BT = {
   "1sol":    {nombre:"Bingo 1 Sol",    color:"#f4d03f", emoji:"🟡"},
@@ -270,6 +291,14 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function showEmailError(errMsg, destEmail) {
+  const alert = document.getElementById('email-error-alert');
+  const msg   = document.getElementById('email-error-msg');
+  if (!alert || !msg) return;
+  const dest = destEmail ? ` (destinatario: ${esc(destEmail)})` : '';
+  msg.innerHTML = `<strong>Error:</strong> ${esc(errMsg)}${dest}`;
+  alert.style.display = 'block';
 }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -549,7 +578,8 @@ async function confirmarAprobacion() {
     if (er.sent) {
       showToast(`✅ Pago aprobado · 📧 Email enviado con el código`);
     } else if (er.error) {
-      showToast(`✅ Pago aprobado · ⚠️ Email falló: ${er.error}`);
+      // Error de email — mostrar alerta prominente que no desaparece sola
+      showEmailError(er.error, data.voucher?.email || '');
     } else {
       showToast(`✅ Pago aprobado`);
     }

@@ -620,26 +620,42 @@ function showPausedBanner(winners, lineaWinners) {
     document.body.appendChild(existing);
   }
 
+  function contactBlock(w, accentColor) {
+    var lines = [];
+    if (w.yape_plin) lines.push(
+      '<div style="margin-top:8px;background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.25);' +
+      'border-radius:8px;padding:8px 14px;">' +
+      '<span style="font-size:.65rem;color:var(--muted);display:block;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">📲 Enviar premio a Yape/Plin</span>' +
+      '<span style="font-size:1.25rem;font-weight:900;color:' + accentColor + ';letter-spacing:2px">' + escHtml(w.yape_plin) + '</span>' +
+      '</div>');
+    else lines.push('<div style="font-size:.75rem;color:var(--muted);margin-top:4px">⚠️ Sin Yape/Plin — ver en /admin/payments</div>');
+    var extra = [];
+    if (w.email)   extra.push('✉️ ' + escHtml(w.email));
+    if (w.celular) extra.push('📞 ' + escHtml(w.celular));
+    if (extra.length) lines.push(
+      '<div style="margin-top:6px;font-size:.78rem;color:var(--muted);line-height:1.8">' + extra.join('  ·  ') + '</div>');
+    return lines.join('');
+  }
+
   const bingoCards = (winners || []).map(function(w) {
-    const yape = w.yape_plin ? (
-      '<div style="margin-top:6px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.3);' +
-      'border-radius:8px;padding:8px 14px;display:inline-block">' +
-      '<span style="font-size:.72rem;color:var(--muted);display:block;letter-spacing:1px;text-transform:uppercase">Enviar premio a Yape/Plin</span>' +
-      '<span style="font-size:1.3rem;font-weight:900;color:var(--accent);letter-spacing:2px">' + escHtml(w.yape_plin) + '</span>' +
-      '</div>'
-    ) : '<div style="font-size:.78rem;color:var(--muted);margin-top:4px">Sin numero Yape/Plin — buscar en /admin/payments</div>';
     const prize = w.prize ? '<span style="color:var(--accent);font-weight:900"> · S/. ' + Number(w.prize).toFixed(2) + '</span>' : '';
-    return '<div style="margin:8px 0;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;">' +
-      '<div style="font-size:1.05rem;color:var(--text);">🏆 ' + escHtml(w.nombre || w.id) + prize + '</div>' +
-      '<div style="font-size:.8rem;color:var(--muted);margin-top:2px">Cartilla: ' + w.id + '</div>' +
-      yape + '</div>';
+    const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
+    return '<div style="margin:8px 0;padding:14px;background:rgba(255,255,255,.04);border-radius:10px;text-align:left">' +
+      '<div style="font-size:1.05rem;color:var(--text);font-weight:700">🏆 ' + nombre + prize + '</div>' +
+      '<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Cartilla: <strong>' + w.id + '</strong>' +
+        (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
+      contactBlock(w, 'var(--accent)') +
+      '</div>';
   }).join('');
 
   const lineaCards = (lineaWinners || []).map(function(w) {
     const prize = w.linea_prize ? '<span style="color:var(--warning);font-weight:900"> · S/. ' + Number(w.linea_prize).toFixed(2) + '</span>' : '';
-    return '<div style="margin:6px 0;padding:10px;background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);border-radius:10px;">' +
-      '<div style="font-size:.95rem;color:var(--text);">⭐ ' + escHtml(w.nombre || w.id) + prize + '</div>' +
-      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Línea · Cartilla: ' + w.id + '</div>' +
+    const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
+    return '<div style="margin:6px 0;padding:12px;background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);border-radius:10px;text-align:left">' +
+      '<div style="font-size:.95rem;color:var(--text);font-weight:700">⭐ ' + nombre + prize + '</div>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Línea · Cartilla: <strong>' + w.id + '</strong>' +
+        (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
+      contactBlock(w, 'var(--warning)') +
       '</div>';
   }).join('');
 
