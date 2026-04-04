@@ -530,14 +530,18 @@ async function loadSessions() {
 }
 
 function renderSessions() {
-  const ss  = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
-  const el  = document.getElementById('sessions-list');
-  const sel = document.getElementById('inp-session');
-  const req  = document.getElementById('session-req');
-  const hint = document.getElementById('session-hint');
+  // Panel "Próximas Sesiones": muestra TODAS las sesiones sin filtrar por tipo
+  const ssAll = allSessions;
+  // Selector del formulario: solo las del tipo elegido
+  const ss    = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
+
+  const el     = document.getElementById('sessions-list');
+  const sel    = document.getElementById('inp-session');
+  const req    = document.getElementById('session-req');
+  const hint   = document.getElementById('session-hint');
   const noSess = document.getElementById('session-no-sessions');
 
-  // Llenar selector de sesión (filtrado por tipo activo)
+  // ── Selector de sesión (filtrado por tipo) ──
   sel.innerHTML = '<option value="">— Elige la sesión en que quieres jugar —</option>' +
     ss.map(s => {
       const dt = new Date(s.datetime_iso);
@@ -550,34 +554,38 @@ function renderSessions() {
   // Indicar si la sesión es requerida u opcional
   if (selBtype) {
     if (ss.length > 0) {
-      if (req)   req.style.display   = 'inline';
-      if (hint)  hint.style.display  = 'none';
+      if (req)    req.style.display    = 'inline';
+      if (hint)   hint.style.display   = 'none';
       if (noSess) noSess.style.display = 'none';
       sel.style.borderColor = 'rgba(0,229,180,.5)';
     } else {
-      if (req)   req.style.display   = 'none';
-      if (hint)  hint.style.display  = 'none';
+      if (req)    req.style.display    = 'none';
+      if (hint)   hint.style.display   = 'none';
       if (noSess) noSess.style.display = 'block';
       sel.style.borderColor = 'var(--border)';
     }
   }
 
-  if (!ss.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sin sesiones programadas para este tipo de bingo.</div>';
+  // ── Panel Próximas Sesiones (todas) ──
+  if (!ssAll.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No hay sesiones programadas por el momento.</div>';
     return;
   }
-  el.innerHTML = ss.map(s => {
+  el.innerHTML = ssAll.map(s => {
     const col  = s.bingo_color || '#00e5b4';
     const dt   = new Date(s.datetime_iso);
     const dstr = isNaN(dt) ? s.datetime_iso :
       dt.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'}) +
       ' · ' + dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    const statusTag = s.status === 'active'    ? '<span style="background:rgba(0,229,180,.15);color:var(--accent);font-size:.65rem;font-weight:900;padding:2px 8px;border-radius:10px;margin-left:6px">EN VIVO</span>'
+                    : s.status === 'preparing' ? '<span style="background:rgba(246,195,67,.15);color:#f6c343;font-size:.65rem;font-weight:900;padding:2px 8px;border-radius:10px;margin-left:6px">PRONTO</span>'
+                    : '';
     return `<div class="session-card">
-      <div style="color:${col};font-weight:700;font-size:.9rem;margin-bottom:4px">
-        ${esc(s.bingo_nombre)}
+      <div style="color:${col};font-weight:700;font-size:.9rem;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap">
+        ${esc(s.bingo_nombre)}${statusTag}
       </div>
       <div style="font-size:.88rem;font-weight:600">📅 ${esc(dstr)}</div>
-      ${s.descripcion?`<div style="color:var(--muted);font-size:.78rem;margin-top:4px">${esc(s.descripcion)}</div>`:''}
+      ${s.descripcion ? `<div style="color:var(--muted);font-size:.78rem;margin-top:4px">${esc(s.descripcion)}</div>` : ''}
       <div style="font-size:.78rem;color:var(--muted);margin-top:6px">
         Precio: <strong style="color:${col}">S/. ${s.bingo_precio}</strong>
       </div>

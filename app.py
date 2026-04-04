@@ -503,12 +503,10 @@ def _load_vouchers() -> list:
         return [v.to_dict() for v in db.query(Voucher).order_by(Voucher.created.desc()).all()]
 
 # ─── Session helpers ──────────────────────────────────────────────────────────
-def get_upcoming_sessions(limit: int = 10) -> list:
-    now = datetime.now().isoformat()
+def get_upcoming_sessions(limit: int = 50) -> list:
     with db_session() as db:
         rows = (db.query(BingoSession)
-                .filter(BingoSession.datetime_iso >= now,
-                        BingoSession.status.notin_(["cancelled", "finished"]))
+                .filter(BingoSession.status.notin_(["cancelled", "finished"]))
                 .order_by(BingoSession.datetime_iso)
                 .limit(limit)
                 .all())
