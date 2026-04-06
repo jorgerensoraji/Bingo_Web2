@@ -162,6 +162,34 @@
     </div>
   </div>
 
+  <!-- ACCESO RÁPIDO: ya tengo código -->
+  <div class="solicitud-panel" id="panel-ya-tengo-codigo"
+       style="margin-bottom:16px;border-color:rgba(0,229,180,.35);background:rgba(0,229,180,.04)">
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+         onclick="toggleYaTengoCodigo()">
+      <div style="font-weight:700;font-size:.95rem;color:var(--accent)">
+        🔑 ¿Ya tienes tu código?
+      </div>
+      <span id="ytc-arrow" style="color:var(--muted);font-size:.85rem">▼ Ver</span>
+    </div>
+    <div id="ytc-body" style="display:none;margin-top:14px">
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+        Si ya enviaste tu solicitud y recibiste (o tienes) tu código, ingrésalo aquí directamente sin llenar el formulario de nuevo.
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="inp-code-quick"
+               placeholder="Código (ej: AB3K9Z)"
+               maxlength="6"
+               style="flex:1;text-transform:uppercase;letter-spacing:3px;font-weight:700"
+               oninput="this.value=this.value.toUpperCase()"
+               onkeydown="if(event.key==='Enter') verificarCodigoRapido()">
+        <button class="btn btn-ghost" style="white-space:nowrap" onclick="verificarCodigoRapido()">
+          🔍 Verificar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="top-row">
 
     <!-- ═══ PANEL IZQUIERDO ═══ -->
@@ -733,6 +761,46 @@ function showEstadoEsperando(email, method) {
         </div>
       </div>
     </div>`;
+}
+
+// ── Acceso rápido: ya tengo código ────────────────────
+function toggleYaTengoCodigo() {
+  const body  = document.getElementById('ytc-body');
+  const arrow = document.getElementById('ytc-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  arrow.textContent  = open ? '▲ Ocultar' : '▼ Ver';
+  if (open) document.getElementById('inp-code-quick').focus();
+}
+
+async function verificarCodigoRapido() {
+  const code = document.getElementById('inp-code-quick').value.trim().toUpperCase();
+  if (!code) { showToast('🔑 Ingresa el código'); return; }
+  try {
+    const res  = await fetch('/api/voucher/status', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error === 'not_found' ? '❌ Código no encontrado' : '❌ ' + data.error);
+      return;
+    }
+    // Ocultar el banner de acceso rápido y el formulario de registro
+    document.getElementById('panel-ya-tengo-codigo').style.display = 'none';
+    document.getElementById('panel-solicitud').style.display = 'none';
+    document.getElementById('panel-estado').style.display    = 'block';
+    // Copiar el código al input interno y mostrar estado
+    document.getElementById('inp-code-check').value = code;
+    activeCode = code;
+    lastStatus = data.payment_status;
+    renderEstado(data);
+    if (['pending','pending_review'].includes(data.payment_status)) {
+      startPolling(code);
+    }
+    setStep(['approved','manual_approved'].includes(data.payment_status) ? 4 : 3);
+  } catch(e) { showToast('❌ Error de conexión'); }
 }
 
 // ── Verificar código existente ─────────────────────────

@@ -907,6 +907,52 @@ function hidePausedOverlay() {
   if (el) el.remove();
 }
 
+// ── Barra de estadísticas ──────────────────────────────
+async function updateGameStats() {
+  try {
+    const res  = await fetch('/api/game_stats');
+    if (!res.ok) return;
+    const d = await res.json();
+
+    const bar = document.getElementById('game-stats-bar');
+    if (!bar) return;
+
+    // Solo mostrar si hay cartillas en juego
+    if (d.n_cartillas > 0) {
+      bar.style.display = 'block';
+    }
+
+    // Línea 1
+    const pl = document.getElementById('gst-players');
+    const ca = document.getElementById('gst-cartillas');
+    if (pl) pl.textContent = d.n_players + (d.n_players === 1 ? ' jugador' : ' jugadores');
+    if (ca) ca.textContent = d.n_cartillas + (d.n_cartillas === 1 ? ' cartilla' : ' cartillas');
+
+    // Línea 2: cerca de ganar
+    const cl = document.getElementById('gst-close');
+    if (cl) {
+      const close = d.close_to_win || {};
+      const keys  = Object.keys(close).map(Number).sort((a,b) => a-b);
+      if (keys.length === 0) {
+        cl.textContent = 'Ninguno muy cerca aún';
+        cl.style.color = 'var(--muted)';
+      } else {
+        cl.innerHTML = keys.map(k => {
+          const n = close[String(k)];
+          const color = k === 1 ? '#ff4d4d' : k === 2 ? '#ff8c42' : '#f6c343';
+          return `<span style="color:${color};margin-right:10px"><strong>${n}</strong> ${n===1?'cartilla':'cartillas'} a <strong>${k}</strong> ${k===1?'bolilla':'bolillas'}</span>`;
+        }).join('');
+      }
+    }
+
+    // Línea 3: premios
+    const pb = document.getElementById('gst-prize-bingo');
+    const pl2 = document.getElementById('gst-prize-linea');
+    if (pb) pb.textContent = d.prize_bingo > 0 ? 'S/. ' + d.prize_bingo.toFixed(2) : '—';
+    if (pl2) pl2.textContent = d.prize_linea > 0 ? 'S/. ' + d.prize_linea.toFixed(2) : '—';
+  } catch(e) {}
+}
+
 // ── INIT ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   const urlEl = document.getElementById('server-url');
@@ -917,4 +963,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   syncState();
   setInterval(syncState, 1500);
+
+  updateGameStats();
+  setInterval(updateGameStats, 10000);
 });

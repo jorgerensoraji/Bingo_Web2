@@ -486,6 +486,38 @@
   <div id="progress"></div>
 </div>
 
+<!-- ══ Barra de estadísticas del juego ══ -->
+<div id="game-stats-bar" style="
+  display:none;
+  background:rgba(4,16,21,.85);
+  border-bottom:1px solid rgba(0,229,180,.15);
+  padding:6px 16px;
+  font-family:'Outfit',sans-serif;
+  font-size:.78rem;
+">
+  <!-- Línea 1: jugadores y cartillas -->
+  <div style="display:flex;align-items:center;gap:18px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+    <span style="color:var(--muted);white-space:nowrap">👥 Jugando:</span>
+    <span id="gst-players" style="color:var(--text);font-weight:700">—</span>
+    <span style="color:rgba(255,255,255,.2)">|</span>
+    <span style="color:var(--muted);white-space:nowrap">🎴 Cartillas:</span>
+    <span id="gst-cartillas" style="color:var(--text);font-weight:700">—</span>
+  </div>
+  <!-- Línea 2: cerca de ganar -->
+  <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap">
+    <span style="color:var(--muted);white-space:nowrap">🔥 Cerca de ganar:</span>
+    <span id="gst-close" style="color:var(--warning);font-weight:700">—</span>
+  </div>
+  <!-- Línea 3: premios -->
+  <div style="display:flex;align-items:center;gap:18px;padding:4px 0;flex-wrap:wrap">
+    <span style="color:var(--muted);white-space:nowrap">🏆 Premio Bingo:</span>
+    <span id="gst-prize-bingo" style="color:var(--accent);font-weight:900">—</span>
+    <span style="color:rgba(255,255,255,.2)">|</span>
+    <span style="color:var(--muted);white-space:nowrap">➖ Premio Línea:</span>
+    <span id="gst-prize-linea" style="color:#f6c343;font-weight:900">—</span>
+  </div>
+</div>
+
 <div class="layout">
 
   <!-- ══ IZQUIERDA ══ -->

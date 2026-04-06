@@ -1529,6 +1529,40 @@ def api_state():
             "prepare_sid":    game.prepare_sid,
         })
 
+@app.route("/api/game_stats")
+def api_game_stats():
+    """Stats públicas para la barra del jugador: jugadores, cartillas, premios, cerca de ganar."""
+    with game_lock:
+        sid   = game.session_id
+        drawn = list(game.drawn)
+        prize = game.prize_pool
+        linea = game.linea_pool
+
+    cartillas    = load_all_cartillas(session_id=sid) if sid else []
+    n_cartillas  = len(cartillas)
+    # Jugadores únicos = teléfonos distintos (o nombres si no hay tel)
+    n_players    = len({c.get("telefono") or c.get("nombre", "") for c in cartillas})
+
+    # Distribución "cerca de ganar" (cartillas con 1–5 números sin salir para bingo)
+    drawn_set = set(drawn)
+    close     = {}
+    for c in cartillas:
+        grid = c.get("grid", [])
+        nums = [n for row in grid for n in row if n is not None]
+        if not nums:
+            continue
+        missing = sum(1 for n in nums if n not in drawn_set)
+        if 1 <= missing <= 5:
+            close[str(missing)] = close.get(str(missing), 0) + 1
+
+    return jsonify({
+        "n_players":    n_players,
+        "n_cartillas":  n_cartillas,
+        "close_to_win": close,   # {"1": X, "2": Y, ...}
+        "prize_bingo":  prize,
+        "prize_linea":  linea,
+    })
+
 @app.route("/api/admin/resume", methods=["POST"])
 def api_admin_resume():
     chk = admin_required()
@@ -1590,7 +1624,7 @@ def api_cartillas_by_access():
         vouchers = db.query(Voucher).filter(
             Voucher.celular       == celular,
             Voucher.access_pin    == hashed,
-            Voucher.payment_status == "approved",
+            Voucher.payment_status.in_(["approved", "manual_approved"]),
         ).all()
     if not vouchers:
         return jsonify({"error": "No se encontraron cartillas. Verifica tu celular y PIN."}), 404
