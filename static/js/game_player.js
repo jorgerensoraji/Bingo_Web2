@@ -356,8 +356,9 @@ async function syncState() {
     drawnLocal.forEach(function(n) {
       markCell(n, false);
       var b = document.getElementById('dball-' + n);
-      if (b) b.parentNode && b.parentNode.removeChild(b);
+      if (b && b.parentNode) b.parentNode.removeChild(b);
     });
+    updateDrumBallSizes();
 
     if (newNums.length > 0) {
       const latest = newNums[newNums.length - 1];
@@ -442,7 +443,69 @@ function removeDrumBall(num) {
   b.style.transition = 'opacity 0.35s, transform 0.35s';
   b.style.opacity    = '0';
   b.style.transform  = b.style.transform + ' scale(0)';
-  setTimeout(function() { if (b.parentNode) b.parentNode.removeChild(b); }, 400);
+  setTimeout(function() {
+    if (b.parentNode) b.parentNode.removeChild(b);
+    updateDrumBallSizes();
+  }, 420);
+}
+
+function updateDrumBallSizes() {
+  var balls = Array.from(document.querySelectorAll('#ball-drum .drum-ball'));
+  var count = balls.length;
+  if (count === 0) return;
+
+  // Size thresholds: fewer balls → bigger → numbers visible
+  var sz, showNum;
+  if      (count <= 5)  { sz = 38; showNum = true; }
+  else if (count <= 10) { sz = 30; showNum = true; }
+  else if (count <= 18) { sz = 22; showNum = true; }
+  else if (count <= 35) { sz = 14; showNum = false; }
+  else                  { sz = 10; showNum = false; }
+
+  // Recalculate rings so balls fit inside the 150px drum (inner radius 75px)
+  var half    = sz / 2;
+  var maxR    = 68 - half;
+  var minR    = half + 5;
+  var numRings = count <= 5 ? 1 : count <= 14 ? 2 : count <= 36 ? 3 : 5;
+  numRings     = Math.min(numRings, count);
+  var perRing  = Math.ceil(count / numRings);
+
+  balls.forEach(function(b, i) {
+    var ring        = Math.floor(i / perRing);
+    var posInRing   = i % perRing;
+    var ballsInRing = Math.min(perRing, count - ring * perRing);
+    var r   = numRings === 1
+      ? Math.round((minR + maxR) / 2)
+      : Math.round(minR + (ring / (numRings - 1)) * (maxR - minR));
+    var spd = parseFloat((4.2 + ring * 1.4 + (i % 3) * 0.25).toFixed(2));
+    var dly = parseFloat((-posInRing * spd / ballsInRing).toFixed(2));
+
+    // Update CSS custom properties (width/height/margin derive from --sz in CSS)
+    b.style.setProperty('--sz', sz + 'px');
+    b.style.boxShadow = '0 0 ' + (sz * 0.55 | 0) + 'px var(--col)';
+
+    // Restart animation with new radius + speed
+    b.style.animation = 'none';
+    b.getBoundingClientRect(); // force reflow
+    b.style.animation = 'drumOrbit ' + spd + 's linear ' + dly + 's infinite';
+
+    // Show number when big enough
+    var num = parseInt(b.id.replace('dball-', ''), 10);
+    if (showNum) {
+      b.textContent          = num;
+      b.style.fontSize       = Math.round(sz * 0.50) + 'px';
+      b.style.display        = 'flex';
+      b.style.alignItems     = 'center';
+      b.style.justifyContent = 'center';
+      b.style.fontFamily     = "'Bebas Neue', sans-serif";
+      b.style.fontWeight     = '900';
+      b.style.color          = '#fff';
+      b.style.textShadow     = '0 1px 3px rgba(0,0,0,.8)';
+    } else {
+      b.textContent  = '';
+      b.style.display = '';
+    }
+  });
 }
 
 function launchBall(num, color) {
