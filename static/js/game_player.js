@@ -459,7 +459,7 @@ function updateDrumBallSizes() {
   if      (count <= 5)  { sz = 38; showNum = true; }
   else if (count <= 10) { sz = 30; showNum = true; }
   else if (count <= 18) { sz = 22; showNum = true; }
-  else if (count <= 35) { sz = 14; showNum = false; }
+  else if (count <= 35) { sz = 16; showNum = true; }
   else                  { sz = 10; showNum = false; }
 
   // Recalculate rings so balls fit inside the 150px drum (inner radius 75px)

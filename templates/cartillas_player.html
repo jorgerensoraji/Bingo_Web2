@@ -213,15 +213,11 @@
           <input type="email" id="inp-email" placeholder="tu@email.com" maxlength="100">
         </div>
         <div class="form-group">
-          <label>Celular <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
-          <input type="tel" id="inp-celular" placeholder="Ej: 987654321" maxlength="20">
-        </div>
-        <div class="form-group">
-          <label>Numero Yape / Plin * <span style="color:var(--muted);font-weight:400">(para recibir tu premio)</span></label>
+          <label>Celular / Yape / Plin * <span style="color:var(--muted);font-weight:400">(para premio y acceso)</span></label>
           <input type="tel" id="inp-yape-plin" placeholder="Ej: 987654321" maxlength="20"
                  style="border-color:rgba(0,229,180,.4)">
           <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            Este numero se usara para enviarte el premio si ganas. Asegurate que sea correcto.
+            Usaremos este número para enviarte el premio si ganas y para acceder a tus cartillas con tu PIN.
           </div>
         </div>
 
@@ -231,7 +227,7 @@
           <input type="tel" id="inp-pin" placeholder="Ej: 4521" maxlength="4" pattern="[0-9]{4}"
                  style="letter-spacing:8px;font-size:1.3rem;font-weight:900;text-align:center;border-color:rgba(246,195,67,.5)">
           <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            Con tu celular + este PIN podrás ver tus cartillas desde <strong style="color:var(--text)">cualquier dispositivo</strong>.
+            Con tu número + este PIN podrás ver tus cartillas desde <strong style="color:var(--text)">cualquier dispositivo</strong>.
             Elige uno que recuerdes y te lo enviaremos al correo.
           </div>
         </div>
@@ -653,8 +649,8 @@ async function enviarSolicitud() {
   const nombres        = document.getElementById('inp-nombres').value.trim();
   const apellidos      = document.getElementById('inp-apellidos').value.trim();
   const email          = document.getElementById('inp-email').value.trim();
-  const celular        = document.getElementById('inp-celular').value.trim();
   const yape_plin      = document.getElementById('inp-yape-plin').value.trim();
+  const celular        = yape_plin;
   const access_pin     = document.getElementById('inp-pin').value.trim();
   const terms_accepted = document.getElementById('inp-terms').checked;
   const method         = document.getElementById('inp-method').value;
@@ -663,7 +659,7 @@ async function enviarSolicitud() {
 
   if (!nombres)                { showToast('⚠️ Ingresa tu nombre'); return; }
   if (!email || !email.includes('@')) { showToast('⚠️ Ingresa un email válido'); return; }
-  if (!yape_plin)              { showToast('⚠️ Ingresa tu número de Yape/Plin'); return; }
+  if (!yape_plin)              { showToast('⚠️ Ingresa tu número de celular/Yape/Plin'); return; }
   if (!access_pin || !/^\d{4}$/.test(access_pin)) { showToast('⚠️ El PIN debe ser exactamente 4 dígitos'); return; }
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
   if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
