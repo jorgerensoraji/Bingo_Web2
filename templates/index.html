@@ -21,9 +21,55 @@
   .left  { display:flex; flex-direction:column; gap:12px; }
   .right { display:flex; flex-direction:column; gap:12px; }
 
-  /* ── Bolilla grande ── */
-  .big-panel { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
-  .ball-wrap { width:clamp(110px,13vw,155px); height:clamp(110px,13vw,155px); flex-shrink:0; }
+  /* ── Máquina de bingo ── */
+  .big-panel { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+
+  /* Bolillero (drum) */
+  #ball-drum-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; }
+  #ball-drum {
+    width:150px; height:150px; border-radius:50%; position:relative;
+    background:radial-gradient(circle at 40% 35%, rgba(0,229,180,.06) 0%, rgba(4,16,21,.9) 60%);
+    border:2px solid rgba(0,229,180,.25);
+    box-shadow:0 0 0 6px rgba(0,229,180,.06), 0 0 30px rgba(0,229,180,.08),
+               inset 0 0 40px rgba(0,0,0,.6);
+    overflow:hidden;
+  }
+  /* glass sheen on drum */
+  #ball-drum::before {
+    content:''; position:absolute; top:6%; left:15%; width:40%; height:30%;
+    background:radial-gradient(ellipse, rgba(255,255,255,.12) 0%, transparent 80%);
+    border-radius:50%; pointer-events:none; z-index:10;
+  }
+  /* drum rim bolts */
+  #ball-drum::after {
+    content:''; position:absolute; inset:0; border-radius:50%;
+    border:6px solid rgba(0,229,180,.08);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.04);
+    pointer-events:none; z-index:11;
+  }
+  .drum-label { font-size:.58rem; letter-spacing:3px; color:var(--muted); text-transform:uppercase; }
+
+  /* Orbiting mini-balls */
+  .drum-ball {
+    position:absolute;
+    width:var(--sz); height:var(--sz);
+    border-radius:50%; top:50%; left:50%;
+    margin-top:calc(var(--sz) / -2); margin-left:calc(var(--sz) / -2);
+    transform-origin:center center;
+    animation:drumOrbit var(--spd) linear infinite var(--dly);
+    background:radial-gradient(circle at 35% 30%, #ffffff55 0%, var(--col) 50%, #020508 100%);
+    box-shadow:0 0 6px var(--col);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Bebas Neue',sans-serif; font-size:calc(var(--sz) * .55);
+    color:rgba(255,255,255,.85); z-index:5;
+  }
+  @keyframes drumOrbit {
+    from { transform:rotate(0deg) translateX(var(--r)) rotate(0deg); }
+    to   { transform:rotate(360deg) translateX(var(--r)) rotate(-360deg); }
+  }
+
+  /* Bolilla grande (selected ball) */
+  .ball-wrap { width:clamp(100px,12vw,140px); height:clamp(100px,12vw,140px); flex-shrink:0; position:relative; }
   #ball {
     width:100%; height:100%; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
@@ -39,10 +85,18 @@
   }
   #big-number {
     font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(2.5rem,5vw,4.5rem);
+    font-size:clamp(2.2rem,5vw,4rem);
     color:var(--accent); line-height:1;
     text-shadow:0 0 20px rgba(0,229,180,.5),0 2px 4px rgba(0,0,0,.8);
     position:relative; z-index:2; letter-spacing:2px;
+  }
+
+  /* Launch animation: ball flying from drum to display */
+  .fly-ball {
+    position:fixed; border-radius:50%; pointer-events:none; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Bebas Neue',sans-serif; font-weight:900;
+    will-change:transform,opacity;
   }
   @keyframes ballReveal {
     0%  { transform:scale(.7) rotate(-15deg); opacity:0; }
@@ -523,11 +577,23 @@
   <!-- ══ IZQUIERDA ══ -->
   <div class="left">
 
-    <!-- Bolilla actual -->
+    <!-- Bolilla actual + Bolillero -->
     <div class="panel big-panel">
+
+      <!-- Bolillero (drum) -->
+      <div id="ball-drum-wrap">
+        <div id="ball-drum"><!-- mini-balls injected by JS --></div>
+        <div class="drum-label">Bolillero</div>
+      </div>
+
+      <!-- Flecha indicadora -->
+      <div style="font-size:1.6rem;color:rgba(0,229,180,.5);flex-shrink:0;align-self:center">▶</div>
+
+      <!-- Bolilla seleccionada -->
       <div class="ball-wrap">
         <div id="ball"><div id="big-number">?</div></div>
       </div>
+
       <div class="number-info">
         <div class="number-label">Bolilla actual</div>
         <div id="words-display">—</div>

@@ -395,6 +395,76 @@ async function syncState() {
   }
 }
 
+// ── DRUM (bolillero) ──────────────────────────────────
+var _drumInited = false;
+
+function initDrum() {
+  var drum = document.getElementById('ball-drum');
+  if (!drum || _drumInited) return;
+  _drumInited = true;
+
+  var cols = GROUP_COLORS.map(function(g){ return g.fg; });
+  // 18 balls: mix of sizes and radii to look like a full machine
+  var config = [
+    {sz:18,r:42,spd:5.2},{sz:22,r:50,spd:7.1},{sz:16,r:35,spd:4.6},
+    {sz:20,r:46,spd:6.3},{sz:24,r:55,spd:8.0},{sz:15,r:38,spd:4.0},
+    {sz:19,r:43,spd:5.8},{sz:21,r:52,spd:7.4},{sz:17,r:40,spd:5.0},
+    {sz:23,r:48,spd:6.7},{sz:16,r:36,spd:4.3},{sz:20,r:44,spd:6.0},
+    {sz:18,r:58,spd:8.5},{sz:22,r:53,spd:7.8},{sz:25,r:46,spd:6.5},
+    {sz:14,r:33,spd:3.8},{sz:19,r:47,spd:5.5},{sz:21,r:57,spd:8.2},
+  ];
+  config.forEach(function(c, i) {
+    var b = document.createElement('div');
+    b.className = 'drum-ball';
+    var col = cols[i % cols.length];
+    var delay = -(i * c.spd / config.length).toFixed(2);
+    b.style.cssText =
+      '--sz:' + c.sz + 'px;' +
+      '--r:'  + c.r  + 'px;' +
+      '--spd:'+ c.spd + 's;' +
+      '--dly:'+ delay + 's;' +
+      '--col:'+ col  + ';';
+    b.textContent = (i + 1) * 5 % 90 + 1; // decorative number
+    drum.appendChild(b);
+  });
+}
+
+function launchBall(num, color) {
+  var drum     = document.getElementById('ball-drum');
+  var mainBall = document.getElementById('ball');
+  if (!drum || !mainBall) return;
+
+  var fromR = drum.getBoundingClientRect();
+  var toR   = mainBall.getBoundingClientRect();
+
+  var sz = 28;
+  var startX = fromR.left + fromR.width  / 2 - sz / 2;
+  var startY = fromR.top  + fromR.height / 2 - sz / 2;
+  var endDX  = (toR.left + toR.width  / 2) - (fromR.left + fromR.width  / 2);
+  var endDY  = (toR.top  + toR.height / 2) - (fromR.top  + fromR.height / 2);
+  var targetScale = (toR.width / sz) * 0.92;
+
+  var fly = document.createElement('div');
+  fly.className = 'fly-ball';
+  fly.textContent = num;
+  fly.style.cssText =
+    'width:' + sz + 'px;height:' + sz + 'px;' +
+    'left:' + startX + 'px;top:' + startY + 'px;' +
+    'font-size:' + Math.round(sz * 0.58) + 'px;' +
+    'background:radial-gradient(circle at 35% 30%,#ffffff55 0%,' + color + '99 45%,#020508 100%);' +
+    'color:' + color + ';' +
+    'box-shadow:0 0 10px ' + color + '99;';
+  document.body.appendChild(fly);
+
+  // Trigger reflow then animate
+  fly.getBoundingClientRect();
+  fly.style.transition = 'transform 0.55s cubic-bezier(0.34,1.20,0.64,1), opacity 0.12s ease 0.43s';
+  fly.style.transform  = 'translate(' + endDX + 'px,' + endDY + 'px) scale(' + targetScale + ')';
+  fly.style.opacity    = '0';
+
+  setTimeout(function() { if (fly.parentNode) fly.parentNode.removeChild(fly); }, 680);
+}
+
 // ── DISPLAY ───────────────────────────────────────────
 function updateDisplay(num) {
   const g       = Math.min(Math.floor((num - 1) / 10), 8);
@@ -405,15 +475,21 @@ function updateDisplay(num) {
   const ballMids  = ['#1a4a7a','#7a6010','#7a2020','#7a3810','#0f5a28','#4a1a6a','#0a5a4a','#1a3a5a','#2a3540'];
   const ballDarks = ['#0a1e2e','#2e2504','#3d0a08','#3d1800','#0a2e16','#22083d','#073832','#0a1f2e','#151d23'];
 
+  // Launch animation first, then reveal the main ball
+  launchBall(num, fg);
+
   ball.style.background = 'radial-gradient(circle at 35% 32%, #ffffff44 0%, ' +
     ballMids[g] + '99 30%, ' + ballDarks[g] + ' 70%, #020508 100%)';
   ball.style.boxShadow = '0 0 0 3px ' + fg + '55, 0 0 35px ' + fg + '33, ' +
     'inset 0 -8px 20px rgba(0,0,0,0.7), inset 0 8px 16px rgba(255,255,255,0.08)';
 
-  ball.classList.remove('reveal');
-  void ball.offsetWidth;
-  ball.classList.add('reveal');
-  setTimeout(function() { ball.classList.remove('reveal'); }, 600);
+  // Delay reveal slightly so the fly animation arrives first
+  setTimeout(function() {
+    ball.classList.remove('reveal');
+    void ball.offsetWidth;
+    ball.classList.add('reveal');
+    setTimeout(function() { ball.classList.remove('reveal'); }, 600);
+  }, 420);
 
   bigNum.textContent      = num;
   bigNum.style.color      = fg;
@@ -1076,6 +1152,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   initGrid();
   initMyCartillaUI();
+  initDrum();
 
   syncState();
   setInterval(syncState, 1500);
