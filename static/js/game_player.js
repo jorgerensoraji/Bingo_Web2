@@ -352,8 +352,12 @@ async function syncState() {
       updateStatusMsg(serverDrawn.length, data.remaining);
     }
 
-    // Re-mark all (recovery after page reload)
-    drawnLocal.forEach(function(n) { markCell(n, false); });
+    // Re-mark all (recovery after page reload) + remove from drum silently
+    drawnLocal.forEach(function(n) {
+      markCell(n, false);
+      var b = document.getElementById('dball-' + n);
+      if (b) b.parentNode && b.parentNode.removeChild(b);
+    });
 
     if (newNums.length > 0) {
       const latest = newNums[newNums.length - 1];
@@ -398,35 +402,47 @@ async function syncState() {
 // ── DRUM (bolillero) ──────────────────────────────────
 var _drumInited = false;
 
+// 9 groups × 10 balls = 90 real balls, each group on its own orbit ring
+var DRUM_RADII = [13, 19, 26, 33, 40, 47, 54, 60, 66];
+// orbit speeds (seconds per revolution) — slightly randomised per group
+var DRUM_SPEEDS = [3.8, 5.1, 4.4, 6.0, 5.5, 4.8, 6.6, 5.9, 7.2];
+
 function initDrum() {
   var drum = document.getElementById('ball-drum');
   if (!drum || _drumInited) return;
   _drumInited = true;
 
   var cols = GROUP_COLORS.map(function(g){ return g.fg; });
-  // 18 balls: mix of sizes and radii to look like a full machine
-  var config = [
-    {sz:18,r:42,spd:5.2},{sz:22,r:50,spd:7.1},{sz:16,r:35,spd:4.6},
-    {sz:20,r:46,spd:6.3},{sz:24,r:55,spd:8.0},{sz:15,r:38,spd:4.0},
-    {sz:19,r:43,spd:5.8},{sz:21,r:52,spd:7.4},{sz:17,r:40,spd:5.0},
-    {sz:23,r:48,spd:6.7},{sz:16,r:36,spd:4.3},{sz:20,r:44,spd:6.0},
-    {sz:18,r:58,spd:8.5},{sz:22,r:53,spd:7.8},{sz:25,r:46,spd:6.5},
-    {sz:14,r:33,spd:3.8},{sz:19,r:47,spd:5.5},{sz:21,r:57,spd:8.2},
-  ];
-  config.forEach(function(c, i) {
-    var b = document.createElement('div');
-    b.className = 'drum-ball';
-    var col = cols[i % cols.length];
-    var delay = -(i * c.spd / config.length).toFixed(2);
-    b.style.cssText =
-      '--sz:' + c.sz + 'px;' +
-      '--r:'  + c.r  + 'px;' +
-      '--spd:'+ c.spd + 's;' +
-      '--dly:'+ delay + 's;' +
-      '--col:'+ col  + ';';
-    b.textContent = (i + 1) * 5 % 90 + 1; // decorative number
-    drum.appendChild(b);
-  });
+
+  for (var g = 0; g < 9; g++) {
+    var col    = cols[g];
+    var radius = DRUM_RADII[g];
+    var spd    = DRUM_SPEEDS[g];
+
+    for (var j = 0; j < 10; j++) {
+      var num   = g * 10 + j + 1;
+      var delay = -(j * spd / 10).toFixed(2); // spread 10 balls evenly on the ring
+      var b     = document.createElement('div');
+      b.className   = 'drum-ball';
+      b.id          = 'dball-' + num;
+      b.style.cssText =
+        '--sz:10px;' +
+        '--r:'  + radius + 'px;' +
+        '--spd:'+ spd    + 's;' +
+        '--dly:'+ delay  + 's;' +
+        '--col:'+ col    + ';';
+      drum.appendChild(b);
+    }
+  }
+}
+
+function removeDrumBall(num) {
+  var b = document.getElementById('dball-' + num);
+  if (!b) return;
+  b.style.transition = 'opacity 0.35s, transform 0.35s';
+  b.style.opacity    = '0';
+  b.style.transform  = b.style.transform + ' scale(0)';
+  setTimeout(function() { if (b.parentNode) b.parentNode.removeChild(b); }, 400);
 }
 
 function launchBall(num, color) {
@@ -475,7 +491,8 @@ function updateDisplay(num) {
   const ballMids  = ['#1a4a7a','#7a6010','#7a2020','#7a3810','#0f5a28','#4a1a6a','#0a5a4a','#1a3a5a','#2a3540'];
   const ballDarks = ['#0a1e2e','#2e2504','#3d0a08','#3d1800','#0a2e16','#22083d','#073832','#0a1f2e','#151d23'];
 
-  // Launch animation first, then reveal the main ball
+  // Remove the ball from the drum and launch it to the display
+  removeDrumBall(num);
   launchBall(num, fg);
 
   ball.style.background = 'radial-gradient(circle at 35% 32%, #ffffff44 0%, ' +
