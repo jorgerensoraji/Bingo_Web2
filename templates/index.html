@@ -630,6 +630,49 @@
       <div id="mis-cartillas-wrap"></div>
     </div>
 
+    <!-- ══ CHAT ══ -->
+    <div class="panel" id="chat-panel" style="margin-top:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-title" style="margin:0">💬 Chat</div>
+        <span id="chat-online" style="font-size:.7rem;color:var(--muted)"></span>
+      </div>
+
+      <!-- Mensajes -->
+      <div id="chat-messages" style="
+        height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;
+        padding:8px;background:var(--bg);border-radius:10px;border:1px solid var(--border);
+        margin-bottom:10px;scroll-behavior:smooth;
+      ">
+        <div id="chat-empty" style="color:var(--muted);font-size:.78rem;text-align:center;margin:auto">
+          Sin mensajes aún. ¡Di hola! 👋
+        </div>
+      </div>
+
+      <!-- Input nombre (solo si no está guardado) -->
+      <div id="chat-name-row" style="display:flex;gap:6px;margin-bottom:6px">
+        <input id="chat-name" type="text" maxlength="25"
+               placeholder="Tu nombre o apodo"
+               style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
+                      padding:7px 10px;color:var(--text);font-family:Outfit,sans-serif;font-size:.82rem;outline:none"
+               onkeydown="if(event.key==='Enter') document.getElementById('chat-msg').focus()">
+      </div>
+
+      <!-- Input mensaje -->
+      <div style="display:flex;gap:6px">
+        <input id="chat-msg" type="text" maxlength="200"
+               placeholder="Escribe un mensaje…"
+               style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
+                      padding:7px 10px;color:var(--text);font-family:Outfit,sans-serif;font-size:.82rem;outline:none"
+               onkeydown="if(event.key==='Enter') sendChatMsg()">
+        <button onclick="sendChatMsg()"
+                style="padding:7px 14px;border:none;border-radius:8px;
+                       background:var(--accent);color:#041015;font-family:Outfit,sans-serif;
+                       font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap">
+          Enviar
+        </button>
+      </div>
+    </div>
+
   </div>
 
 </div>

@@ -134,6 +134,21 @@ def hash_pin(pin: str) -> str:
     """SHA-256 del PIN. Nunca guardamos el PIN en texto claro."""
     return hashlib.sha256(pin.strip().encode()).hexdigest()
 
+# ─── Chat en memoria ──────────────────────────────────────────────────────────
+import threading as _threading
+_chat_lock  = _threading.Lock()
+_chat_msgs  = []          # lista de dicts: {id, name, msg, ts, color}
+_chat_next_id = 1
+_CHAT_MAX   = 150         # máximo mensajes en memoria
+_CHAT_COLORS = [
+    "#00e5b4","#f6c343","#58d68d","#5dade2",
+    "#a569bd","#ff8c42","#48c9b0","#f1948a",
+]
+
+def _chat_color(name: str) -> str:
+    idx = sum(ord(c) for c in name) % len(_CHAT_COLORS)
+    return _CHAT_COLORS[idx]
+
 def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
     if not email_configurado():
         return False, "Email no configurado. Agrega EMAIL_FROM y EMAIL_PASS en las variables de entorno."
@@ -1562,6 +1577,48 @@ def api_game_stats():
         "prize_bingo":  prize,
         "prize_linea":  linea,
     })
+
+@app.route("/api/chat/messages")
+def api_chat_messages():
+    since = int(request.args.get("since", 0))
+    with _chat_lock:
+        msgs = [m for m in _chat_msgs if m["id"] > since]
+    return jsonify({"messages": msgs})
+
+@app.route("/api/chat/send", methods=["POST"])
+@rate_limit(max_calls=8, window_seconds=10)
+def api_chat_send():
+    global _chat_next_id
+    data = request.get_json() or {}
+    name = sanitize_text((data.get("name") or "").strip(), 30)
+    msg  = sanitize_text((data.get("msg")  or "").strip(), 200)
+    if not name:
+        return jsonify({"error": "Ingresa tu nombre"}), 400
+    if not msg:
+        return jsonify({"error": "Mensaje vacío"}), 400
+    with _chat_lock:
+        entry = {
+            "id":    _chat_next_id,
+            "name":  name,
+            "msg":   msg,
+            "ts":    datetime.now().strftime("%H:%M"),
+            "color": _chat_color(name),
+        }
+        _chat_msgs.append(entry)
+        _chat_next_id += 1
+        if len(_chat_msgs) > _CHAT_MAX:
+            _chat_msgs.pop(0)
+    return jsonify({"ok": True, "id": entry["id"]})
+
+@app.route("/api/chat/clear", methods=["POST"])
+def api_chat_clear():
+    chk = admin_required()
+    if chk: return chk
+    global _chat_next_id
+    with _chat_lock:
+        _chat_msgs.clear()
+        _chat_next_id = 1
+    return jsonify({"ok": True})
 
 @app.route("/api/admin/resume", methods=["POST"])
 def api_admin_resume():

@@ -979,6 +979,96 @@ async function updateGameStats() {
   } catch(e) {}
 }
 
+// ── CHAT ──────────────────────────────────────────────
+let chatLastId   = 0;
+let chatSending  = false;
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function fetchChatMessages() {
+  try {
+    const res  = await fetch('/api/chat/messages?since=' + chatLastId);
+    if (!res.ok) return;
+    const data = await res.json();
+    const msgs = data.messages || [];
+    if (!msgs.length) return;
+
+    const box   = document.getElementById('chat-messages');
+    const empty = document.getElementById('chat-empty');
+    if (!box) return;
+    if (empty) empty.remove();
+
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    const myName   = (localStorage.getItem('chat_name') || '').trim();
+
+    msgs.forEach(function(m) {
+      const isMe = myName && m.name === myName;
+      const div  = document.createElement('div');
+      div.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe ? 'flex-end' : 'flex-start');
+      div.innerHTML =
+        '<div style="max-width:85%;background:' + (isMe ? 'rgba(0,229,180,.15)' : 'rgba(255,255,255,.05)') + ';' +
+        'border:1px solid ' + (isMe ? 'rgba(0,229,180,.3)' : 'rgba(255,255,255,.08)') + ';' +
+        'border-radius:10px;padding:5px 10px;font-size:.8rem;">' +
+        '<span style="font-weight:700;color:' + esc(m.color) + ';font-size:.72rem">' + esc(m.name) + '</span>' +
+        '<span style="color:rgba(255,255,255,.3);font-size:.65rem;margin-left:6px">' + esc(m.ts) + '</span>' +
+        '<div style="color:#e8f4f8;margin-top:2px;word-break:break-word">' + esc(m.msg) + '</div>' +
+        '</div>';
+      box.appendChild(div);
+      chatLastId = Math.max(chatLastId, m.id);
+    });
+
+    if (atBottom) box.scrollTop = box.scrollHeight;
+
+    // Actualizar contador
+    const onlineEl = document.getElementById('chat-online');
+    if (onlineEl) onlineEl.textContent = chatLastId + (chatLastId === 1 ? ' mensaje' : ' mensajes');
+  } catch(e) {}
+}
+
+async function sendChatMsg() {
+  if (chatSending) return;
+  const nameEl = document.getElementById('chat-name');
+  const msgEl  = document.getElementById('chat-msg');
+  if (!nameEl || !msgEl) return;
+
+  const name = nameEl.value.trim();
+  const msg  = msgEl.value.trim();
+  if (!name) { nameEl.focus(); showToast('⚠️ Ingresa tu nombre'); return; }
+  if (!msg)  { msgEl.focus();  return; }
+
+  chatSending = true;
+  try {
+    const res  = await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, msg }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || 'Error')); return; }
+    msgEl.value = '';
+    localStorage.setItem('chat_name', name);
+    await fetchChatMessages();
+    const box = document.getElementById('chat-messages');
+    if (box) box.scrollTop = box.scrollHeight;
+  } catch(e) {
+    showToast('❌ Error de conexión');
+  } finally {
+    chatSending = false;
+  }
+}
+
+function initChat() {
+  // Restaurar nombre guardado
+  const saved = localStorage.getItem('chat_name');
+  const nameEl = document.getElementById('chat-name');
+  if (saved && nameEl) nameEl.value = saved;
+
+  fetchChatMessages();
+  setInterval(fetchChatMessages, 3000);
+}
+
 // ── INIT ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   const urlEl = document.getElementById('server-url');
@@ -992,4 +1082,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   updateGameStats();
   setInterval(updateGameStats, 10000);
+
+  initChat();
 });
