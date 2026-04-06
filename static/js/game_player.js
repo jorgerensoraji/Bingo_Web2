@@ -45,6 +45,9 @@ let testAudio      = null;
 let adminWasOnline = true;
 let resetPending   = false;
 
+// ── SESIÓN ACTIVA ─────────────────────────────────────
+let activeSessionId = null;   // se actualiza desde /api/state
+
 // ── MI CARTILLA ───────────────────────────────────────
 let myCartilla    = null;
 let myBingoFired  = false;
@@ -293,6 +296,7 @@ async function syncState() {
 
     const serverDrawn  = data.drawn || [];
     const serverGameId = data.game_id;
+    if (data.session_id) activeSessionId = data.session_id;
 
     const statusEl = document.getElementById('sync-status');
     if (statusEl && adminWasOnline) {
@@ -598,11 +602,33 @@ async function loadAllCartillas() {
         .then(function(r) { return r.ok ? r.json() : null; });
     })
   );
-  myCartillas = results
+  const all = results
     .filter(function(r) { return r.status === 'fulfilled' && r.value && r.value.grid; })
     .map(function(r) { return r.value; });
+
+  // Filtrar por sesión activa
+  let wrongSession = 0;
+  if (activeSessionId) {
+    myCartillas = all.filter(function(c) {
+      if (!c.session_id || c.session_id === activeSessionId) return true;
+      wrongSession++;
+      return false;
+    });
+  } else {
+    myCartillas = all;
+  }
+
   cartillaStates = {};
+
+  if (wrongSession > 0 && !myCartillas.length) {
+    showToast('❌ Tus cartillas son de otra sesión y no pueden usarse en el juego actual.', 5000);
+    return;
+  }
+  if (wrongSession > 0) {
+    showToast('⚠️ ' + wrongSession + ' cartilla(s) de otra sesión fueron ignoradas.', 4000);
+  }
   if (!myCartillas.length) { showToast("❌ No se encontraron cartillas válidas"); return; }
+
   const banner = document.getElementById('banner-comprar');
   if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
   updateMyCartillaAutoMark(true);
