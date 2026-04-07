@@ -220,9 +220,16 @@
         <div class="filter-row">
           <select id="f-type" class="inp" onchange="renderSessions()">
             <option value="all">Todos los tipos</option>
-            <option value="1sol">🟡 1 Sol</option>
-            <option value="5soles">🔵 5 Soles</option>
-            <option value="10soles">💎 10 Soles</option>
+            <optgroup label="── Bingo 90 Bolas ──">
+              <option value="1sol">🟡 1 Sol</option>
+              <option value="5soles">🔵 5 Soles</option>
+              <option value="10soles">💎 10 Soles</option>
+            </optgroup>
+            <optgroup label="── Bingo 75 B-I-N-G-O ──">
+              <option value="bingo75_1sol">🎯 1 Sol</option>
+              <option value="bingo75_5soles">🎯 5 Soles</option>
+              <option value="bingo75_10soles">🎯 10 Soles</option>
+            </optgroup>
           </select>
           <select id="f-status" class="inp" onchange="renderSessions()">
             <option value="all">Todos los estados</option>
@@ -248,15 +255,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-const BINGO_TYPES = {
-  "1sol":    { nombre:"Bingo 1 Sol",    precio:1,  color:"#f4d03f", emoji:"🟡",
-               prize_pct:.70, linea_pct:.10 },
-  "5soles":  { nombre:"Bingo 5 Soles",  precio:5,  color:"#5dade2", emoji:"🔵",
-               prize_pct:.75, linea_pct:.08 },
-  "10soles": { nombre:"Bingo 10 Soles", precio:10, color:"#00e5b4", emoji:"💎",
-               prize_pct:.80, linea_pct:.05 },
-};
-
+let BINGO_TYPES  = {};  // populated from /api/bingo_types
 let allSessions  = [];
 let selBtype     = "1sol";
 let cdTimers     = {};   // sid → intervalId de countdown
@@ -274,19 +273,36 @@ function esc(s) {
 }
 
 // ── Construir selector de tipo de bingo ───────────────
-function buildBtypes() {
-  const g = document.getElementById('btype-grid');
-  g.innerHTML = Object.entries(BINGO_TYPES).map(([k, v]) => `
-    <div class="btype-card ${k === selBtype ? 'selected' : ''}" id="bcard-${k}"
-         onclick="selectBtype('${k}')"
-         style="${k === selBtype
-           ? `border-color:${v.color};box-shadow:0 0 12px ${v.color}44`
-           : ''}">
+async function buildBtypes() {
+  if (!Object.keys(BINGO_TYPES).length) {
+    try {
+      const res  = await fetch('/api/bingo_types');
+      const data = await res.json();
+      (data.bingo_types || []).forEach(bt => { BINGO_TYPES[bt.id] = bt; });
+    } catch(e) {}
+  }
+  const g       = document.getElementById('btype-grid');
+  const types90 = Object.values(BINGO_TYPES).filter(v => v.grid_type !== '75');
+  const types75 = Object.values(BINGO_TYPES).filter(v => v.grid_type === '75');
+
+  function card(v) {
+    const sel = v.id === selBtype;
+    return `<div class="btype-card ${sel?'selected':''}" id="bcard-${v.id}"
+         onclick="selectBtype('${v.id}')"
+         style="${sel?`border-color:${v.color};box-shadow:0 0 12px ${v.color}44`:''}">
       <div class="emoji">${v.emoji}</div>
       <div class="price" style="color:${v.color}">S/.${v.precio}</div>
       <div class="name">${v.nombre}</div>
-    </div>`
-  ).join('');
+    </div>`;
+  }
+
+  g.innerHTML =
+    `<div style="grid-column:1/-1;font-size:.62rem;letter-spacing:2px;color:var(--muted);
+                 text-transform:uppercase;padding:2px 0 4px">🎱 Bingo 90 Bolas</div>` +
+    types90.map(card).join('') +
+    `<div style="grid-column:1/-1;font-size:.62rem;letter-spacing:2px;color:var(--muted);
+                 text-transform:uppercase;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:4px">🎯 Bingo 75 · B-I-N-G-O</div>` +
+    types75.map(card).join('');
   updatePreview();
 }
 

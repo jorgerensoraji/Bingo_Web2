@@ -374,10 +374,22 @@ BINGO_TYPES = {
         "prize_pct": 0.80, "linea_pct": 0.05, "max_cartillas_per_voucher": 1,
         "balls": 90, "grid_type": "90",
     },
-    "bingo75": {
-        "id": "bingo75", "nombre": "Bingo 75", "precio": 5.00,
+    "bingo75_1sol": {
+        "id": "bingo75_1sol", "nombre": "Bingo 75 · 1 Sol", "precio": 1.00,
+        "color": "#f472b6", "emoji": "🎯", "descripcion": "Bingo americano B-I-N-G-O",
+        "prize_pct": 0.70, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
+        "balls": 75, "grid_type": "75",
+    },
+    "bingo75_5soles": {
+        "id": "bingo75_5soles", "nombre": "Bingo 75 · 5 Soles", "precio": 5.00,
         "color": "#a855f7", "emoji": "🎯", "descripcion": "Bingo americano B-I-N-G-O",
         "prize_pct": 0.75, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
+        "balls": 75, "grid_type": "75",
+    },
+    "bingo75_10soles": {
+        "id": "bingo75_10soles", "nombre": "Bingo 75 · 10 Soles", "precio": 10.00,
+        "color": "#818cf8", "emoji": "🎯", "descripcion": "Bingo americano B-I-N-G-O",
+        "prize_pct": 0.80, "linea_pct": 0.08, "max_cartillas_per_voucher": 1,
         "balls": 75, "grid_type": "75",
     },
 }
