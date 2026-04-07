@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -)",
+      "Bash(python3 replace_section.py)",
+      "Bash(py --version)",
+      "Bash(py replace_section.py)",
+      "Bash(py -c ':*)",
+      "Bash(grep -n \"by_access\\\\|access_pin\\\\|celular.*pin\\\\|pin.*celular\\\\|cargar.*cartilla\\\\|load.*cartilla\" templates/*.html)",
+      "Bash(python -c \"import ast, sys; ast.parse\\(open\\('app.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(wc:*)",
+      "Bash(python -c \"import ast, sys; ast.parse\\(open\\('app.py',encoding='utf-8'\\).read\\(\\)\\); print\\('app.py OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py',encoding='utf-8'\\).read\\(\\)\\); print\\('app.py OK'\\)\")"
+    ]
+  }
+}

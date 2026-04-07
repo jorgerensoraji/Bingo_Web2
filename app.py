@@ -1456,12 +1456,14 @@ def api_draw():
         num   = game.draw()
         words = num2words(num, lang="es")
         count = len(game.drawn)
+        bingo_letter = ["B","I","N","G","O"][min((num-1)//15, 4)]
+        letter_phrase = f"{bingo_letter}, {words}"
         if count == 1:
-            phrase = f"Primera bolilla, número {words}"
-        elif count == 90:
-            phrase = f"Última bolilla, número {words}. ¡Juego completo!"
+            phrase = f"Primera bolilla, {letter_phrase}"
+        elif count == 75:
+            phrase = f"Última bolilla, {letter_phrase}. ¡Juego completo!"
         else:
-            phrase = f"La siguiente bolilla es el número {words}"
+            phrase = f"{letter_phrase}"
         game.last_phrase   = phrase
         game.last_activity = time.time()
         wc = len(game.claimed_winners)

@@ -800,6 +800,8 @@ async function loadAllCartillas() {
   if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
   updateMyCartillaAutoMark(true);
   showToast('✅ ' + myCartillas.length + ' cartilla(s) cargada(s)');
+  var wrapEl = document.getElementById('mis-cartillas-wrap');
+  if (wrapEl) { setTimeout(function(){ wrapEl.scrollIntoView({behavior:'smooth', block:'start'}); }, 500); }
   try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch(e) {}
 }
 
