@@ -764,8 +764,9 @@ async function loadAllCartillas() {
   if (!ids.length) { showToast('⚠️ No tienes cartillas guardadas en este dispositivo'); return; }
   showToast('⏳ Cargando ' + ids.length + ' cartilla(s)…');
   const results = await Promise.allSettled(
-    ids.map(function(cid) {
-      return fetch('/api/cartilla/' + cid.trim().toUpperCase())
+    ids.map(function(entry) {
+      const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
+      return fetch('/api/cartilla/' + String(cid).trim().toUpperCase())
         .then(function(r) { return r.ok ? r.json() : null; });
     })
   );
@@ -913,7 +914,7 @@ function updateMyCartillaAutoMark(force) {
           if (lineaType === 'diag_anti' && ri + ci === 4)    inLine = true;
         }
 
-        const isFree = is75 && ri === 2 && ci === 2;
+        const isFree = isBingo75 && ri === 2 && ci === 2;
         if (isFree) {
           cell.classList.add('marked');
           cell.style.borderColor = g.fg;

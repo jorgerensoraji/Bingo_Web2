@@ -1226,6 +1226,8 @@ def api_admin_create_voucher():
     if bingo_type not in BINGO_TYPES:
         return jsonify({"error": "invalid_bingo_type"}), 400
     btype  = BINGO_TYPES[bingo_type]
+    import random as _random
+    plain_pin = str(_random.randint(1000, 9999))
     v_dict = {}
     with db_session() as db:
         code = _unique_code(db)
@@ -1239,15 +1241,18 @@ def api_admin_create_voucher():
             precio=btype["precio"],
             session_id=data.get("session_id", ""),
             payment_method=data.get("payment_method", "efectivo"),
-            payment_status="pending",
+            payment_status="manual_approved",
+            approved_at=datetime.now().isoformat(),
             payment_ref=data.get("payment_ref", ""),
             created=datetime.now().isoformat(),
             creado_por="admin",
+            access_pin=hash_pin(plain_pin),
+            pin_hint=plain_pin,
         )
         db.add(v)
         db.flush()
         v_dict = v.to_dict()
-    return jsonify({"status": "ok", "voucher": v_dict})
+    return jsonify({"status": "ok", "voucher": v_dict, "pin": plain_pin})
 
 @app.route("/api/admin/vouchers")
 def api_admin_list_vouchers():

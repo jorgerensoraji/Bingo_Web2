@@ -687,15 +687,16 @@ async function createVoucher() {
 
   if (!res.ok) { showToast('❌ ' + (data.error||'No se pudo generar')); return; }
 
-  const code = data.voucher.code;
-  const bt   = BINGO_TYPES[bingo_type]||BINGO_TYPES['1sol'];
+  const code    = data.voucher.code;
+  const pin     = data.pin || data.voucher.pin_hint || '—';
+  const bt      = BINGO_TYPES[bingo_type]||BINGO_TYPES['1sol'];
 
   document.getElementById('lastCode').textContent = code;
   document.getElementById('lastInfo').innerHTML   =
     `${bt.emoji} ${bt.nombre} — S/. ${bt.precio.toFixed(2)}<br>
-     <span style="color:var(--warning)">⚠️ Pendiente — ve a
-     <a href="/admin/payments" style="color:var(--accent)">Pagos</a>
-     para aprobar y enviar el email a ${esc(email)}</span>`;
+     ✅ Aprobado automáticamente<br>
+     <span style="color:var(--accent);font-size:1.1rem;font-weight:900;">PIN: ${esc(pin)}</span>
+     <span style="color:var(--muted);font-size:.8rem;"> — comparte este PIN con ${esc(email||celular)}</span>`;
   document.getElementById('codeBox').style.display = 'flex';
 
   showToast(`✅ Código ${code} generado para ${nombres} ${apellidos}`);
