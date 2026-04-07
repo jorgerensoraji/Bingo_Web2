@@ -49,10 +49,12 @@ let activeSessionId = null;   // se actualiza desde /api/state
 
 // ── MI CARTILLA ───────────────────────────────────────
 let myCartilla    = null;
+let myCartillas   = [];      // array of loaded cartilla objects
 let myBingoFired  = false;
 let claimedBingo  = false;   // v6 — reclamo de bingo
 let claimedLinea  = false;   // v6 — reclamo de línea
 let almostSpoken  = false;   // v6 — evitar repetir "¡Falta 1!"
+let cartillaStates = {};     // per-cartilla claim/alert state
 
 // ── TOAST ─────────────────────────────────────────────
 let toastJob = null;
@@ -750,6 +752,25 @@ function launchConfetti() {
 }
 
 // ── CARTILLA UI (multi-cartilla v8) ─────────────────────
+
+function getCartillaState(cid) {
+  if (!cartillaStates[cid]) {
+    cartillaStates[cid] = { bingoFired: false, almostSpoken: false, claimedBingo: false, claimedLinea: false };
+  }
+  return cartillaStates[cid];
+}
+
+function playWinAlert() {
+  if (!soundEnabled) return;
+  var voice = (document.getElementById('player-voice-select') || {}).value || 'es-PE-CamilaNeural';
+  playPhrase('¡Bingo! ¡Felicidades, ganaste!', voice);
+}
+
+function showWinNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try { new Notification(title, { body: body }); } catch(e) {}
+}
+
 function getMyCartillasFromStorage() {
   try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]') || []; }
   catch(e) { return []; }
