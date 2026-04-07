@@ -973,7 +973,7 @@ function buildPicker() {
   const area = document.getElementById('picker-area');
   if (!area) return;
   const grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-bottom:10px';
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:10px';
   COL_COLORS.forEach((col, ci) => {
     const h = document.createElement('div');
     h.textContent  = COL_RANGES[ci][0]+'…';
@@ -982,8 +982,8 @@ function buildPicker() {
       background:rgba(${hexToRgb(col)},0.15)`;
     grid.appendChild(h);
   });
-  for (let row = 0; row < 10; row++) {
-    for (let ci = 0; ci < 9; ci++) {
+  for (let row = 0; row < 15; row++) {
+    for (let ci = 0; ci < 5; ci++) {
       const num = COL_RANGES[ci][row];
       if (num === undefined) { grid.appendChild(document.createElement('div')); continue; }
       const btn = document.createElement('button');
@@ -1005,7 +1005,7 @@ function togglePickerNum(n, ci, btn) {
     btn.style.borderColor='';btn.style.color='var(--muted)';
     btn.style.background='var(--card)';btn.style.transform='';
   } else {
-    if (selected.size >= 15) { showToast('⚠️ Máximo 15 números'); return; }
+    if (selected.size >= 24) { showToast('⚠️ Máximo 24 números'); return; }
     selected.add(n);
     btn.style.borderColor=COL_COLORS[ci];
     btn.style.color=COL_COLORS[ci];
