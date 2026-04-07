@@ -5,21 +5,19 @@
 
 // ── COLORES ───────────────────────────────────────
 const GC = [
-  {fg:'#5dade2',bg:'#0a1e2e'},{fg:'#f4d03f',bg:'#1e1500'},{fg:'#f1948a',bg:'#2a0805'},
-  {fg:'#e59866',bg:'#2a1000'},{fg:'#58d68d',bg:'#051e0f'},{fg:'#a569bd',bg:'#160525'},
-  {fg:'#48c9b0',bg:'#032420'},{fg:'#7fb3d3',bg:'#061320'},{fg:'#95a5a6',bg:'#0e1315'},
+  {fg:'#5dade2',bg:'#0a1e2e'},  // B  1-15
+  {fg:'#f4d03f',bg:'#1e1500'},  // I  16-30
+  {fg:'#f1948a',bg:'#2a0805'},  // N  31-45
+  {fg:'#58d68d',bg:'#051e0f'},  // G  46-60
+  {fg:'#a569bd',bg:'#160525'},  // O  61-75
 ];
-const COL_LABELS = ['1-10','11-20','21-30','31-40','41-50','51-60','61-70','71-80','81-90'];
+const COL_LABELS = ['B (1-15)','I (16-30)','N (31-45)','G (46-60)','O (61-75)'];
 const COL_RANGES_MANUAL = [
-  [1,2,3,4,5,6,7,8,9],
-  [10,11,12,13,14,15,16,17,18,19],
-  [20,21,22,23,24,25,26,27,28,29],
-  [30,31,32,33,34,35,36,37,38,39],
-  [40,41,42,43,44,45,46,47,48,49],
-  [50,51,52,53,54,55,56,57,58,59],
-  [60,61,62,63,64,65,66,67,68,69],
-  [70,71,72,73,74,75,76,77,78,79],
-  [80,81,82,83,84,85,86,87,88,89,90],
+  [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+  [16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],
+  [31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],
+  [46,47,48,49,50,51,52,53,54,55,56,57,58,59,60],
+  [61,62,63,64,65,66,67,68,69,70,71,72,73,74,75],
 ];
 
 // ── ESTADO ────────────────────────────────────────
@@ -219,8 +217,8 @@ async function viewCartilla(cid) {
     ).join('');
 
     let cellsHtml = '';
-    for (let ri = 0; ri < 3; ri++) {
-      for (let ci = 0; ci < 9; ci++) {
+    for (let ri = 0; ri < 5; ri++) {
+      for (let ci = 0; ci < 5; ci++) {
         const num = c.grid[ri][ci];
         const g   = GC[ci];
         if (num === null) {
@@ -317,7 +315,7 @@ async function checkAll() {
       ).join('');
     } else {
       wList.innerHTML = `<p style="color:var(--muted);font-size:.85rem;">
-        Ninguna cartilla tiene premio todavía. Sorteadas: ${data.drawn_count || 0}/90</p>`;
+        Ninguna cartilla tiene premio todavía. Sorteadas: ${data.drawn_count || 0}/75</p>`;
     }
 
     renderTable(allCartillas);
@@ -339,11 +337,15 @@ function switchTab(tab) {
 function buildPicker() {
   const wrap = document.getElementById('picker-wrap');
   if (!wrap) return;
+  // N column label shows FREE reminder
+  const labels = COL_LABELS.map((lbl, ci) =>
+    ci === 2 ? lbl + ' · libre centro' : lbl
+  );
   wrap.innerHTML = `<div class="picker-grid">${
     COL_RANGES_MANUAL.map((nums, ci) => `
       <div class="picker-col">
         <div class="picker-col-label" style="color:${GC[ci].fg};background:${GC[ci].bg};">
-          ${COL_LABELS[ci]}
+          ${labels[ci]}
         </div>
         ${nums.map(n => `
           <div class="p-num" id="pn-${n}" style="color:${GC[ci].fg};"
@@ -361,7 +363,7 @@ function toggleNum(n, ci) {
     el.style.background  = 'var(--card)';
     el.style.borderColor = '';
   } else {
-    if (selectedNums.size >= 15) { showToast('⚠️ Máximo 15 números'); return; }
+    if (selectedNums.size >= 24) { showToast('⚠️ Máximo 24 números'); return; }
     selectedNums.add(n);
     el.classList.add('selected');
     el.style.background  = GC[ci].bg;
@@ -383,27 +385,25 @@ function updatePickerUI() {
   const count = selectedNums.size;
   const disp  = document.getElementById('picker-count-display');
   if (disp) {
-    disp.innerHTML  = `Seleccionados: <span>${count}</span> / 15`;
-    disp.className  = `picker-count${count > 15 ? ' warn' : ''}`;
+    disp.innerHTML  = `Seleccionados: <span>${count}</span> / 24`;
+    disp.className  = `picker-count${count > 24 ? ' warn' : ''}`;
   }
 
   const colCounts = COL_RANGES_MANUAL.map(range =>
     range.filter(n => selectedNums.has(n)).length
   );
+  // B,I,G,O need 5 each; N needs 4 (FREE center)
+  const needed = [5, 5, 4, 5, 5];
   const errors = [], ok = [];
 
-  if (count < 15) errors.push(`⏳ Faltan ${15 - count} número(s)`);
-  else            ok.push('✅ Total: 15 números');
+  if (count < 24) errors.push(`⏳ Faltan ${24 - count} número(s)`);
+  else            ok.push('✅ Total: 24 números');
 
   colCounts.forEach((c, i) => {
-    if (c > 2) errors.push(`❌ Col ${COL_LABELS[i]}: máx 2 (tienes ${c})`);
+    const n = needed[i];
+    if (c > n) errors.push(`❌ ${COL_LABELS[i]}: máx ${n} (tienes ${c})`);
+    else if (count === 24 && c < n) errors.push(`❌ ${COL_LABELS[i]}: necesitas ${n} (tienes ${c})`);
   });
-
-  if (count === 15 && errors.length === 0) {
-    const valid = validateManualGrid(colCounts);
-    if (!valid) errors.push('❌ No se pueden formar 3 filas de 5 con esta distribución');
-    else        ok.push('✅ Las 3 filas de 5 se pueden formar');
-  }
 
   const rules = document.getElementById('picker-rules');
   if (rules) {
@@ -412,70 +412,33 @@ function updatePickerUI() {
     ).join('') || 'Selecciona tus números.';
   }
 
-  const allOk = count === 15 && errors.length === 0;
+  const allOk = count === 24 && errors.length === 0;
   const btn   = document.getElementById('btn-save-manual');
   if (btn) btn.disabled = !allOk;
 }
 
-function validateManualGrid(colCounts) {
-  const rows = [[], [], []];
-  const cols = colCounts.map((c, i) => ({ count:c, col:i })).filter(x => x.count > 0);
-
-  function fill(ci) {
-    if (ci === cols.length) return rows.every(r => r.length === 5);
-    const { count, col } = cols[ci];
-    const available = rows.map((r, i) => i).filter(i => rows[i].length < 5);
-    if (available.length < count) return false;
-    const combos = combinations(available, count);
-    for (const combo of combos) {
-      combo.forEach(ri => rows[ri].push(col));
-      if (fill(ci + 1)) return true;
-      combo.forEach(ri => rows[ri].pop());
-    }
-    return false;
-  }
-  return fill(0);
-}
-
-function combinations(arr, k) {
-  if (k === 0) return [[]];
-  if (k > arr.length) return [];
-  const [first, ...rest] = arr;
-  return [
-    ...combinations(rest, k - 1).map(c => [first, ...c]),
-    ...combinations(rest, k),
-  ];
-}
 
 async function saveManualCartilla() {
   const nombre = document.getElementById('inp-nombre').value.trim() || 'Jugador';
-  if (selectedNums.size !== 15) { showToast('⚠️ Selecciona exactamente 15 números'); return; }
+  if (selectedNums.size !== 24) { showToast('⚠️ Selecciona exactamente 24 números'); return; }
 
-  const colCounts = COL_RANGES_MANUAL.map(range =>
-    range.filter(n => selectedNums.has(n)).length
-  );
-  const rows = [[], [], []];
-  const cols = colCounts.map((c, i) => ({
-    count: c, col: i,
-    nums: COL_RANGES_MANUAL[i].filter(n => selectedNums.has(n))
-  })).filter(x => x.count > 0);
-
-  function buildRows(ci) {
-    if (ci === cols.length) return rows.every(r => r.length === 5);
-    const { count, col, nums: cnums } = cols[ci];
-    const available = [0,1,2].filter(i => rows[i].length < 5);
-    const combos = combinations(available, count);
-    for (const combo of combos) {
-      combo.sort().forEach((ri, i) => rows[ri].push({ col, num: cnums[i] }));
-      if (buildRows(ci + 1)) return true;
-      combo.sort().forEach((ri) => rows[ri].pop());
+  // Build 5×5 BINGO 75 grid: each column contains its range's numbers sorted by row
+  // N column (ci=2) has FREE space at row 2 (center)
+  const needed = [5, 5, 4, 5, 5];
+  const grid = Array.from({ length: 5 }, () => Array(5).fill(null));
+  for (let ci = 0; ci < 5; ci++) {
+    const colNums = COL_RANGES_MANUAL[ci].filter(n => selectedNums.has(n)).sort((a, b) => a - b);
+    if (colNums.length !== needed[ci]) {
+      showToast(`⚠️ ${COL_LABELS[ci]}: necesitas exactamente ${needed[ci]} números`);
+      return;
     }
-    return false;
+    if (ci === 2) {
+      // N column: rows 0,1,3,4 used; row 2 = FREE (null)
+      [0, 1, 3, 4].forEach((row, i) => { grid[row][ci] = colNums[i]; });
+    } else {
+      colNums.forEach((n, row) => { grid[row][ci] = n; });
+    }
   }
-  buildRows(0);
-
-  const grid = Array.from({ length:3 }, () => Array(9).fill(null));
-  rows.forEach((row, ri) => row.forEach(({ col, num }) => { grid[ri][col] = num; }));
 
   showToast('⏳ Guardando cartilla…');
   try {

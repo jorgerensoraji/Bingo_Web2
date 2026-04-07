@@ -8,21 +8,16 @@
 
 // ── COLORES ───────────────────────────────────────
 const GROUP_COLORS = [
-  { fg:'#5dade2', bg:'#0a1e2e' },
-  { fg:'#f4d03f', bg:'#1e1500' },
-  { fg:'#f1948a', bg:'#2a0805' },
-  { fg:'#e59866', bg:'#2a1000' },
-  { fg:'#58d68d', bg:'#051e0f' },
-  { fg:'#a569bd', bg:'#160525' },
-  { fg:'#48c9b0', bg:'#032420' },
-  { fg:'#7fb3d3', bg:'#061320' },
-  { fg:'#95a5a6', bg:'#0e1315' },
+  { fg:'#5dade2', bg:'#0a1e2e' },  // B  1-15
+  { fg:'#f4d03f', bg:'#1e1500' },  // I  16-30
+  { fg:'#f1948a', bg:'#2a0805' },  // N  31-45
+  { fg:'#58d68d', bg:'#051e0f' },  // G  46-60
+  { fg:'#a569bd', bg:'#160525' },  // O  61-75
 ];
-const GROUP_LABELS = ['1–10','11–20','21–30','31–40','41–50','51–60','61–70','71–80','81–90'];
+const GROUP_LABELS = ['B  1-15','I  16-30','N  31-45','G  46-60','O  61-75'];
 const BALL_COLORS  = [
   ['#1a4a7a','#0a1e2e'], ['#7a6010','#2e2504'], ['#7a2020','#3d0a08'],
-  ['#7a3810','#3d1800'], ['#0f5a28','#0a2e16'], ['#4a1a6a','#22083d'],
-  ['#0a5a4a','#073832'], ['#1a3a5a','#0a1f2e'], ['#2a3540','#151d23'],
+  ['#0f5a28','#0a2e16'], ['#4a1a6a','#22083d'],
 ];
 
 // ── ESTADO ────────────────────────────────────────
@@ -98,10 +93,9 @@ function initGrid() {
     headers.appendChild(h);
   });
 
-  for (let col = 0; col < 9; col++) {
-    for (let row = 0; row < 10; row++) {
-      const num  = col * 10 + row + 1;
-      if (num > 90) continue;   // FIX: skip 91-99 ghost cells
+  for (let col = 0; col < 5; col++) {
+    for (let row = 0; row < 15; row++) {
+      const num  = col * 15 + row + 1;
       const cell = document.createElement('div');
       cell.className    = 'num-cell';
       cell.id           = `cell-${num}`;
@@ -135,7 +129,7 @@ function runAnimation() {
 
     function tick() {
       if (step < steps) {
-        bigNum.textContent = Math.floor(Math.random() * 90) + 1;
+        bigNum.textContent = Math.floor(Math.random() * 75) + 1;
         step++;
         mixJob = setTimeout(tick, delay);
       } else {
@@ -203,7 +197,7 @@ async function fetchDraw() {
 
 // ── DISPLAY ───────────────────────────────────────
 function updateDisplay(num, words) {
-  const g           = Math.min(Math.floor((num - 1) / 10), 8);
+  const g           = Math.min(Math.floor((num - 1) / 15), 4);
   const { fg }      = GROUP_COLORS[g];
   const [mid, dark] = BALL_COLORS[g];
   const ball        = document.getElementById('ball');
@@ -227,14 +221,14 @@ function updateDisplay(num, words) {
 
   document.getElementById('words-display').textContent = capitalize(words);
   const gt = document.getElementById('group-tag');
-  gt.textContent = `Grupo ${GROUP_LABELS[g]}`;
+  gt.textContent = GROUP_LABELS[g];
   gt.style.color = fg;
 }
 
 function markCell(num) {
   const cell = document.getElementById(`cell-${num}`);
   if (!cell) return;
-  const g          = Math.min(Math.floor((num - 1) / 10), 8);
+  const g          = Math.min(Math.floor((num - 1) / 15), 4);
   const { fg, bg } = GROUP_COLORS[g];
   cell.classList.add('drawn', 'just-drawn');
   cell.style.color       = fg;
@@ -248,7 +242,7 @@ function updateRecent() {
   if (!strip) return;
   strip.innerHTML = '';
   [...drawn].slice(-18).reverse().forEach(n => {
-    const g  = Math.min(Math.floor((n - 1) / 10), 8);
+    const g  = Math.min(Math.floor((n - 1) / 15), 4);
     const el = document.createElement('div');
     el.className   = 'recent-num';
     el.textContent = n;
@@ -260,7 +254,7 @@ function updateRecent() {
 function updateStats(count, remaining) {
   document.getElementById('stat-drawn').textContent = count;
   document.getElementById('stat-rem').textContent   = remaining;
-  const pct = Math.round((count / 90) * 100);
+  const pct = Math.round((count / 75) * 100);
   document.getElementById('progress').style.width = pct + '%';
   document.getElementById('stat-pct').textContent = pct + '%';
 }
@@ -370,7 +364,7 @@ function tickAuto() {
 
   const total = parseInt(document.getElementById('auto-interval').value) || 10;
   if (autoCountdown <= 0) {
-    if (drawn.length >= 90) { stopAuto(); showGameOver(); return; }
+    if (drawn.length >= 75) { stopAuto(); showGameOver(); return; }
     drawNumber();
     autoCountdown = total;
   } else {
@@ -419,9 +413,9 @@ async function newGame() {
   document.getElementById('group-tag').textContent     = '';
   document.getElementById('auto-cd').textContent       = '';
   document.getElementById('recent-nums').innerHTML     = '';
-  updateStats(0, 90);
+  updateStats(0, 75);
 
-  for (let i = 1; i <= 90; i++) {
+  for (let i = 1; i <= 75; i++) {
     const cell = document.getElementById(`cell-${i}`);
     if (cell) {
       cell.classList.remove('drawn', 'just-drawn');
@@ -454,7 +448,7 @@ function showGameOver() {
   speak('¡Felicidades! Se han sorteado todas las bolillas. ¡Juego completo!');
   const timer = document.getElementById('timer').textContent.replace('⏱ ', '');
   document.getElementById('gameover-info').textContent =
-    `¡Se sortearon las 90 bolillas en ${timer}!`;
+    `¡Se sortearon las 75 bolillas en ${timer}!`;
   document.getElementById('gameover').classList.add('show');
   launchConfetti();
 }
@@ -536,7 +530,7 @@ async function loadExistingState() {
     }
 
     updateRecent();
-    updateStats(drawn.length, data.remaining ?? (90 - drawn.length));
+    updateStats(drawn.length, data.remaining ?? (75 - drawn.length));
 
     if (!startTime) { startTime = Date.now(); startClock(); }
 
@@ -571,7 +565,7 @@ async function pollStateForPlayers() {
       serverDrawn.forEach(n => markCell(n));
       if (serverLast) updateDisplay(serverLast, '');
       updateRecent();
-      updateStats(serverDrawn.length, data.remaining ?? (90 - serverDrawn.length));
+      updateStats(serverDrawn.length, data.remaining ?? (75 - serverDrawn.length));
       lastSeenServerLast = serverLast;
       return;
     }
@@ -586,10 +580,10 @@ async function pollStateForPlayers() {
       updateDisplay(serverLast, '');
       markCell(serverLast);
       updateRecent();
-      updateStats(serverDrawn.length, data.remaining ?? (90 - serverDrawn.length));
+      updateStats(serverDrawn.length, data.remaining ?? (75 - serverDrawn.length));
 
       // AUDIO: requiere unlock por click/tap
-      speak(`Bolilla ${serverLast}`);
+      speak(data.last_phrase || `Bolilla ${serverLast}`);
     }
   } catch (e) {
     // silencioso para no molestar

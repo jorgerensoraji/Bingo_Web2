@@ -8,7 +8,7 @@ Features:
   - Auto-checks ALL cartillas for winners after every draw
   - Auto-pauses when winner limit reached
   - Auto-emails winner notification
-  - Auto-finishes session when all 90 balls drawn or time limit hit
+  - Auto-finishes session when all 75 balls drawn or time limit hit
   - Admin can override / take manual control at any time
   - Full audit log of every automated action
 """
@@ -133,12 +133,14 @@ def _auto_draw_one(session_id: str) -> dict | None:
         words = num2words(num, lang="es")
         count = len(game.drawn)
 
+        bingo_letter = ["B","I","N","G","O"][min((num-1)//15, 4)]
+        letter_phrase = f"{bingo_letter}, {words}"
         if count == 1:
-            phrase = f"Primera bolilla, número {words}"
-        elif count == 90:
-            phrase = f"Última bolilla, número {words}. ¡Juego completo!"
+            phrase = f"Primera bolilla, {letter_phrase}"
+        elif count == 75:
+            phrase = f"Última bolilla, {letter_phrase}. ¡Juego completo!"
         else:
-            phrase = f"La siguiente bolilla es el número {words}"
+            phrase = letter_phrase
 
         game.last_phrase   = phrase
         game.last_activity = time.time()
@@ -383,7 +385,7 @@ def _tick_auto_draw():
                 _log("winners_detected", {"session_id": sid, "count": len(winners)})
                 _notify_winners(winners, sid)
             # Auto-finish when last ball
-            if result["count"] >= 90:
+            if result["count"] >= 75:
                 _auto_finish_session(sid)
 
 def _tick_auto_start():

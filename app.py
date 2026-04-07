@@ -1164,7 +1164,10 @@ def api_player_solicitar():
         return jsonify({"error": "terms_not_accepted", "message": "Debes aceptar los términos y condiciones."}), 400
     if bingo_type not in BINGO_TYPES:
         return jsonify({"error": "invalid_bingo_type"}), 400
-    # Si se especificó sesión, el bingo_type debe coincidir con el de la sesión
+    if not session_id:
+        return jsonify({"error": "no_session",
+                        "message": "No hay sesiones disponibles. El administrador debe crear una sesión antes de poder comprar cartillas."}), 400
+    # Validar que la sesión existe y coincide con el bingo_type
     if session_id:
         s = get_session(session_id)
         if not s:
@@ -1503,7 +1506,8 @@ def api_repeat():
     with game_lock:
         if game.last is None:
             return jsonify({"error": "no number"}), 400
-        phrase = f"Repito, bolilla número {num2words(game.last, lang='es')}"
+        bingo_letter = ["B","I","N","G","O"][min((game.last-1)//15, 4)]
+        phrase = f"Repito, {bingo_letter}, {num2words(game.last, lang='es')}"
     try:
         return send_file(make_audio(phrase, voice), mimetype="audio/mpeg")
     except Exception as e:

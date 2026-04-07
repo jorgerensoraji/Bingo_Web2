@@ -254,8 +254,8 @@
             ⚠️ Debes elegir una sesión para participar.
           </div>
           <div id="session-no-sessions" style="font-size:.75rem;margin-top:4px;
-               color:var(--muted);display:none">
-            ℹ️ No hay sesiones programadas para este tipo de bingo todavía.
+               color:var(--danger);display:none">
+            ❌ No hay sesiones disponibles. El administrador debe crear una sesión antes de poder comprar cartillas.
           </div>
         </div>
 
@@ -436,14 +436,13 @@
           → recibe código → genera cartilla
 ═══════════════════════════════════════════════════════ */
 
-const COL_COLORS = ['#5dade2','#f4d03f','#f1948a','#e59866',
-                    '#58d68d','#a569bd','#48c9b0','#7fb3d3','#95a5a6'];
+const COL_COLORS = ['#5dade2','#f4d03f','#f1948a','#58d68d','#a569bd'];
 const COL_RANGES = [
-  [1,2,3,4,5,6,7,8,9],[10,11,12,13,14,15,16,17,18,19],
-  [20,21,22,23,24,25,26,27,28,29],[30,31,32,33,34,35,36,37,38,39],
-  [40,41,42,43,44,45,46,47,48,49],[50,51,52,53,54,55,56,57,58,59],
-  [60,61,62,63,64,65,66,67,68,69],[70,71,72,73,74,75,76,77,78,79],
-  [80,81,82,83,84,85,86,87,88,89,90],
+  [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+  [16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],
+  [31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],
+  [46,47,48,49,50,51,52,53,54,55,56,57,58,59,60],
+  [61,62,63,64,65,66,67,68,69,70,71,72,73,74,75],
 ];
 
 let selected       = new Set();
@@ -589,19 +588,20 @@ function renderSessions() {
       return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
     }).join('');
 
-  // Indicar si la sesión es requerida u opcional
-  if (selBtype) {
-    if (ss.length > 0) {
-      if (req)    req.style.display    = 'inline';
-      if (hint)   hint.style.display   = 'none';
-      if (noSess) noSess.style.display = 'none';
-      sel.style.borderColor = 'rgba(0,229,180,.5)';
-    } else {
-      if (req)    req.style.display    = 'none';
-      if (hint)   hint.style.display   = 'none';
-      if (noSess) noSess.style.display = 'block';
-      sel.style.borderColor = 'var(--border)';
-    }
+  // Indicar si la sesión es requerida, y bloquear el botón si no hay sesiones
+  const btnSolicitar = document.getElementById('btn-solicitar');
+  if (ss.length > 0) {
+    if (req)    req.style.display    = 'inline';
+    if (hint)   hint.style.display   = 'none';
+    if (noSess) noSess.style.display = 'none';
+    sel.style.borderColor = 'rgba(0,229,180,.5)';
+    if (btnSolicitar) { btnSolicitar.disabled = false; btnSolicitar.style.opacity = ''; }
+  } else {
+    if (req)    req.style.display    = 'none';
+    if (hint)   hint.style.display   = 'none';
+    if (noSess) noSess.style.display = 'block';
+    sel.style.borderColor = 'var(--danger)';
+    if (btnSolicitar) { btnSolicitar.disabled = true; btnSolicitar.style.opacity = '0.4'; }
   }
 
   // ── Panel Próximas Sesiones (todas) ──
@@ -667,9 +667,14 @@ async function enviarSolicitud() {
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
   if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
 
-  // Validar sesión: si hay sesiones disponibles para el tipo elegido, es obligatorio elegir una
+  // Validar sesión: siempre es obligatorio
   const sesionesDisponibles = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
-  if (sesionesDisponibles.length > 0 && !session_id) {
+  if (sesionesDisponibles.length === 0) {
+    showToast('❌ No hay sesiones disponibles. El admin debe crear una sesión primero.');
+    document.getElementById('session-group')?.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  if (!session_id) {
     const hint = document.getElementById('session-hint');
     const sel  = document.getElementById('inp-session');
     if (hint) hint.style.display = 'block';
@@ -707,6 +712,7 @@ async function enviarSolicitud() {
         terms_not_accepted:  '⚠️ Debes aceptar los términos y condiciones.',
         missing_ref:         '⚠️ Ingresa el número de operación.',
         duplicate_reference: '⚠️ ' + (data.message || 'Referencia duplicada.'),
+        no_session:          '❌ No hay sesiones disponibles. El administrador debe crear una sesión.',
         invalid_bingo_type:  '⚠️ Tipo de bingo inválido.',
         invalid_session:     '⚠️ La sesión seleccionada no existe.',
         bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con la sesión.'),

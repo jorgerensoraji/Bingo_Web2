@@ -31,7 +31,7 @@
 
 <div class="stats-bar">
   <div class="stat">Sorteadas: <strong id="stat-drawn">0</strong></div>
-  <div class="stat">Restantes: <strong id="stat-rem">90</strong></div>
+  <div class="stat">Restantes: <strong id="stat-rem">75</strong></div>
   <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
   <div class="stat"><strong id="stat-pct">0%</strong></div>
   <div class="shortcuts">[Space] Sortear &nbsp;[R] Repetir &nbsp;[A] Auto &nbsp;[Esc] Silenciar &nbsp;[N] Nuevo</div>
@@ -178,7 +178,7 @@
 
 <div id="gameover">
   <h1>🎉 ¡BINGO!</h1>
-  <p id="gameover-info">Se sortearon las 90 bolillas.</p>
+  <p id="gameover-info">Se sortearon las 75 bolillas.</p>
   <button class="btn btn-draw" style="max-width:240px;margin:0 auto 8px;"
           onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
   <button class="btn btn-sm" style="max-width:200px;margin:0 auto;" onclick="hideGameOver()">Cerrar</button>
@@ -300,7 +300,7 @@ setInterval(async function() {
       infoEl.innerHTML =
         `Sesión: <strong style="color:var(--accent)">#${sid}</strong><br>` +
         `Tipo: <strong>${bt}</strong><br>` +
-        `Bolillas sorteadas: <strong>${drawn}/90</strong><br>` +
+        `Bolillas sorteadas: <strong>${drawn}/75</strong><br>` +
         `Premio BINGO: <strong style="color:var(--accent)">S/. ${pool}</strong><br>` +
         `Premio LÍNEA: <strong style="color:var(--warning)">S/. ${linea}</strong>`;
       if (panelSes) panelSes.style.display = 'block';

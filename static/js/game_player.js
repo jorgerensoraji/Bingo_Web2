@@ -801,7 +801,7 @@ async function loadAllCartillas() {
   updateMyCartillaAutoMark(true);
   showToast('✅ ' + myCartillas.length + ' cartilla(s) cargada(s)');
   var wrapEl = document.getElementById('mis-cartillas-wrap');
-  if (wrapEl) { setTimeout(function(){ wrapEl.scrollIntoView({behavior:'smooth', block:'start'}); }, 500); }
+  if (wrapEl) { setTimeout(function(){ wrapEl.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 700); }
   try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch(e) {}
 }
 
@@ -876,8 +876,6 @@ function updateMyCartillaAutoMark(force) {
         d.textContent = col.letter;
         d.style.color      = col.fg;
         d.style.background = col.bg;
-        d.style.fontWeight = '900';
-        d.style.fontSize   = '.85rem';
         colsDiv.appendChild(d);
       });
       gridWrap.appendChild(colsDiv);
@@ -964,7 +962,7 @@ function updateMyCartillaAutoMark(force) {
 function initMyCartillaUI() {
   const btn = document.getElementById('btn-load-cartilla');
   if (btn) btn.addEventListener('click', loadAllCartillas);
-  if (getMyCartillasFromStorage().length) loadAllCartillas();
+  if (getMyCartillasFromStorage().length) setTimeout(loadAllCartillas, 800);
 }
 
 // ── v8: Reclamar BINGO (por cartilla) ────────────────
