@@ -1315,6 +1315,7 @@ def api_player_solicitar():
             precio=btype["precio"], session_id=session_id,
             payment_method=method, payment_ref=ref,
             access_pin=hash_pin(plain_pin) if plain_pin else "",
+            pin_hint=plain_pin,
             payment_status="pending_review",
             payment_submitted_at=datetime.now().isoformat(),
             created=datetime.now().isoformat(),
@@ -1399,10 +1400,11 @@ def api_approve_voucher(code):
 
     email_result = {"sent": False, "error": ""}
     email        = v_dict.get("email", "")
+    plain_pin    = v_dict.get("pin_hint", "")
     if email:
         url_base = request.host_url.rstrip("/")
         asunto   = f"🎱 Tu código para {v_dict.get('bingo_nombre', 'Bingo')} — Bingo Pro"
-        ok, err  = enviar_email(email, asunto, _email_codigo_voucher(v_dict, url_base))
+        ok, err  = enviar_email(email, asunto, _email_codigo_voucher(v_dict, url_base, plain_pin=plain_pin))
         email_result = {"sent": ok, "error": err}
         if ok:
             with db_session() as db:
@@ -1410,6 +1412,7 @@ def api_approve_voucher(code):
                 if v2:
                     v2.email_codigo_enviado = True
                     v2.email_enviado_at     = datetime.now().isoformat()
+                    v2.pin_hint             = ""   # limpiar PIN plano tras enviar
         else:
             print(f"[WARN] Email no enviado a {email}: {err}")
 

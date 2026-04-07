@@ -48,6 +48,7 @@ def _migrate():
         "ALTER TABLE vouchers ADD COLUMN yape_plin VARCHAR(20) DEFAULT ''",
         "ALTER TABLE vouchers ADD COLUMN terms_accepted BOOLEAN DEFAULT 0",
         "ALTER TABLE vouchers ADD COLUMN access_pin VARCHAR(64) DEFAULT ''",
+        "ALTER TABLE vouchers ADD COLUMN pin_hint VARCHAR(4) DEFAULT ''",
     ]
     with engine.connect() as conn:
         for sql in new_columns:
