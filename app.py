@@ -360,16 +360,25 @@ BINGO_TYPES = {
         "id": "1sol", "nombre": "Bingo 1 Sol", "precio": 1.00,
         "color": "#f4d03f", "emoji": "🟡", "descripcion": "Entrada básica",
         "prize_pct": 0.70, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
+        "balls": 90, "grid_type": "90",
     },
     "5soles": {
         "id": "5soles", "nombre": "Bingo 5 Soles", "precio": 5.00,
         "color": "#5dade2", "emoji": "🔵", "descripcion": "Entrada estándar",
         "prize_pct": 0.75, "linea_pct": 0.08, "max_cartillas_per_voucher": 1,
+        "balls": 90, "grid_type": "90",
     },
     "10soles": {
         "id": "10soles", "nombre": "Bingo 10 Soles", "precio": 10.00,
         "color": "#00e5b4", "emoji": "💎", "descripcion": "Entrada premium",
         "prize_pct": 0.80, "linea_pct": 0.05, "max_cartillas_per_voucher": 1,
+        "balls": 90, "grid_type": "90",
+    },
+    "bingo75": {
+        "id": "bingo75", "nombre": "Bingo 75", "precio": 5.00,
+        "color": "#a855f7", "emoji": "🎯", "descripcion": "Bingo americano B-I-N-G-O",
+        "prize_pct": 0.75, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
+        "balls": 75, "grid_type": "75",
     },
 }
 
@@ -567,8 +576,12 @@ class GameState:
     def __init__(self):
         self.reset()
 
+    def _ball_pool(self):
+        balls = BINGO_TYPES.get(self.bingo_type, {}).get("balls", 90)
+        return list(range(1, balls + 1))
+
     def reset(self):
-        self.available         = list(range(1, 91))
+        self.available         = list(range(1, 91))  # overridden after bingo_type is set
         self.drawn: list       = []
         self.last              = None
         self.game_id           = str(uuid.uuid4())[:8].upper()
@@ -722,12 +735,38 @@ def get_local_ip():
     except Exception:
         return "127.0.0.1"
 
-# ─── Generador de cartillas (unchanged) ──────────────────────────────────────
+# ─── Generador de cartillas ───────────────────────────────────────────────────
 COL_RANGES = [
     list(range(1, 10)), list(range(10, 20)), list(range(20, 30)),
     list(range(30, 40)), list(range(40, 50)), list(range(50, 60)),
     list(range(60, 70)), list(range(70, 80)), list(range(80, 91)),
 ]
+
+# B-I-N-G-O column ranges (1-15, 16-30, 31-45, 46-60, 61-75)
+BINGO75_COL_RANGES = [
+    list(range(1,  16)),   # B
+    list(range(16, 31)),   # I
+    list(range(31, 46)),   # N
+    list(range(46, 61)),   # G
+    list(range(61, 76)),   # O
+]
+BINGO75_LETTERS = ["B", "I", "N", "G", "O"]
+
+def generate_cartilla_grid_75() -> list:
+    """5×5 BINGO card: B(1-15) I(16-30) N(31-45,FREE center) G(46-60) O(61-75)"""
+    grid = [[None] * 5 for _ in range(5)]
+    for col in range(5):
+        pool = BINGO75_COL_RANGES[col]
+        if col == 2:                          # N column — 4 numbers + FREE center
+            nums = sorted(random.sample(pool, 4))
+            for i, row in enumerate([0, 1, 3, 4]):
+                grid[row][col] = nums[i]
+            # grid[2][2] stays None → FREE
+        else:
+            nums = sorted(random.sample(pool, 5))
+            for row in range(5):
+                grid[row][col] = nums[row]
+    return grid
 
 def generate_cartilla_grid():
     for _ in range(1000):
@@ -789,26 +828,65 @@ def load_cartilla(cid: str) -> dict | None:
         c = db.query(Cartilla).filter_by(id=cid.upper()).first()
         return c.to_dict() if c else None
 
+def _is_bingo75_grid(grid: list) -> bool:
+    return len(grid) == 5 and len(grid[0]) == 5
+
 def check_winner(grid: list, drawn: list) -> dict:
+    if _is_bingo75_grid(grid):
+        return _check_winner_75(grid, drawn)
+    return _check_winner_90(grid, drawn)
+
+def _check_winner_90(grid: list, drawn: list) -> dict:
     drawn_set = set(drawn)
     nums      = [n for row in grid for n in row if n is not None]
     marked    = [n for n in nums if n in drawn_set]
     result    = {
         "total": len(nums), "marked": len(marked),
         "bingo": len(marked) == len(nums),
-        "linea": False, "linea_row": None,
+        "linea": False, "linea_row": None, "linea_type": None,
         "almost": False, "almost_num": None,
     }
     for i, row in enumerate(grid):
         row_nums = [n for n in row if n is not None]
         if row_nums and all(n in drawn_set for n in row_nums):
-            result["linea"]     = True
-            result["linea_row"] = i
-            break
+            result["linea"] = True; result["linea_row"] = i; result["linea_type"] = "row"; break
     if not result["bingo"] and len(nums) - len(marked) == 1:
         result["almost"]     = True
-        result["almost_num"] = next(
-            (n for row in grid for n in row if n and n not in drawn_set), None)
+        result["almost_num"] = next((n for row in grid for n in row if n and n not in drawn_set), None)
+    return result
+
+def _check_winner_75(grid: list, drawn: list) -> dict:
+    drawn_set = set(drawn)
+    def marked(r, c): return grid[r][c] is None or grid[r][c] in drawn_set  # None = FREE
+    nums   = [grid[r][c] for r in range(5) for c in range(5) if grid[r][c] is not None]
+    marked_nums = [n for n in nums if n in drawn_set]
+    bingo  = all(marked(r, c) for r in range(5) for c in range(5))
+    result = {
+        "total": 24, "marked": len(marked_nums),
+        "bingo": bingo,
+        "linea": False, "linea_row": None, "linea_type": None,
+        "almost": False, "almost_num": None,
+    }
+    # Rows
+    for r in range(5):
+        if all(marked(r, c) for c in range(5)):
+            result["linea"] = True; result["linea_row"] = r; result["linea_type"] = "row"; break
+    # Columns
+    if not result["linea"]:
+        for c in range(5):
+            if all(marked(r, c) for r in range(5)):
+                result["linea"] = True; result["linea_row"] = c; result["linea_type"] = "col"; break
+    # Diagonals
+    if not result["linea"]:
+        if all(marked(i, i) for i in range(5)):
+            result["linea"] = True; result["linea_type"] = "diag_main"
+        elif all(marked(i, 4 - i) for i in range(5)):
+            result["linea"] = True; result["linea_type"] = "diag_anti"
+    # Almost bingo (1 away)
+    if not bingo and 24 - len(marked_nums) == 1:
+        result["almost"]     = True
+        result["almost_num"] = next((grid[r][c] for r in range(5) for c in range(5)
+                                     if grid[r][c] is not None and grid[r][c] not in drawn_set), None)
     return result
 
 def compute_prize_pool(session_id: str, bingo_type: str) -> dict:
@@ -885,43 +963,87 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
         c.setFillColorRGB(0.9, 0.5, 0.1)
         c.setFont("Helvetica-Bold", 8)
         c.drawCentredString(cw / 2, ch - 4.5 * cm, "⚠ Generada por administrador")
-    grid  = cartilla["grid"]
-    col_w = (cw - 4 * cm) / 9
-    row_h = 1.8 * cm
-    x0    = 2 * cm
-    y0    = ch - 5.7 * cm
-    col_labels = ["1-10","11-20","21-30","31-40","41-50","51-60","61-70","71-80","81-90"]
-    for ci in range(9):
-        r, g, b = hex_to_rgb01(GROUP_COLORS_HEX[ci])
-        cx = x0 + ci * col_w
-        c.setFillColorRGB(r * .3, g * .3, b * .3)
-        c.roundRect(cx + 1, y0 + 2, col_w - 2, 0.7 * cm, 4, fill=1, stroke=0)
-        c.setFillColorRGB(r, g, b)
-        c.setFont("Helvetica-Bold", 7)
-        c.drawCentredString(cx + col_w / 2, y0 + 0.2 * cm + 2, col_labels[ci])
-    y0 -= 0.8 * cm
-    for ri in range(3):
-        for ci in range(9):
-            num     = grid[ri][ci]
-            cx      = x0 + ci * col_w
-            cy      = y0 - ri * row_h
-            r, g, b = hex_to_rgb01(GROUP_COLORS_HEX[ci])
-            if num is None:
-                c.setFillColorRGB(.07, .12, .16); c.setStrokeColorRGB(.10, .18, .24)
-            elif num in drawn_set:
-                c.setFillColorRGB(r * .5, g * .5, b * .5); c.setStrokeColorRGB(r, g, b)
-            else:
-                c.setFillColorRGB(.07, .16, .22); c.setStrokeColorRGB(.15, .28, .38)
-            c.roundRect(cx + 2, cy - row_h + 4, col_w - 4, row_h - 6, 6, fill=1, stroke=1)
-            if num is not None:
-                if num in drawn_set:
-                    c.setFillColorRGB(r, g, b)
-                    c.circle(cx + col_w / 2, cy - row_h / 2 + 2, min(col_w, row_h) * .36, fill=1, stroke=0)
-                    c.setFillColorRGB(.04, .07, .10)
+    grid      = cartilla["grid"]
+    is_75     = _is_bingo75_grid(grid)
+    x0        = 2 * cm
+    y0        = ch - 5.7 * cm
+
+    if is_75:
+        # ── 5×5 BINGO card ──────────────────────────────
+        BINGO75_COLORS_HEX = ["#3b82f6","#f59e0b","#ef4444","#10b981","#a855f7"]
+        col_w = (cw - 4 * cm) / 5
+        row_h = 2.0 * cm
+        # Header row: B I N G O
+        for ci, letter in enumerate(BINGO75_LETTERS):
+            r, g, b = hex_to_rgb01(BINGO75_COLORS_HEX[ci])
+            cx = x0 + ci * col_w
+            c.setFillColorRGB(r * .35, g * .35, b * .35)
+            c.roundRect(cx + 1, y0 + 2, col_w - 2, 0.9 * cm, 6, fill=1, stroke=0)
+            c.setFillColorRGB(r, g, b)
+            c.setFont("Helvetica-Bold", 22)
+            c.drawCentredString(cx + col_w / 2, y0 + 0.18 * cm + 2, letter)
+        y0 -= 1.0 * cm
+        for ri in range(5):
+            for ci in range(5):
+                num     = grid[ri][ci]
+                cx      = x0 + ci * col_w
+                cy      = y0 - ri * row_h
+                r, g, b = hex_to_rgb01(BINGO75_COLORS_HEX[ci])
+                is_free = (ri == 2 and ci == 2)
+                if is_free or num in drawn_set:
+                    c.setFillColorRGB(r * .45, g * .45, b * .45); c.setStrokeColorRGB(r, g, b)
                 else:
-                    c.setFillColorRGB(min(1, r * 1.2), min(1, g * 1.2), min(1, b * 1.2))
-                c.setFont("Helvetica-Bold", 18)
-                c.drawCentredString(cx + col_w / 2, cy - row_h / 2 - 5, str(num))
+                    c.setFillColorRGB(.07, .14, .20); c.setStrokeColorRGB(.15, .28, .38)
+                c.roundRect(cx + 2, cy - row_h + 4, col_w - 4, row_h - 6, 8, fill=1, stroke=1)
+                if is_free:
+                    c.setFillColorRGB(r, g, b)
+                    c.setFont("Helvetica-Bold", 11)
+                    c.drawCentredString(cx + col_w / 2, cy - row_h / 2 - 4, "FREE")
+                elif num is not None:
+                    if num in drawn_set:
+                        c.setFillColorRGB(r, g, b)
+                        c.circle(cx + col_w / 2, cy - row_h / 2 + 2, min(col_w, row_h) * .35, fill=1, stroke=0)
+                        c.setFillColorRGB(.04, .07, .10)
+                    else:
+                        c.setFillColorRGB(min(1, r * 1.3), min(1, g * 1.3), min(1, b * 1.3))
+                    c.setFont("Helvetica-Bold", 20)
+                    c.drawCentredString(cx + col_w / 2, cy - row_h / 2 - 6, str(num))
+    else:
+        # ── 3×9 classic 90-ball card ────────────────────
+        col_w = (cw - 4 * cm) / 9
+        row_h = 1.8 * cm
+        col_labels = ["1-10","11-20","21-30","31-40","41-50","51-60","61-70","71-80","81-90"]
+        for ci in range(9):
+            r, g, b = hex_to_rgb01(GROUP_COLORS_HEX[ci])
+            cx = x0 + ci * col_w
+            c.setFillColorRGB(r * .3, g * .3, b * .3)
+            c.roundRect(cx + 1, y0 + 2, col_w - 2, 0.7 * cm, 4, fill=1, stroke=0)
+            c.setFillColorRGB(r, g, b)
+            c.setFont("Helvetica-Bold", 7)
+            c.drawCentredString(cx + col_w / 2, y0 + 0.2 * cm + 2, col_labels[ci])
+        y0 -= 0.8 * cm
+        for ri in range(3):
+            for ci in range(9):
+                num     = grid[ri][ci]
+                cx      = x0 + ci * col_w
+                cy      = y0 - ri * row_h
+                r, g, b = hex_to_rgb01(GROUP_COLORS_HEX[ci])
+                if num is None:
+                    c.setFillColorRGB(.07, .12, .16); c.setStrokeColorRGB(.10, .18, .24)
+                elif num in drawn_set:
+                    c.setFillColorRGB(r * .5, g * .5, b * .5); c.setStrokeColorRGB(r, g, b)
+                else:
+                    c.setFillColorRGB(.07, .16, .22); c.setStrokeColorRGB(.15, .28, .38)
+                c.roundRect(cx + 2, cy - row_h + 4, col_w - 4, row_h - 6, 6, fill=1, stroke=1)
+                if num is not None:
+                    if num in drawn_set:
+                        c.setFillColorRGB(r, g, b)
+                        c.circle(cx + col_w / 2, cy - row_h / 2 + 2, min(col_w, row_h) * .36, fill=1, stroke=0)
+                        c.setFillColorRGB(.04, .07, .10)
+                    else:
+                        c.setFillColorRGB(min(1, r * 1.2), min(1, g * 1.2), min(1, b * 1.2))
+                    c.setFont("Helvetica-Bold", 18)
+                    c.drawCentredString(cx + col_w / 2, cy - row_h / 2 - 5, str(num))
     c.setFillColorRGB(r_a * .8, g_a * .8, b_a * .8)
     c.setFont("Helvetica-Bold", 10)
     c.drawCentredString(cw / 2, 3.6 * cm, f"{btype['nombre']}  -  S/. {btype['precio']:.2f}")
@@ -946,8 +1068,18 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
     drawn_set = set(drawn or [])
     grid  = cartilla["grid"]
     btype = BINGO_TYPES.get(cartilla.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
-    COLS, ROWS = 9, 3
-    PAD = 30; HEADER_H = 150; FOOTER_H = 80; CW, CH = 90, 80
+    is_75 = _is_bingo75_grid(grid)
+
+    if is_75:
+        COLS, ROWS = 5, 5
+        PAD = 30; HEADER_H = 150; FOOTER_H = 80; CW, CH = 110, 100
+        BINGO_RGB = [(59,130,246),(245,158,11),(239,68,68),(16,185,129),(168,85,247)]
+    else:
+        COLS, ROWS = 9, 3
+        PAD = 30; HEADER_H = 150; FOOTER_H = 80; CW, CH = 90, 80
+        BINGO_RGB = [(93,173,226),(244,208,63),(241,148,138),(229,152,102),
+                     (88,214,141),(165,105,189),(72,201,176),(127,179,211),(149,165,166)]
+
     W = PAD * 2 + COLS * CW
     H = PAD * 2 + HEADER_H + ROWS * CH + FOOTER_H
     img  = Image.new("RGB", (W, H), (10, 18, 26))
@@ -960,31 +1092,36 @@ def cartilla_to_png(cartilla: dict, drawn: list = None) -> BytesIO:
               fill=(140, 180, 210), anchor="mt", font=_get_font(size=15))
     draw.text((W // 2, PAD + 72), f"Precio: S/. {btype['precio']:.2f}  |  Premio: {int(btype['prize_pct'] * 100)}%",
               fill=(100, 140, 170), anchor="mt", font=_get_font(size=12))
-    GROUP_RGB = [(93,173,226),(244,208,63),(241,148,138),(229,152,102),
-                 (88,214,141),(165,105,189),(72,201,176),(127,179,211),(149,165,166)]
-    col_labels = ["1-10","11-20","21-30","31-40","41-50","51-60","61-70","71-80","81-90"]
+
     y_start = PAD + HEADER_H
+    col_labels = BINGO75_LETTERS if is_75 else ["1-10","11-20","21-30","31-40","41-50","51-60","61-70","71-80","81-90"]
+    lbl_sz     = 28 if is_75 else 11
     for ci in range(COLS):
         cx    = PAD + ci * CW
-        r,g,b = GROUP_RGB[ci]
-        draw.rounded_rectangle([cx + 3, y_start - 26, cx + CW - 3, y_start - 4],
+        r,g,b = BINGO_RGB[ci]
+        draw.rounded_rectangle([cx + 3, y_start - 30, cx + CW - 3, y_start - 4],
                                 radius=6, fill=(int(r * .25), int(g * .25), int(b * .25)))
-        draw.text((cx + CW // 2, y_start - 15), col_labels[ci],
-                  fill=(r, g, b), anchor="mm", font=_get_font(bold=True, size=11))
+        draw.text((cx + CW // 2, y_start - 17), col_labels[ci],
+                  fill=(r, g, b), anchor="mm", font=_get_font(bold=True, size=lbl_sz))
+
     for ri in range(ROWS):
         for ci in range(COLS):
             num   = grid[ri][ci]
             cx    = PAD + ci * CW
             cy    = y_start + ri * CH
-            r,g,b = GROUP_RGB[ci]
-            if num is None:
-                cf, bf = (12,22,32),(20,40,55)
-            elif num in drawn_set:
+            r,g,b = BINGO_RGB[ci]
+            is_free = is_75 and ri == 2 and ci == 2
+            if is_free or (num is not None and num in drawn_set):
                 cf = (int(r*.45),int(g*.45),int(b*.45)); bf = (r,g,b)
+            elif num is None:
+                cf, bf = (12,22,32),(20,40,55)
             else:
                 cf, bf = (14,32,46),(30,65,90)
             draw.rounded_rectangle([cx+4,cy+4,cx+CW-4,cy+CH-4], radius=10, fill=cf, outline=bf, width=2)
-            if num is not None:
+            if is_free:
+                draw.text((cx+CW//2,cy+CH//2), "FREE", fill=(r,g,b),
+                          anchor="mm", font=_get_font(bold=True, size=18))
+            elif num is not None:
                 if num in drawn_set:
                     m = 12; draw.ellipse([cx+m,cy+m,cx+CW-m,cy+CH-m], fill=(r,g,b))
                     tc = (15,25,35)
@@ -1536,6 +1673,8 @@ def api_state():
             "bingo_nombre":   bt_info["nombre"],
             "bingo_color":    bt_info["color"],
             "bingo_precio":   bt_info["precio"],
+            "bingo_balls":    bt_info.get("balls", 90),
+            "bingo_grid":     bt_info.get("grid_type", "90"),
             "prize_pool":     game.prize_pool,
             "linea_pool":     game.linea_pool,
             "preparing":      game.preparing,
@@ -1778,6 +1917,7 @@ def api_start_session(sid):
         game.reset()
         game.session_id  = sid
         game.bingo_type  = s_dict["bingo_type"]
+        game.available   = game._ball_pool()   # set correct pool after bingo_type is assigned
         game.prize_pool  = prize["prize_amount"]
         game.linea_pool  = prize["linea_amount"]
         game.preparing   = False
@@ -2025,7 +2165,8 @@ def api_generate():
 
     results = []
     for _ in range(count):
-        grid = generate_cartilla_grid()
+        grid = generate_cartilla_grid_75() if BINGO_TYPES.get(bingo_type, {}).get("grid_type") == "75" \
+               else generate_cartilla_grid()
         c    = save_cartilla(nombre, grid, voucher_code=code,
                              session_id=session_id, bingo_type=bingo_type,
                              generada_por_admin=por_admin)
