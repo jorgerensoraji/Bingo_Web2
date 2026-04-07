@@ -2000,37 +2000,38 @@ def api_caja():
         sessions = db.query(BingoSession).order_by(BingoSession.datetime_iso.desc()).all()
         vouchers = db.query(Voucher).all()
 
-    total_rec  = sum(v.precio for v in vouchers
-                     if v.payment_status in ("approved", "manual_approved"))
-    total_prem = 0.0
-    sesiones   = []
-    for s in sessions:
-        wf = []
-        try: wf = json.loads(s.winners_final or "[]")
-        except Exception: pass
-        premios   = sum(w.get("prize", 0) for w in wf)
-        total_prem += premios
-        sid_vs    = [v for v in vouchers
-                     if v.session_id == s.id
-                     and v.payment_status in ("approved", "manual_approved")]
-        recaudado = sum(v.precio for v in sid_vs)
-        sesiones.append({
-            "id": s.id, "fecha": s.date, "hora": s.time,
-            "bingo_type": s.bingo_type, "bingo_nombre": s.bingo_nombre,
-            "status": s.status, "jugadores": len(sid_vs),
-            "recaudado": round(recaudado, 2),
-            "premios_paid": round(premios, 2),
-            "ganancia": round(recaudado - premios, 2),
-            "ganadores": wf,
-        })
+        total_rec  = sum(v.precio for v in vouchers
+                         if v.payment_status in ("approved", "manual_approved"))
+        total_prem = 0.0
+        sesiones   = []
+        for s in sessions:
+            wf = []
+            try: wf = json.loads(s.winners_final or "[]")
+            except Exception: pass
+            premios   = sum(w.get("prize", 0) for w in wf)
+            total_prem += premios
+            sid_vs    = [v for v in vouchers
+                         if v.session_id == s.id
+                         and v.payment_status in ("approved", "manual_approved")]
+            recaudado = sum(v.precio for v in sid_vs)
+            sesiones.append({
+                "id": s.id, "fecha": s.date, "hora": s.time,
+                "bingo_type": s.bingo_type, "bingo_nombre": s.bingo_nombre,
+                "status": s.status, "jugadores": len(sid_vs),
+                "recaudado": round(recaudado, 2),
+                "premios_paid": round(premios, 2),
+                "ganancia": round(recaudado - premios, 2),
+                "ganadores": wf,
+            })
+        total_vouchers = len(vouchers)
 
     return jsonify({
         "resumen": {
             "total_recaudado": round(total_rec, 2),
             "total_premios":   round(total_prem, 2),
             "ganancia_bruta":  round(total_rec - total_prem, 2),
-            "total_sesiones":  len(sessions),
-            "total_vouchers":  len(vouchers),
+            "total_sesiones":  len(sesiones),
+            "total_vouchers":  total_vouchers,
         },
         "sesiones": sesiones,
     })
