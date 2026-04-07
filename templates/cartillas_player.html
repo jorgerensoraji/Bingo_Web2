@@ -567,10 +567,8 @@ async function loadSessions() {
 }
 
 function renderSessions() {
-  // Panel "Próximas Sesiones": muestra TODAS las sesiones sin filtrar por tipo
+  // Both panel and selector show ALL sessions — type syncs automatically on selection
   const ssAll = allSessions;
-  // Selector del formulario: solo las del tipo elegido
-  const ss    = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
 
   const el     = document.getElementById('sessions-list');
   const sel    = document.getElementById('inp-session');
@@ -578,9 +576,9 @@ function renderSessions() {
   const hint   = document.getElementById('session-hint');
   const noSess = document.getElementById('session-no-sessions');
 
-  // ── Selector de sesión (filtrado por tipo) ──
+  // ── Selector de sesión (todas las sesiones) ──
   sel.innerHTML = '<option value="">— Elige la sesión en que quieres jugar —</option>' +
-    ss.map(s => {
+    ssAll.map(s => {
       const dt = new Date(s.datetime_iso);
       const dstr = isNaN(dt) ? s.datetime_iso :
         dt.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}) +
@@ -588,9 +586,9 @@ function renderSessions() {
       return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
     }).join('');
 
-  // Indicar si la sesión es requerida, y bloquear el botón si no hay sesiones
+  // Bloquear el botón solo si no hay ninguna sesión
   const btnSolicitar = document.getElementById('btn-solicitar');
-  if (ss.length > 0) {
+  if (ssAll.length > 0) {
     if (req)    req.style.display    = 'inline';
     if (hint)   hint.style.display   = 'none';
     if (noSess) noSess.style.display = 'none';
@@ -668,8 +666,7 @@ async function enviarSolicitud() {
   if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
 
   // Validar sesión: siempre es obligatorio
-  const sesionesDisponibles = allSessions.filter(s => !selBtype || s.bingo_type === selBtype);
-  if (sesionesDisponibles.length === 0) {
+  if (allSessions.length === 0) {
     showToast('❌ No hay sesiones disponibles. El admin debe crear una sesión primero.');
     document.getElementById('session-group')?.scrollIntoView({behavior:'smooth', block:'center'});
     return;
