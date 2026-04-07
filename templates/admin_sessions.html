@@ -220,16 +220,9 @@
         <div class="filter-row">
           <select id="f-type" class="inp" onchange="renderSessions()">
             <option value="all">Todos los tipos</option>
-            <optgroup label="── Bingo 90 Bolas ──">
-              <option value="1sol">🟡 1 Sol</option>
-              <option value="5soles">🔵 5 Soles</option>
-              <option value="10soles">💎 10 Soles</option>
-            </optgroup>
-            <optgroup label="── Bingo 75 B-I-N-G-O ──">
-              <option value="bingo75_1sol">🎯 1 Sol</option>
-              <option value="bingo75_5soles">🎯 5 Soles</option>
-              <option value="bingo75_10soles">🎯 10 Soles</option>
-            </optgroup>
+            <option value="1sol">🎯 1 Sol</option>
+            <option value="5soles">🎯 5 Soles</option>
+            <option value="10soles">🎯 10 Soles</option>
           </select>
           <select id="f-status" class="inp" onchange="renderSessions()">
             <option value="all">Todos los estados</option>
@@ -281,11 +274,8 @@ async function buildBtypes() {
       (data.bingo_types || []).forEach(bt => { BINGO_TYPES[bt.id] = bt; });
     } catch(e) {}
   }
-  const g       = document.getElementById('btype-grid');
-  const types90 = Object.values(BINGO_TYPES).filter(v => v.grid_type !== '75');
-  const types75 = Object.values(BINGO_TYPES).filter(v => v.grid_type === '75');
-
-  function card(v) {
+  const g = document.getElementById('btype-grid');
+  g.innerHTML = Object.values(BINGO_TYPES).map(v => {
     const sel = v.id === selBtype;
     return `<div class="btype-card ${sel?'selected':''}" id="bcard-${v.id}"
          onclick="selectBtype('${v.id}')"
@@ -294,15 +284,7 @@ async function buildBtypes() {
       <div class="price" style="color:${v.color}">S/.${v.precio}</div>
       <div class="name">${v.nombre}</div>
     </div>`;
-  }
-
-  g.innerHTML =
-    `<div style="grid-column:1/-1;font-size:.62rem;letter-spacing:2px;color:var(--muted);
-                 text-transform:uppercase;padding:2px 0 4px">🎱 Bingo 90 Bolas</div>` +
-    types90.map(card).join('') +
-    `<div style="grid-column:1/-1;font-size:.62rem;letter-spacing:2px;color:var(--muted);
-                 text-transform:uppercase;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:4px">🎯 Bingo 75 · B-I-N-G-O</div>` +
-    types75.map(card).join('');
+  }).join('');
   updatePreview();
 }
 

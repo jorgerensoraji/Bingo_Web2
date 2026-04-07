@@ -26,23 +26,9 @@ const BINGO75_COLORS = [
   { fg: '#a855f7', bg: '#130820', letter: 'O' },
 ];
 
-// ── Active game mode (updated from api/state) ─────────
-var isBingo75    = false;
-var gameBalls    = 90;
-
-const GROUP_COLORS = [
-  { fg:'#5dade2', bg:'#0a1e2e' },
-  { fg:'#f4d03f', bg:'#1e1500' },
-  { fg:'#f1948a', bg:'#2a0805' },
-  { fg:'#e59866', bg:'#2a1000' },
-  { fg:'#58d68d', bg:'#051e0f' },
-  { fg:'#a569bd', bg:'#160525' },
-  { fg:'#48c9b0', bg:'#032420' },
-  { fg:'#7fb3d3', bg:'#061320' },
-  { fg:'#95a5a6', bg:'#0e1315' },
-];
-const GROUP_LABELS = ['1–10','11–20','21–30','31–40','41–50','51–60','61–70','71–80','81–90'];
-const COL_LABELS_MINI = ['1-10','11-20','21-30','31-40','41-50','51-60','61-70','71-80','81-90'];
+// ── Game mode: always Bingo 75 B-I-N-G-O ─────────────
+var isBingo75    = true;
+var gameBalls    = 75;
 
 // ── ESTADO ────────────────────────────────────────────
 let drawnLocal     = [];
@@ -91,54 +77,28 @@ function initGridForMode() {
   headers.innerHTML = '';
   grid.innerHTML    = '';
 
-  if (isBingo75) {
-    grid.style.gridTemplateColumns = 'repeat(5,1fr)';
-    grid.style.gridTemplateRows   = 'repeat(15,1fr)';
-    BINGO75_COLORS.forEach(function(col) {
-      const h = document.createElement('div');
-      h.className = 'group-header';
-      h.textContent = col.letter;
-      h.style.color      = col.fg;
-      h.style.background = col.bg;
-      h.style.fontSize   = '1rem';
-      h.style.fontWeight = '900';
-      headers.appendChild(h);
-    });
-    for (let col = 0; col < 5; col++) {
-      for (let row = 0; row < 15; row++) {
-        const num  = col * 15 + row + 1;
-        const cell = document.createElement('div');
-        cell.className        = 'num-cell';
-        cell.id               = 'cell-' + num;
-        cell.textContent      = num;
-        cell.style.gridColumn = col + 1;
-        cell.style.gridRow    = row + 1;
-        grid.appendChild(cell);
-      }
-    }
-  } else {
-    grid.style.gridTemplateColumns = 'repeat(9,1fr)';
-    grid.style.gridTemplateRows   = 'repeat(10,1fr)';
-    GROUP_LABELS.forEach(function(lbl, g) {
-      const h = document.createElement('div');
-      h.className   = 'group-header';
-      h.textContent = lbl;
-      h.style.color      = GROUP_COLORS[g].fg;
-      h.style.background = GROUP_COLORS[g].bg;
-      headers.appendChild(h);
-    });
-    for (let col = 0; col < 9; col++) {
-      for (let row = 0; row < 10; row++) {
-        const num = col * 10 + row + 1;
-        if (num > 90) continue;
-        const cell = document.createElement('div');
-        cell.className        = 'num-cell';
-        cell.id               = 'cell-' + num;
-        cell.textContent      = num;
-        cell.style.gridColumn = col + 1;
-        cell.style.gridRow    = row + 1;
-        grid.appendChild(cell);
-      }
+  grid.style.gridTemplateColumns = 'repeat(5,1fr)';
+  grid.style.gridTemplateRows   = 'repeat(15,1fr)';
+  BINGO75_COLORS.forEach(function(col) {
+    const h = document.createElement('div');
+    h.className = 'group-header';
+    h.textContent = col.letter;
+    h.style.color      = col.fg;
+    h.style.background = col.bg;
+    h.style.fontSize   = '1rem';
+    h.style.fontWeight = '900';
+    headers.appendChild(h);
+  });
+  for (let col = 0; col < 5; col++) {
+    for (let row = 0; row < 15; row++) {
+      const num  = col * 15 + row + 1;
+      const cell = document.createElement('div');
+      cell.className        = 'num-cell';
+      cell.id               = 'cell-' + num;
+      cell.textContent      = num;
+      cell.style.gridColumn = col + 1;
+      cell.style.gridRow    = row + 1;
+      grid.appendChild(cell);
     }
   }
 }
@@ -343,16 +303,7 @@ async function syncState() {
     const serverGameId = data.game_id;
     if (data.session_id) activeSessionId = data.session_id;
 
-    // Detect mode switch
-    const newIs75 = data.bingo_grid === '75';
-    if (newIs75 !== isBingo75) {
-      isBingo75 = newIs75;
-      gameBalls = data.bingo_balls || (isBingo75 ? 75 : 90);
-      initGridForMode();
-      initDrum();
-    } else {
-      gameBalls = data.bingo_balls || gameBalls;
-    }
+    gameBalls = data.bingo_balls || 75;
 
     const statusEl = document.getElementById('sync-status');
     if (statusEl && adminWasOnline) {
@@ -459,52 +410,27 @@ async function syncState() {
 // ── DRUM (bolillero) ──────────────────────────────────
 var _drumInited = false;
 
-// 9 groups × 10 balls = 90 real balls, each group on its own orbit ring
-var DRUM_RADII = [13, 19, 26, 33, 40, 47, 54, 60, 66];
-// orbit speeds (seconds per revolution) — slightly randomised per group
-var DRUM_SPEEDS = [3.8, 5.1, 4.4, 6.0, 5.5, 4.8, 6.6, 5.9, 7.2];
-
 function initDrum() {
   var drum = document.getElementById('ball-drum');
   if (!drum) return;
-  // Clear previous balls (supports reinit on mode change)
   drum.querySelectorAll('.drum-ball').forEach(function(b){ b.parentNode.removeChild(b); });
   _drumInited = true;
 
-  if (isBingo75) {
-    // 5 rings × 15 balls = 75
-    var b75radii  = [16, 25, 35, 46, 58];
-    var b75speeds = [4.2, 5.6, 4.8, 6.3, 5.1];
-    for (var g = 0; g < 5; g++) {
-      var col = BINGO75_COLORS[g].fg;
-      var radius = b75radii[g];
-      var spd    = b75speeds[g];
-      for (var j = 0; j < 15; j++) {
-        var num   = g * 15 + j + 1;
-        var delay = -(j * spd / 15).toFixed(2);
-        var b     = document.createElement('div');
-        b.className = 'drum-ball';
-        b.id        = 'dball-' + num;
-        b.style.cssText = '--sz:10px;--r:' + radius + 'px;--spd:' + spd + 's;--dly:' + delay + 's;--col:' + col + ';';
-        drum.appendChild(b);
-      }
-    }
-  } else {
-    // 9 rings × 10 balls = 90
-    var cols = GROUP_COLORS.map(function(g){ return g.fg; });
-    for (var g = 0; g < 9; g++) {
-      var col    = cols[g];
-      var radius = DRUM_RADII[g];
-      var spd    = DRUM_SPEEDS[g];
-      for (var j = 0; j < 10; j++) {
-        var num   = g * 10 + j + 1;
-        var delay = -(j * spd / 10).toFixed(2);
-        var b     = document.createElement('div');
-        b.className = 'drum-ball';
-        b.id        = 'dball-' + num;
-        b.style.cssText = '--sz:10px;--r:' + radius + 'px;--spd:' + spd + 's;--dly:' + delay + 's;--col:' + col + ';';
-        drum.appendChild(b);
-      }
+  // 5 rings × 15 balls = 75 (B-I-N-G-O)
+  var radii  = [16, 25, 35, 46, 58];
+  var speeds = [4.2, 5.6, 4.8, 6.3, 5.1];
+  for (var g = 0; g < 5; g++) {
+    var col    = BINGO75_COLORS[g].fg;
+    var radius = radii[g];
+    var spd    = speeds[g];
+    for (var j = 0; j < 15; j++) {
+      var num   = g * 15 + j + 1;
+      var delay = -(j * spd / 15).toFixed(2);
+      var b     = document.createElement('div');
+      b.className = 'drum-ball';
+      b.id        = 'dball-' + num;
+      b.style.cssText = '--sz:10px;--r:' + radius + 'px;--spd:' + spd + 's;--dly:' + delay + 's;--col:' + col + ';';
+      drum.appendChild(b);
     }
   }
 }
@@ -618,11 +544,9 @@ function launchBall(num, color) {
 
 // ── DISPLAY ───────────────────────────────────────────
 function getNumColor(num) {
-  if (isBingo75) return BINGO75_COLORS[Math.min(Math.floor((num-1)/15),4)].fg;
-  return GROUP_COLORS[Math.min(Math.floor((num-1)/10),8)].fg;
+  return BINGO75_COLORS[Math.min(Math.floor((num-1)/15),4)].fg;
 }
 function getNumLabel(num) {
-  if (!isBingo75) return String(num);
   return BINGO75_COLORS[Math.min(Math.floor((num-1)/15),4)].letter + '-' + num;
 }
 
@@ -631,12 +555,10 @@ function updateDisplay(num) {
   const ball    = document.getElementById('ball');
   const bigNum  = document.getElementById('big-number');
 
-  const g = isBingo75
-    ? Math.min(Math.floor((num-1)/15), 4)
-    : Math.min(Math.floor((num-1)/10), 8);
+  const g = Math.min(Math.floor((num-1)/15), 4);
 
-  const ballMids  = ['#1a4a7a','#7a6010','#7a2020','#7a3810','#0f5a28','#4a1a6a','#0a5a4a','#1a3a5a','#2a3540'];
-  const ballDarks = ['#0a1e2e','#2e2504','#3d0a08','#3d1800','#0a2e16','#22083d','#073832','#0a1f2e','#151d23'];
+  const ballMids  = ['#1a4a7a','#7a6010','#7a2020','#0f5a28','#4a1a6a'];
+  const ballDarks = ['#0a1e2e','#2e2504','#3d0a08','#0a2e16','#22083d'];
 
   // Remove the ball from the drum and launch it to the display
   removeDrumBall(num);
@@ -659,13 +581,11 @@ function updateDisplay(num) {
   bigNum.style.color      = fg;
   bigNum.style.textShadow = '0 0 20px ' + fg + '88, 0 2px 4px rgba(0,0,0,0.8)';
   // Shrink font slightly for letter-prefixed numbers (B-12)
-  bigNum.style.fontSize   = isBingo75 ? 'clamp(1.8rem,4vw,3.2rem)' : '';
+  bigNum.style.fontSize   = 'clamp(1.8rem,4vw,3.2rem)';
 
   const gt = document.getElementById('group-tag');
   if (gt) {
-    gt.textContent = isBingo75
-      ? BINGO75_COLORS[g].letter + '  (' + (g*15+1) + '–' + (g*15+15) + ')'
-      : 'Grupo ' + GROUP_LABELS[g];
+    gt.textContent = BINGO75_COLORS[g].letter + '  (' + (g*15+1) + '–' + (g*15+15) + ')';
     gt.style.color = fg;
   }
 
@@ -678,14 +598,9 @@ function updateDisplay(num) {
 function markCell(num, animate) {
   const cell = document.getElementById('cell-' + num);
   if (!cell) return;
-  var fg, bg;
-  if (isBingo75) {
-    const col = Math.min(Math.floor((num - 1) / 15), 4);
-    fg = BINGO75_COLORS[col].fg; bg = BINGO75_COLORS[col].bg;
-  } else {
-    const g = Math.min(Math.floor((num - 1) / 10), 8);
-    fg = GROUP_COLORS[g].fg; bg = GROUP_COLORS[g].bg;
-  }
+  const col = Math.min(Math.floor((num - 1) / 15), 4);
+  const fg  = BINGO75_COLORS[col].fg;
+  const bg  = BINGO75_COLORS[col].bg;
   cell.classList.add('drawn');
   if (animate) cell.classList.add('just-drawn');
   cell.style.color       = fg;
@@ -699,9 +614,7 @@ function updateRecent() {
   if (!strip) return;
   strip.innerHTML = '';
   drawnLocal.slice(-18).reverse().forEach(function(n) {
-    var fg;
-    if (isBingo75) { fg = BINGO75_COLORS[Math.min(Math.floor((n-1)/15),4)].fg; }
-    else           { fg = GROUP_COLORS[Math.min(Math.floor((n-1)/10),8)].fg; }
+    const fg = BINGO75_COLORS[Math.min(Math.floor((n-1)/15),4)].fg;
     const el = document.createElement('div');
     el.className   = 'recent-num';
     el.textContent = n;
@@ -917,23 +830,13 @@ function updateMyCartillaAutoMark(force) {
     const nums = [];
     for (const row of cart.grid) for (const n of row) if (n !== null && n !== undefined) nums.push(n);
     const marked  = nums.filter(function(n) { return drawnSet.has(n); }).length;
-    const is75    = cart.grid.length === 5 && cart.grid[0].length === 5;
     function cellOk(r, c) { return cart.grid[r][c] === null || drawnSet.has(cart.grid[r][c]); }
-    var isBingo, isLinea, lineaType = null, lineaIdx = null;
-    if (is75) {
-      isBingo = [0,1,2,3,4].every(function(r){ return [0,1,2,3,4].every(function(c){ return cellOk(r,c); }); });
-      isLinea = false;
-      for (var r=0;r<5&&!isLinea;r++) if ([0,1,2,3,4].every(function(c){return cellOk(r,c);})) { isLinea=true; lineaType='row'; lineaIdx=r; }
-      for (var c=0;c<5&&!isLinea;c++) if ([0,1,2,3,4].every(function(r){return cellOk(r,c);})) { isLinea=true; lineaType='col'; lineaIdx=c; }
-      if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,i);}))   { isLinea=true; lineaType='diag_main'; }
-      if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,4-i);})) { isLinea=true; lineaType='diag_anti'; }
-    } else {
-      isBingo = nums.length > 0 && nums.every(function(n) { return drawnSet.has(n); });
-      isLinea = cart.grid.some(function(row) {
-        const rn = row.filter(function(n) { return n !== null && n !== undefined; });
-        return rn.length > 0 && rn.every(function(n) { return drawnSet.has(n); });
-      });
-    }
+    var isLinea = false, lineaType = null, lineaIdx = null;
+    const isBingo = [0,1,2,3,4].every(function(r){ return [0,1,2,3,4].every(function(c){ return cellOk(r,c); }); });
+    for (var r=0;r<5&&!isLinea;r++) if ([0,1,2,3,4].every(function(c){return cellOk(r,c);})) { isLinea=true; lineaType='row'; lineaIdx=r; }
+    for (var c=0;c<5&&!isLinea;c++) if ([0,1,2,3,4].every(function(r){return cellOk(r,c);})) { isLinea=true; lineaType='col'; lineaIdx=c; }
+    if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,i);}))   { isLinea=true; lineaType='diag_main'; }
+    if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,4-i);})) { isLinea=true; lineaType='diag_anti'; }
     const isAlmost = !isBingo && (nums.length - marked === 1);
     if (isBingo && !state.bingoFired) {
       state.bingoFired = true;
@@ -955,48 +858,31 @@ function updateMyCartillaAutoMark(force) {
       header.className = 'mc-header';
       panel.insertBefore(header, panel.firstChild);
     }
-    const totalNums = is75 ? 24 : 15;
     header.innerHTML = '<div><span class="mc-id">Cartilla ' + cart.id + '</span>' +
-      '<span class="mc-count"> · ' + marked + '/' + totalNums + '</span></div>' + badge;
+      '<span class="mc-count"> · ' + marked + '/24</span></div>' + badge;
 
     // Rebuild grid if type changed (detect by data attribute)
     let gridWrap = panel.querySelector('.mc-grid-wrap');
-    if (gridWrap && gridWrap.dataset.gridType !== (is75 ? '75' : '90')) {
-      gridWrap.remove(); gridWrap = null;
-    }
     if (!gridWrap) {
       gridWrap = document.createElement('div');
       gridWrap.className = 'mc-grid-wrap';
-      gridWrap.dataset.gridType = is75 ? '75' : '90';
       const colsDiv = document.createElement('div');
       colsDiv.className = 'mc-grid-cols';
-      if (is75) {
-        BINGO75_COLORS.forEach(function(col) {
-          const d = document.createElement('div');
-          d.className = 'mc-col-label';
-          d.textContent = col.letter;
-          d.style.color      = col.fg;
-          d.style.background = col.bg;
-          d.style.fontWeight = '900';
-          d.style.fontSize   = '.85rem';
-          colsDiv.appendChild(d);
-        });
-      } else {
-        COL_LABELS_MINI.forEach(function(lbl, ci) {
-          const d = document.createElement('div');
-          d.className = 'mc-col-label';
-          d.textContent = lbl.split('-')[0];
-          d.style.color      = GROUP_COLORS[ci].fg;
-          d.style.background = GROUP_COLORS[ci].bg;
-          colsDiv.appendChild(d);
-        });
-      }
+      BINGO75_COLORS.forEach(function(col) {
+        const d = document.createElement('div');
+        d.className = 'mc-col-label';
+        d.textContent = col.letter;
+        d.style.color      = col.fg;
+        d.style.background = col.bg;
+        d.style.fontWeight = '900';
+        d.style.fontSize   = '.85rem';
+        colsDiv.appendChild(d);
+      });
       gridWrap.appendChild(colsDiv);
       const gridDiv = document.createElement('div');
       gridDiv.className = 'mc-grid';
-      if (is75) gridDiv.style.gridTemplateColumns = 'repeat(5,1fr)';
-      const cellCount = is75 ? 25 : 27;
-      for (let i = 0; i < cellCount; i++) {
+      gridDiv.style.gridTemplateColumns = 'repeat(5,1fr)';
+      for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.className = 'mc-cell';
         gridDiv.appendChild(cell);
@@ -1006,13 +892,11 @@ function updateMyCartillaAutoMark(force) {
     }
 
     const cells = panel.querySelectorAll('.mc-cell');
-    const ROWS = is75 ? 5 : 3;
-    const COLS = is75 ? 5 : 9;
     let idx = 0;
-    for (let ri = 0; ri < ROWS; ri++) {
-      for (let ci = 0; ci < COLS; ci++) {
+    for (let ri = 0; ri < 5; ri++) {
+      for (let ci = 0; ci < 5; ci++) {
         const num   = cart.grid[ri][ci];
-        const g     = is75 ? BINGO75_COLORS[ci] : GROUP_COLORS[ci];
+        const g     = BINGO75_COLORS[ci];
         const cell  = cells[idx++];
         if (!cell) continue;
         cell.className = 'mc-cell';
@@ -1022,7 +906,7 @@ function updateMyCartillaAutoMark(force) {
 
         // Highlight winning line
         var inLine = false;
-        if (isLinea && is75) {
+        if (isLinea) {
           if (lineaType === 'row'       && ri === lineaIdx)  inLine = true;
           if (lineaType === 'col'       && ci === lineaIdx)  inLine = true;
           if (lineaType === 'diag_main' && ri === ci)        inLine = true;

@@ -182,16 +182,9 @@ td{padding:10px 12px;vertical-align:middle}
       </select>
       <select class="inp" id="f-btype" onchange="filterTable()">
         <option value="all">Todos los tipos</option>
-        <optgroup label="── Bingo 90 Bolas ──">
-          <option value="1sol">🟡 1 Sol</option>
-          <option value="5soles">🔵 5 Soles</option>
-          <option value="10soles">💎 10 Soles</option>
-        </optgroup>
-        <optgroup label="── Bingo 75 B-I-N-G-O ──">
-          <option value="bingo75_1sol">🎯 1 Sol</option>
-          <option value="bingo75_5soles">🎯 5 Soles</option>
-          <option value="bingo75_10soles">🎯 10 Soles</option>
-        </optgroup>
+        <option value="1sol">🎯 1 Sol</option>
+        <option value="5soles">🎯 5 Soles</option>
+        <option value="10soles">🎯 10 Soles</option>
       </select>
       <button class="btn btn-ghost" onclick="refresh()">🔄</button>
     </div>
@@ -279,12 +272,9 @@ td{padding:10px 12px;vertical-align:middle}
 
 <script>
 const BT = {
-  "1sol":           {nombre:"Bingo 1 Sol",        color:"#f4d03f", emoji:"🟡", max_cartillas:3},
-  "5soles":         {nombre:"Bingo 5 Soles",       color:"#5dade2", emoji:"🔵", max_cartillas:5},
-  "10soles":        {nombre:"Bingo 10 Soles",      color:"#00e5b4", emoji:"💎", max_cartillas:5},
-  "bingo75_1sol":   {nombre:"Bingo 75 · 1 Sol",   color:"#f472b6", emoji:"🎯", max_cartillas:1},
-  "bingo75_5soles": {nombre:"Bingo 75 · 5 Soles", color:"#a855f7", emoji:"🎯", max_cartillas:1},
-  "bingo75_10soles":{nombre:"Bingo 75 · 10 Soles",color:"#818cf8", emoji:"🎯", max_cartillas:1},
+  "1sol":    {nombre:"Bingo 1 Sol",    color:"#f472b6", emoji:"🎯", max_cartillas:1},
+  "5soles":  {nombre:"Bingo 5 Soles",  color:"#a855f7", emoji:"🎯", max_cartillas:1},
+  "10soles": {nombre:"Bingo 10 Soles", color:"#818cf8", emoji:"🎯", max_cartillas:1},
 };
 const METHOD_ICON = {
   yape:'💜', plin:'💙', transferencia:'🏦',

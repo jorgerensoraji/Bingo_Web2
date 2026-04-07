@@ -550,12 +550,9 @@ function selectBtype(id) {
   selBtype = id;
   loadBingoTypes();
   renderSessions(); // filtrar sesiones al cambiar tipo
-  // Ocultar tab manual para Bingo 75 (cartilla siempre auto-generada)
-  const is75 = id.startsWith('bingo75');
+  // Tab manual siempre oculto (Bingo 75 usa generación automática)
   const manualBtn = document.getElementById('tab-manual-btn');
-  const manualPanel = document.getElementById('tab-manual');
-  if (manualBtn)  manualBtn.style.display  = is75 ? 'none' : '';
-  if (manualPanel && is75) switchTab('auto');
+  if (manualBtn) manualBtn.style.display = 'none';
 }
 
 // ── Cargar sesiones ─────────────────────────────────────
@@ -1155,6 +1152,9 @@ async function checkStarted() {
 }
 
 // ── Init ───────────────────────────────────────────────
+// Tab manual oculto siempre (solo Bingo 75 auto-generado)
+const _mBtn = document.getElementById('tab-manual-btn');
+if (_mBtn) _mBtn.style.display = 'none';
 buildPicker();
 loadConfig();
 loadBingoTypes();
