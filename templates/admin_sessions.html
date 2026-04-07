@@ -714,7 +714,7 @@ async function logout() {
 }
 
 // ── Init ───────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Fecha por defecto: ahora + 1 hora redondeada
   const d = new Date();
   d.setHours(d.getHours() + 1, 0, 0, 0);
@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Actualizar preview al cambiar max jugadores
   document.getElementById('inp-max')?.addEventListener('input', updatePreview);
 
-  buildBtypes();
+  await buildBtypes();   // cargar tipos ANTES de renderizar sesiones
   loadSessions();
   setInterval(loadSessions, 8000);
 });

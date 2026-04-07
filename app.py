@@ -1072,7 +1072,7 @@ def cartilla_to_pdf(cartilla: dict, drawn: list = None) -> BytesIO:
     c.setFont("Helvetica", 9)
     marked_count = len([n for row in grid for n in row if n and n in drawn_set])
     c.drawCentredString(cw / 2, 2.0 * cm, "Bingo Pro Web v8.0  •  Made by Renso Ramirez")
-    c.drawCentredString(cw / 2, 1.4 * cm, f"Números marcados: {marked_count} / 15")
+    c.drawCentredString(cw / 2, 1.4 * cm, f"Números marcados: {marked_count} / {'24' if is_75 else '15'}")
     c.save(); buf.seek(0)
     return buf
 
@@ -2205,14 +2205,22 @@ def api_save_manual():
         ok, err = validate_voucher_for_cartilla(code)
         if not ok:
             return jsonify({"error": err}), 403
-    if not grid or len(grid) != 3 or any(len(r) != 9 for r in grid):
-        return jsonify({"error": "grid invalido"}), 400
-    nums = [n for row in grid for n in row if n is not None]
-    if len(nums) != 15:
-        return jsonify({"error": "Se requieren 15 numeros"}), 400
     vinfo      = get_voucher_info(code) if code else None
     session_id = (vinfo.get("session_id") if vinfo else None) or ""
     bingo_type = (vinfo.get("bingo_type") if vinfo else "1sol")
+    is_75_type = BINGO_TYPES.get(bingo_type, {}).get("grid_type") == "75"
+    if is_75_type:
+        if not grid or len(grid) != 5 or any(len(r) != 5 for r in grid):
+            return jsonify({"error": "grid invalido"}), 400
+        nums = [n for row in grid for n in row if n is not None]
+        if len(nums) != 24:
+            return jsonify({"error": "Se requieren 24 numeros para Bingo 75"}), 400
+    else:
+        if not grid or len(grid) != 3 or any(len(r) != 9 for r in grid):
+            return jsonify({"error": "grid invalido"}), 400
+        nums = [n for row in grid for n in row if n is not None]
+        if len(nums) != 15:
+            return jsonify({"error": "Se requieren 15 numeros"}), 400
     c = save_cartilla(nombre, grid, voucher_code=code,
                       session_id=session_id, bingo_type=bingo_type,
                       generada_por_admin=is_admin())

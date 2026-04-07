@@ -319,8 +319,8 @@ function handleAdminOffline() {
     const lb = document.getElementById('last-big');
     if (lb) { lb.textContent = '—'; lb.style.color = ''; }
     document.getElementById('timer').textContent = '⏱ 00:00';
-    updateStats(0, 90);
-    updateStatusMsg(0, 90);
+    updateStats(0, gameBalls);
+    updateStatusMsg(0, gameBalls);
 
     adminWasOnline = true;
     if (statusEl) statusEl.textContent = '🔄 Esperando al administrador…';

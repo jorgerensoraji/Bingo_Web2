@@ -344,9 +344,16 @@ tr:hover td{background:rgba(17,31,46,.5)}
       <select id="f-btype-v" class="inp" style="flex:1;min-width:140px"
               onchange="refresh()">
         <option value="">Todos los tipos</option>
-        <option value="1sol">🟡 1 Sol</option>
-        <option value="5soles">🔵 5 Soles</option>
-        <option value="10soles">💎 10 Soles</option>
+        <optgroup label="── Bingo 90 Bolas ──">
+          <option value="1sol">🟡 1 Sol</option>
+          <option value="5soles">🔵 5 Soles</option>
+          <option value="10soles">💎 10 Soles</option>
+        </optgroup>
+        <optgroup label="── Bingo 75 B-I-N-G-O ──">
+          <option value="bingo75_1sol">🎯 1 Sol</option>
+          <option value="bingo75_5soles">🎯 5 Soles</option>
+          <option value="bingo75_10soles">🎯 10 Soles</option>
+        </optgroup>
       </select>
     </div>
 
@@ -378,12 +385,18 @@ tr:hover td{background:rgba(17,31,46,.5)}
 
 <script>
 const BINGO_TYPES = {
-  "1sol":    {nombre:"Bingo 1 Sol",    precio:1,  color:"#f4d03f",
-              emoji:"🟡", prize_pct:.70, linea_pct:.10, max_cartillas:3},
-  "5soles":  {nombre:"Bingo 5 Soles",  precio:5,  color:"#5dade2",
-              emoji:"🔵", prize_pct:.75, linea_pct:.08, max_cartillas:5},
-  "10soles": {nombre:"Bingo 10 Soles", precio:10, color:"#00e5b4",
-              emoji:"💎", prize_pct:.80, linea_pct:.05, max_cartillas:5},
+  "1sol":          {nombre:"Bingo 1 Sol",        precio:1,  color:"#f4d03f",
+                    emoji:"🟡", prize_pct:.70, linea_pct:.10, max_cartillas:3},
+  "5soles":        {nombre:"Bingo 5 Soles",       precio:5,  color:"#5dade2",
+                    emoji:"🔵", prize_pct:.75, linea_pct:.08, max_cartillas:5},
+  "10soles":       {nombre:"Bingo 10 Soles",      precio:10, color:"#00e5b4",
+                    emoji:"💎", prize_pct:.80, linea_pct:.05, max_cartillas:5},
+  "bingo75_1sol":  {nombre:"Bingo 75 · 1 Sol",   precio:1,  color:"#f472b6",
+                    emoji:"🎯", prize_pct:.70, linea_pct:.10, max_cartillas:1},
+  "bingo75_5soles":{nombre:"Bingo 75 · 5 Soles", precio:5,  color:"#a855f7",
+                    emoji:"🎯", prize_pct:.75, linea_pct:.10, max_cartillas:1},
+  "bingo75_10soles":{nombre:"Bingo 75 · 10 Soles",precio:10,color:"#818cf8",
+                    emoji:"🎯", prize_pct:.80, linea_pct:.08, max_cartillas:1},
 };
 
 let selBtype = "1sol";
