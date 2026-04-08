@@ -1714,6 +1714,13 @@ def api_list_sessions():
 def api_upcoming_sessions():
     return jsonify({"sessions": get_upcoming_sessions(20)})
 
+@app.route("/api/session/<sid>", methods=["GET"])
+def api_get_session(sid):
+    s = get_session(sid)
+    if not s:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"session": s})
+
 @app.route("/api/cartillas/by_access", methods=["POST"])
 @rate_limit(max_calls=10, window_seconds=60)
 def api_cartillas_by_access():

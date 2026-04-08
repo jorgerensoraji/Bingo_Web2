@@ -945,12 +945,12 @@ async function generateAuto() {
       showToast(msgs[data.error] || '❌ ' + data.error);
       return;
     }
-    data.cartillas.forEach(c => saveMyCartilla(c.id));
+    data.cartillas.forEach(c => saveMyCartilla(c.id, c.session_id));
     showToast(`✅ ¡${data.cartillas.length} cartilla(s) generada(s)!`);
     loadMyCartillas();
     setStep(4);
-    // Refrescar estado para actualizar contador
     if (code) setTimeout(() => verificarCodigoSilencioso(code), 1000);
+    await showSuccessPanel(data.cartillas);
   } catch(e) { showToast('❌ Error de conexión'); }
 }
 
@@ -1088,18 +1088,72 @@ async function saveManual() {
       const msgs={bad_code:'❌ Código inválido.',payment_pending:'⏳ Pago pendiente.',game_started:'⛔ El juego ya empezó.'};
       showToast(msgs[data.error]||'❌ '+data.error); return;
     }
-    saveMyCartilla(data.cartilla.id);
+    saveMyCartilla(data.cartilla.id, data.cartilla.session_id);
     showToast(`✅ Cartilla ${data.cartilla.id} guardada`);
     clearPicker(); loadMyCartillas();
+    await showSuccessPanel([data.cartilla]);
   } catch(e) { showToast('❌ Error de conexión'); }
 }
 
+// ── Panel de éxito post-generación ────────────────────
+async function showSuccessPanel(cartillas) {
+  if (!cartillas || !cartillas.length) return;
+  const sid = (cartillas[0] && cartillas[0].session_id) ? cartillas[0].session_id : null;
+  let sesionHtml = '';
+  if (sid) {
+    try {
+      const res = await fetch(`/api/session/${encodeURIComponent(sid)}`);
+      if (res.ok) {
+        const d   = await res.json();
+        const s   = d.session || {};
+        const statusMap = {
+          scheduled: { label:'⏳ Programada',        color:'var(--muted)' },
+          preparing: { label:'🔄 Iniciando pronto…', color:'#f6c343' },
+          active:    { label:'🟢 EN JUEGO AHORA',    color:'var(--accent)' },
+          finished:  { label:'✅ Finalizada',         color:'var(--muted)' },
+        };
+        const st = statusMap[s.status] || { label: s.status || '—', color:'var(--muted)' };
+        sesionHtml = `
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0;text-align:left">
+            <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Tu sesión</div>
+            <div style="font-weight:900;margin-bottom:3px">${esc(s.bingo_nombre||'Bingo')}</div>
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">📅 ${esc(s.date||'—')} &nbsp;🕐 ${esc(s.time||'—')}</div>
+            <div style="font-weight:700;color:${st.color}">${st.label}</div>
+            ${s.status==='active'     ? '<div style="font-size:.75rem;color:var(--accent);margin-top:4px">¡El juego ya comenzó! Entra ahora.</div>' : ''}
+            ${s.status==='scheduled'  ? '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">El juego iniciará cuando el admin lo active.</div>' : ''}
+            ${s.status==='preparing'  ? '<div style="font-size:.75rem;color:#f6c343;margin-top:4px">El juego está a punto de comenzar.</div>' : ''}
+          </div>`;
+      }
+    } catch(e) {}
+  }
+
+  const ids = cartillas.map(c => (typeof c === 'object' && c !== null) ? c.id : c).join(', ');
+  document.getElementById('success-cartilla-panel')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'success-cartilla-panel';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(7,13,20,.92);z-index:800;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:400px;width:100%;text-align:center;max-height:90vh;overflow-y:auto">
+      <div style="font-size:2.5rem;margin-bottom:10px">🎉</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--accent);letter-spacing:2px;margin-bottom:6px">¡Cartilla Lista!</div>
+      <div style="font-size:.82rem;color:var(--muted)">${cartillas.length > 1 ? 'IDs de tus cartillas' : 'ID de tu cartilla'}</div>
+      <div style="font-size:1.3rem;font-weight:900;color:var(--text);margin:6px 0">${esc(ids)}</div>
+      ${sesionHtml}
+      <a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
+      <button id="close-success-panel" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">Cerrar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('close-success-panel').onclick = () => overlay.remove();
+}
+
 // ── Mis cartillas (localStorage) ───────────────────────
-function saveMyCartilla(cid) {
+function saveMyCartilla(cid, sid) {
   try {
-    const arr=JSON.parse(localStorage.getItem('my_cartillas')||'[]');
-    if(!arr.includes(cid)) arr.unshift(cid);
-    localStorage.setItem('my_cartillas',JSON.stringify(arr.slice(0,30)));
+    let arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+    arr = arr.map(e => typeof e === 'string' ? { id: e, session_id: '' } : e);
+    if (!arr.find(e => e.id === cid)) arr.unshift({ id: cid, session_id: sid || '' });
+    localStorage.setItem('my_cartillas', JSON.stringify(arr.slice(0, 30)));
   } catch(e) {}
 }
 
@@ -1112,7 +1166,9 @@ function loadMyCartillas() {
     listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
     return;
   }
-  listEl.innerHTML=arr.map(cid=>{
+  listEl.innerHTML=arr.map(entry=>{
+    const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
+    const sid = (typeof entry === 'object' && entry !== null) ? (entry.session_id || '') : '';
     const pdf=`/api/cartilla/${cid}/pdf`;
     const png=`/api/cartilla/${cid}/png`;
     const msg=encodeURIComponent(`Mi cartilla de Bingo. ID: ${cid}`);
@@ -1127,6 +1183,8 @@ function loadMyCartillas() {
         <a class="btn btn-ghost btn-sm" href="${pdf}" target="_blank">📄 PDF</a>
         <a class="btn btn-sm" style="background:rgba(37,211,102,.15);color:#25d366"
            href="${wa}" target="_blank">📲 WA</a>
+        <a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)"
+           href="/">🎮</a>
         <button class="btn btn-sm" style="background:rgba(231,76,60,.15);color:var(--danger)"
                 onclick="removeMyCartilla('${cid}')">✕</button>
       </div>

@@ -405,6 +405,8 @@ function handleSessionFinished() {
   _lastBannerKey = '';
   var bannerEl = document.getElementById('global-winner-banner');
   if (bannerEl) bannerEl.style.display = 'none';
+  var psBanner = document.getElementById('player-session-banner');
+  if (psBanner) psBanner.style.display = 'none';
 
   // Reset the drawn-balls grid
   initGridReset();
@@ -980,6 +982,7 @@ async function loadAllCartillas() {
   if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
   updateMyCartillaAutoMark(true);
   showToast('✅ ' + myCartillas.length + ' cartilla(s) cargada(s)');
+  showPlayerSessionBanner();
   var wrapEl = document.getElementById('mis-cartillas-wrap');
   if (wrapEl) { setTimeout(function(){ wrapEl.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 700); }
   try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch(e) {}
@@ -1146,9 +1149,67 @@ function updateMyCartillaAutoMark(force) {
   });
 }
 
+// ── Banner de sesión del jugador ─────────────────────
+async function showPlayerSessionBanner() {
+  const banner = document.getElementById('player-session-banner');
+  if (!banner) return;
+
+  const stored = getMyCartillasFromStorage();
+  if (!stored.length) { banner.style.display = 'none'; return; }
+
+  // Collect unique session IDs from stored cartillas
+  const sids = [...new Set(
+    stored.map(e => (typeof e === 'object' && e !== null) ? e.session_id : null).filter(Boolean)
+  )];
+  if (!sids.length) { banner.style.display = 'none'; return; }
+
+  // Fetch session info for all unique sids
+  const sessions = [];
+  for (const sid of sids) {
+    try {
+      const res = await fetch('/api/session/' + encodeURIComponent(sid));
+      if (res.ok) { const d = await res.json(); if (d.session) sessions.push(d.session); }
+    } catch(e) {}
+  }
+  if (!sessions.length) { banner.style.display = 'none'; return; }
+
+  const statusMap = {
+    scheduled: { emoji:'⏳', label:'Programada',        bg:'rgba(100,130,160,.12)', border:'rgba(100,130,160,.3)', color:'var(--muted)' },
+    preparing: { emoji:'🔄', label:'Iniciando pronto',  bg:'rgba(246,195,67,.12)',  border:'rgba(246,195,67,.4)',  color:'#f6c343' },
+    active:    { emoji:'🟢', label:'EN JUEGO AHORA',    bg:'rgba(0,229,180,.12)',   border:'rgba(0,229,180,.5)',   color:'var(--accent)' },
+    finished:  { emoji:'✅', label:'Finalizada',         bg:'rgba(100,130,160,.08)', border:'rgba(100,130,160,.2)', color:'var(--muted)' },
+  };
+
+  const esc2 = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const html = sessions.map(s => {
+    const st = statusMap[s.status] || statusMap.scheduled;
+    const isActive   = s.status === 'active';
+    const isPreparing = s.status === 'preparing';
+    const activeNote  = isActive    ? '<span style="font-size:.72rem;color:var(--accent);margin-left:8px">¡Entra al juego!</span>' : '';
+    const prepNote    = isPreparing ? '<span style="font-size:.72rem;color:#f6c343;margin-left:8px">A punto de iniciar</span>' : '';
+    const sessionNote = s.id === activeSessionId ? '' :
+      (activeSessionId
+        ? '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">Esta sesión no es la que está activa ahora mismo.</div>'
+        : '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">Aún no hay sesión activa. Tu cartilla estará lista cuando el admin inicie.</div>');
+    return `<div style="padding:10px 14px;background:${st.bg};border:1px solid ${st.border};border-radius:10px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:.85rem;font-weight:700">${st.emoji} ${esc2(s.bingo_nombre||'Bingo')}</span>
+        <span style="font-size:.75rem;color:${st.color};font-weight:700">${st.label}</span>
+        ${activeNote}${prepNote}
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">📅 ${esc2(s.date||'—')} &nbsp;🕐 ${esc2(s.time||'—')}</div>
+      ${sessionNote}
+    </div>`;
+  }).join('');
+
+  banner.innerHTML = html;
+  banner.style.display = 'block';
+}
+
 function initMyCartillaUI() {
   const btn = document.getElementById('btn-load-cartilla');
   if (btn) btn.addEventListener('click', loadAllCartillas);
+  showPlayerSessionBanner();
   if (getMyCartillasFromStorage().length) setTimeout(loadAllCartillas, 800);
 }
 
