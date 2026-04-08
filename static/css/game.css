@@ -17,12 +17,14 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { height:100%; }
+html { overflow-x:hidden; max-width:100vw; }
 body {
   font-family:'Outfit',sans-serif;
   background:var(--bg);
   color:var(--text);
   min-height:100vh;
   overflow-x:hidden;
+  max-width:100vw;
 }
 body::before {
   content:'';
@@ -103,6 +105,19 @@ header {
 @media(max-width:600px){
   .right-col{grid-template-columns:1fr;}
   .shortcuts{display:none;}
+
+  /* ── Header compact on mobile ── */
+  header { padding:8px 12px; }
+  .header-right { gap:8px; }
+  .header-right .stat { display:none; }       /* hide stats, keep timer */
+  #timer { font-size:1.1rem; letter-spacing:1px; }
+
+  /* ── Recent strip: smaller badges ── */
+  .recent-num { font-size:1rem; min-width:26px; }
+  .recent-strip { padding:6px 10px; }
+
+  /* ── Number grid: tighter rows ── */
+  .num-cell { height:22px; }
 }
 
 /* NUMBER DISPLAY */
@@ -198,10 +213,16 @@ header {
   background:var(--card); border:1px solid var(--border);
   border-radius:10px; padding:8px 16px;
   display:flex; align-items:center; gap:10px;
-  margin-bottom:12px; overflow-x:auto;
+  margin-bottom:12px; overflow:hidden;   /* clips, lets inner div scroll */
 }
-.recent-label { font-size:.75rem; color:var(--muted); white-space:nowrap; }
-.recent-num { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; min-width:36px; text-align:center; }
+.recent-label { font-size:.75rem; color:var(--muted); white-space:nowrap; flex-shrink:0; }
+#recent-nums  {
+  display:flex; gap:10px;
+  min-width:0; flex:1;           /* allow shrinking below max-content */
+  overflow-x:auto;               /* scroll the numbers inside */
+  -webkit-overflow-scrolling:touch;
+}
+.recent-num { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; min-width:36px; text-align:center; flex-shrink:0; }
 
 /* GRID */
 .grid-section {

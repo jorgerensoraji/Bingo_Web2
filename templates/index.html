@@ -393,12 +393,35 @@
     background:var(--sub); color:var(--muted);
   }
   @media(max-width:600px) {
+    /* ── Cartilla grid ── */
     .mc-cell { font-size:1rem; border-radius:6px; }
     .mc-cell.marked span { font-size:.85rem; }
     .mc-col-label { font-size:1rem; }
     .mc-grid-wrap { padding:6px 4px 4px; }
     .mc-grid-cols { gap:3px; margin-bottom:3px; }
     .mc-grid { gap:3px; }
+
+    /* ── Header ── */
+    .header-sub { display:none; }
+    .header-title { font-size:1.1rem; letter-spacing:1px; }
+
+    /* ── Big panel: hide drum, compact layout ── */
+    #ball-drum-wrap { display:none !important; }
+    .big-panel { gap:10px; padding:10px; flex-wrap:nowrap; align-items:center; }
+    /* hide the ▶ arrow (it's a sibling div with inline font-size:1.6rem) */
+    .big-panel > div[style*="1.6rem"] { display:none !important; }
+    .ball-wrap { width:80px !important; height:80px !important; }
+    #big-number { font-size:2.4rem !important; }
+    #words-display { font-size:.95rem !important; }
+    .number-info { min-width:0; }
+    .audio-bar { flex-wrap:wrap; gap:4px; margin-top:6px; }
+    #player-voice-select { font-size:.72rem; min-width:0; }
+
+    /* ── Layout padding ── */
+    .layout { padding:8px; gap:8px; }
+
+    /* ── Game stats bar: wrap on small screens ── */
+    #game-stats-bar > div { flex-wrap:wrap !important; gap:6px !important; }
   }
   .mc-cell.empty  { background:rgba(10,18,26,.5); color:transparent; border:1px dashed var(--border); }
   .mc-cell.marked { border-color:currentColor; }
@@ -628,7 +651,7 @@
     <!-- Últimas bolillas -->
     <div class="recent-strip">
       <span class="recent-label">Últimas bolillas:</span>
-      <div id="recent-nums" style="display:flex;gap:10px;"></div>
+      <div id="recent-nums"></div>
     </div>
 
     <!-- Grid numérico -->
