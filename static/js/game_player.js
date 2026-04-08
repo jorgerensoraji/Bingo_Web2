@@ -432,6 +432,28 @@ function handleSessionFinished() {
   if (sessionFinishedShown) return;
   sessionFinishedShown = true;
 
+  // ── Remove finished-session cartillas from localStorage ──
+  // Use activeSessionId + loaded myCartillas to identify which IDs to purge.
+  var finishedSid = activeSessionId;
+  if (finishedSid) {
+    // IDs we know belong to this session (already fetched from server)
+    var toRemove = new Set();
+    myCartillas.forEach(function(c) {
+      if (c.session_id === finishedSid) toRemove.add(c.id);
+    });
+    try {
+      var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+      var remaining = stored.filter(function(e) {
+        var cid = (typeof e === 'object' && e !== null) ? e.id : e;
+        var sid = (typeof e === 'object' && e !== null) ? (e.session_id || '') : '';
+        if (toRemove.has(cid)) return false;          // known from loaded data
+        if (sid && sid === finishedSid) return false; // known from localStorage metadata
+        return true;
+      });
+      localStorage.setItem('my_cartillas', JSON.stringify(remaining));
+    } catch(err) {}
+  }
+
   // Stop clock and audio
   if (clockJob) { clearInterval(clockJob); clockJob = null; }
   stopAudio();
