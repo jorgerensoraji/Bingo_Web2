@@ -399,19 +399,18 @@
   }
 
   @media(max-width:600px) {
-    /* ── Layout: right panel (cartilla) above left panel (grid) ── */
-    .layout {
-      display:flex !important;
-      flex-direction:column;
-      padding:6px; gap:6px;
-    }
-    .right { order:-1; }   /* My Cartilla + Game Status + Chat come first */
-    .left  { order:0; }
+    /* ── Layout: dissolve left/right containers so each section can be
+       individually ordered: ball → game-status → grid → cartilla → chat ── */
+    .layout { display:flex !important; flex-direction:column; padding:6px; gap:6px; }
+    .left   { display:contents; }   /* children participate directly in .layout */
+    .right  { display:contents; }
 
-    /* Within right: cartilla panel first, then game status, then chat */
-    .right { display:flex; flex-direction:column; }
-    #cartilla-panel { order:-1; }
-    #chat-panel     { order:1; }
+    .big-panel         { order:1; }   /* current ball + audio */
+    .recent-strip      { order:2; }   /* last drawn numbers strip */
+    #game-status-panel { order:3; }   /* game status + last big number */
+    .grid-section      { order:4; }   /* números sorteados (full grid) */
+    #cartilla-panel    { order:5; }   /* mi cartilla */
+    #chat-panel        { order:6; }   /* chat */
 
     /* ── Cartilla grid ── */
     .mc-cell { font-size:.92rem; border-radius:5px; }
@@ -740,7 +739,7 @@
   <div class="right">
 
     <!-- Estado del juego -->
-    <div class="panel">
+    <div class="panel" id="game-status-panel">
       <div class="section-title">Estado del Juego</div>
       <div id="game-status-msg" style="line-height:1.5;color:var(--muted);">
         Esperando que el administrador inicie el sorteo…
