@@ -294,9 +294,13 @@ function renderTable(ss) {
     const bt       = BT[s.bingo_type] || BT['1sol'];
     const margen   = s.recaudado > 0 ? Math.round((s.ganancia / s.recaudado) * 100) : 0;
     const ganColor = s.ganancia >= 0 ? '#27ae60' : 'var(--danger)';
-    const ganadores = (s.ganadores || []).map(w =>
-      `🏆 ${esc(w.nombre || w.id)} · ${fmt(w.prize)} · ${w.drawn_count} bolillas`
-    ).join('<br>') || '<span style="color:var(--muted)">—</span>';
+    const ganadores = (s.ganadores || []).map(w => {
+      const esBingo = w.tipo !== 'linea';
+      const premio  = esBingo ? w.prize : w.linea_prize;
+      const icono   = esBingo ? '🏆' : '⭐';
+      const tipo    = esBingo ? 'Bingo' : 'Línea';
+      return `${icono} ${esc(w.nombre || w.id)} · <strong>${fmt(premio)}</strong> <span style="color:var(--muted);font-size:.72rem">(${tipo})</span> · ${w.drawn_count} bolillas`;
+    }).join('<br>') || '<span style="color:var(--muted)">—</span>';
 
     return `<tr>
       <td>

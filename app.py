@@ -2185,7 +2185,7 @@ def api_caja():
             wf = []
             try: wf = json.loads(s.winners_final or "[]")
             except Exception: pass
-            premios   = sum(w.get("prize", 0) for w in wf)
+            premios   = sum(w.get("prize", 0) + w.get("linea_prize", 0) for w in wf)
             total_prem += premios
             sid_vs    = [v for v in vouchers
                          if v.session_id == s.id
