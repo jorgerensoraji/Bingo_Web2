@@ -1078,6 +1078,11 @@ def admin_caja_page():
     if not is_admin(): return redirect("/admin/login")
     return render_template("admin_caja.html")
 
+@app.route("/admin/pagos_ganadores")
+def admin_pagos_ganadores_page():
+    if not is_admin(): return redirect("/admin/login")
+    return render_template("admin_pagos_ganadores.html")
+
 # ─── Auth ──────────────────────────────────────────────────────────────────────
 
 @app.route("/api/admin/login", methods=["POST"])
@@ -1990,6 +1995,132 @@ def api_winners_history():
                     "prize":         w.get("prize", 0),
                 })
     return jsonify({"winners": result})
+
+# ─── Pagos a Ganadores ───────────────────────────────────────────────────────
+@app.route("/api/admin/winner_payments")
+def api_winner_payments():
+    chk = admin_required()
+    if chk: return chk
+    result = []
+    # From finished/active sessions in DB
+    with db_session() as db:
+        sessions = db.query(BingoSession).order_by(BingoSession.datetime_iso.desc()).all()
+        for s in sessions:
+            wf = []
+            try: wf = json.loads(s.winners_final or "[]")
+            except Exception: pass
+            for w in wf:
+                result.append({
+                    "session_id":    s.id,
+                    "session_fecha": s.date,
+                    "session_hora":  s.time,
+                    "bingo_nombre":  s.bingo_nombre,
+                    "bingo_type":    s.bingo_type,
+                    "session_status": s.status,
+                    "cartilla_id":   w.get("id", ""),
+                    "nombre":        w.get("nombre", ""),
+                    "apellidos":     w.get("apellidos", ""),
+                    "celular":       w.get("celular", ""),
+                    "yape_plin":     w.get("yape_plin", ""),
+                    "email":         w.get("email", ""),
+                    "prize":         w.get("prize", 0),
+                    "linea_prize":   w.get("linea_prize", 0),
+                    "claimed_at":    w.get("claimed_at", ""),
+                    "drawn_count":   w.get("drawn_count", 0),
+                    "tipo":          w.get("tipo", "bingo"),
+                    "paid":          bool(w.get("paid", False)),
+                    "paid_at":       w.get("paid_at", ""),
+                    "paid_method":   w.get("paid_method", ""),
+                    "paid_ref":      w.get("paid_ref", ""),
+                    "paid_note":     w.get("paid_note", ""),
+                })
+    # Also include current in-memory game winners (active game)
+    with game_lock:
+        active_sid = game.session_id
+        live_winners = list(game.winners_log)
+    db_ids = {(r["session_id"], r["cartilla_id"]) for r in result}
+    for w in live_winners:
+        key = (active_sid or "", w.get("id", ""))
+        if key not in db_ids:
+            result.append({
+                "session_id":    active_sid or "—",
+                "session_fecha": "",
+                "session_hora":  "",
+                "bingo_nombre":  w.get("bingo_nombre", "Juego activo"),
+                "bingo_type":    w.get("bingo_type", ""),
+                "session_status": "active",
+                "cartilla_id":   w.get("id", ""),
+                "nombre":        w.get("nombre", ""),
+                "apellidos":     w.get("apellidos", ""),
+                "celular":       w.get("celular", ""),
+                "yape_plin":     w.get("yape_plin", ""),
+                "email":         w.get("email", ""),
+                "prize":         w.get("prize", 0),
+                "linea_prize":   w.get("linea_prize", 0),
+                "claimed_at":    w.get("claimed_at", ""),
+                "drawn_count":   w.get("drawn_count", 0),
+                "tipo":          "bingo",
+                "paid":          False,
+                "paid_at":       "",
+                "paid_method":   "",
+                "paid_ref":      "",
+                "paid_note":     "",
+            })
+    return jsonify({"payments": result})
+
+
+@app.route("/api/admin/winner_payments/pay", methods=["POST"])
+def api_pay_winner():
+    chk = admin_required()
+    if chk: return chk
+    data        = request.get_json() or {}
+    session_id  = (data.get("session_id")  or "").strip()
+    cartilla_id = (data.get("cartilla_id") or "").strip().upper()
+    paid_ref    = (data.get("paid_ref")    or "").strip()[:100]
+    paid_method = (data.get("paid_method") or "efectivo").strip()
+    paid_note   = (data.get("paid_note")   or "").strip()[:300]
+
+    if not session_id or not cartilla_id:
+        return jsonify({"error": "session_id y cartilla_id requeridos"}), 400
+
+    updated = False
+    # Try to update in DB (finished/scheduled sessions)
+    with db_session() as db:
+        sx = db.query(BingoSession).filter_by(id=session_id).first()
+        if sx:
+            wf = []
+            try: wf = json.loads(sx.winners_final or "[]")
+            except Exception: pass
+            for w in wf:
+                if w.get("id") == cartilla_id:
+                    w["paid"]        = True
+                    w["paid_at"]     = datetime.now().isoformat()
+                    w["paid_method"] = paid_method
+                    w["paid_ref"]    = paid_ref
+                    w["paid_note"]   = paid_note
+                    updated = True
+            if updated:
+                sx.winners_final = json.dumps(wf, ensure_ascii=False)
+                db.flush()
+
+    # Also update in-memory game winners (active game)
+    if not updated:
+        with game_lock:
+            for w in game.winners_log:
+                if w.get("id") == cartilla_id:
+                    w["paid"]        = True
+                    w["paid_at"]     = datetime.now().isoformat()
+                    w["paid_method"] = paid_method
+                    w["paid_ref"]    = paid_ref
+                    w["paid_note"]   = paid_note
+                    updated = True
+            if updated:
+                game.save_to_db()
+
+    if not updated:
+        return jsonify({"error": "Ganador no encontrado"}), 404
+    return jsonify({"status": "ok", "message": "Pago registrado correctamente"})
+
 
 # ─── Caja ─────────────────────────────────────────────────────────────────────
 @app.route("/api/admin/caja")

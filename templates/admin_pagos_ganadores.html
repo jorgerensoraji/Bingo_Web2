@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💸 Pagos a Ganadores — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap { max-width:1100px; margin:0 auto; padding:20px }
+
+/* KPIs */
+.kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px }
+@media(max-width:600px){ .kpi-row { grid-template-columns:repeat(2,1fr) } }
+.kpi {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:14px; padding:18px; text-align:center;
+}
+.kpi .v { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; color:var(--kpi-color,var(--accent)); line-height:1; margin-bottom:4px }
+.kpi .l { font-size:.6rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase }
+
+/* Cards */
+.card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px }
+.card-title { font-size:.6rem; letter-spacing:3px; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:16px }
+
+/* Payment rows */
+.pay-row {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px; padding:14px 16px; margin-bottom:10px;
+  display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;
+}
+.pay-row.is-paid { opacity:.6; border-color:rgba(39,174,96,.3) }
+.pay-info { flex:1; min-width:200px }
+.pay-name { font-weight:900; font-size:.95rem; color:var(--text) }
+.pay-meta { font-size:.75rem; color:var(--muted); margin-top:3px; line-height:1.6 }
+.pay-prize { font-family:'Bebas Neue',sans-serif; font-size:2rem; color:var(--accent); white-space:nowrap; text-align:right }
+.pay-prize.linea { color:var(--warning) }
+.pay-actions { display:flex; flex-direction:column; gap:6px; min-width:140px }
+
+/* Buttons */
+.btn { padding:8px 16px; border-radius:9px; border:none; font-weight:900; cursor:pointer; font-family:'Outfit',sans-serif; font-size:.82rem; transition:filter .15s }
+.btn:hover { filter:brightness(1.1) }
+.btn-accent { background:var(--accent); color:#041015 }
+.btn-ghost  { background:var(--card); color:var(--text); border:1px solid var(--border) }
+.btn-danger { background:rgba(231,76,60,.2); color:var(--danger); border:1px solid rgba(231,76,60,.3) }
+.btn-sm { padding:6px 12px; font-size:.76rem }
+
+/* Status badge */
+.badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.7rem; font-weight:700 }
+.badge-paid    { background:rgba(39,174,96,.2);  color:#27ae60 }
+.badge-pending { background:rgba(231,76,60,.15); color:var(--danger) }
+.badge-active  { background:rgba(0,229,180,.15); color:var(--accent) }
+
+/* Modal */
+.modal-bg {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+  z-index:900; align-items:center; justify-content:center;
+}
+.modal-bg.open { display:flex }
+.modal {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:18px; padding:28px; width:90%; max-width:480px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.modal h3 { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; color:var(--accent); letter-spacing:2px; margin:0 0 6px }
+.modal-sub { font-size:.8rem; color:var(--muted); margin-bottom:20px }
+.field { margin-bottom:14px }
+.field label { display:block; font-size:.72rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px }
+.field input, .field select, .field textarea {
+  width:100%; padding:10px 12px; background:var(--sub);
+  border:1px solid var(--border); border-radius:9px;
+  color:var(--text); font-family:'Outfit',sans-serif; font-size:.88rem;
+  outline:none; box-sizing:border-box;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent) }
+.field textarea { resize:vertical; min-height:70px }
+.modal-actions { display:flex; gap:10px; margin-top:20px }
+.modal-actions .btn { flex:1; padding:12px }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:12px 22px; z-index:1000;
+  transition:transform .3s; white-space:nowrap; pointer-events:none;
+}
+.toast.show { transform:translateX(-50%) translateY(0) }
+
+/* Empty */
+.empty { text-align:center; color:var(--muted); padding:30px; font-size:.9rem }
+
+/* Proof display */
+.proof-box {
+  background:rgba(39,174,96,.06); border:1px solid rgba(39,174,96,.2);
+  border-radius:8px; padding:8px 12px; margin-top:8px; font-size:.78rem;
+}
+.proof-box strong { color:#27ae60 }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💸 Pagos Ganadores</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
+    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--accent);letter-spacing:2px;margin:0">
+        Pagos a Ganadores
+      </h2>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:2px">
+        Registra los premios entregados y deja constancia del comprobante
+      </div>
+    </div>
+    <button class="btn btn-ghost" onclick="load()">🔄 Actualizar</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi" style="--kpi-color:var(--danger)">
+      <div class="v" id="k-pendiente">S/.0</div>
+      <div class="l">Por Pagar</div>
+    </div>
+    <div class="kpi" style="--kpi-color:#27ae60">
+      <div class="v" id="k-pagado">S/.0</div>
+      <div class="l">Ya Pagado</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--accent)">
+      <div class="v" id="k-total-w">0</div>
+      <div class="l">Total Ganadores</div>
+    </div>
+  </div>
+
+  <!-- Pendientes -->
+  <div class="card">
+    <div class="card-title">⚠️ Pagos Pendientes</div>
+    <div id="list-pending"><div class="empty">Cargando…</div></div>
+  </div>
+
+  <!-- Pagados -->
+  <div class="card">
+    <div class="card-title">✅ Pagos Realizados</div>
+    <div id="list-paid"><div class="empty">Cargando…</div></div>
+  </div>
+
+</div>
+
+<!-- Modal confirmar pago -->
+<div class="modal-bg" id="modal-pay">
+  <div class="modal">
+    <h3>Confirmar Pago</h3>
+    <div class="modal-sub" id="modal-pay-sub">—</div>
+
+    <div class="field">
+      <label>Método de Pago</label>
+      <select id="pay-method">
+        <option value="yape">📱 Yape</option>
+        <option value="plin">📱 Plin</option>
+        <option value="transferencia">🏦 Transferencia bancaria</option>
+        <option value="efectivo">💵 Efectivo</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Código / N° de Operación</label>
+      <input id="pay-ref" type="text" placeholder="Ej: YAP-12345678 o N° de transferencia">
+    </div>
+
+    <div class="field">
+      <label>Notas adicionales (opcional)</label>
+      <textarea id="pay-note" placeholder="Ej: Enviado a Yape 987654321, confirmado por el jugador…"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" onclick="confirmPay()">✅ Registrar Pago</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3200);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt(n) { return 'S/. ' + Number(n||0).toFixed(2); }
+function logout() {
+  fetch('/api/admin/logout', {method:'POST'}).finally(() => location.href='/admin/login');
+}
+
+let _pendingTarget = null;
+let _allData = [];
+
+// ── Cargar ────────────────────────────────────────────
+async function load() {
+  try {
+    const res  = await fetch('/api/admin/winner_payments');
+    if (!res.ok) { showToast('❌ Error al cargar'); return; }
+    const data = await res.json();
+    _allData = data.payments || [];
+    render(_allData);
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+// ── Render ────────────────────────────────────────────
+function render(payments) {
+  const pending = payments.filter(p => !p.paid);
+  const paid    = payments.filter(p =>  p.paid);
+
+  // KPIs
+  const totalPend = pending.reduce((s,p) => s + (p.prize||0) + (p.linea_prize||0), 0);
+  const totalPaid = paid.reduce((s,p)    => s + (p.prize||0) + (p.linea_prize||0), 0);
+  document.getElementById('k-pendiente').textContent = fmt(totalPend);
+  document.getElementById('k-pagado').textContent    = fmt(totalPaid);
+  document.getElementById('k-total-w').textContent   = payments.length;
+
+  // Pending
+  const lp = document.getElementById('list-pending');
+  if (!pending.length) {
+    lp.innerHTML = '<div class="empty">🎉 Sin pagos pendientes</div>';
+  } else {
+    lp.innerHTML = pending.map(p => payRowHTML(p, false)).join('');
+  }
+
+  // Paid
+  const lpa = document.getElementById('list-paid');
+  if (!paid.length) {
+    lpa.innerHTML = '<div class="empty">Aún no hay pagos registrados</div>';
+  } else {
+    lpa.innerHTML = paid.map(p => payRowHTML(p, true)).join('');
+  }
+}
+
+function payRowHTML(p, isPaid) {
+  const prizeTotal = (p.prize||0) + (p.linea_prize||0);
+  const prizeLabel = p.linea_prize > 0
+    ? `<div style="font-size:.7rem;color:var(--warning)">+ Línea: ${fmt(p.linea_prize)}</div>`
+    : '';
+  const contactLine = [
+    p.celular   ? `📞 ${esc(p.celular)}`   : '',
+    p.yape_plin ? `💰 Yape/Plin: ${esc(p.yape_plin)}` : '',
+    p.email     ? `✉️ ${esc(p.email)}`     : '',
+  ].filter(Boolean).join(' · ');
+
+  const proofHTML = isPaid ? `
+    <div class="proof-box">
+      <strong>✅ Pagado</strong> · ${esc(p.paid_at ? p.paid_at.replace('T',' ').slice(0,16) : '')}
+      ${p.paid_method ? `<br><strong>Método:</strong> ${esc(p.paid_method)}` : ''}
+      ${p.paid_ref    ? `<br><strong>Código/Ref:</strong> ${esc(p.paid_ref)}` : ''}
+      ${p.paid_note   ? `<br><strong>Nota:</strong> ${esc(p.paid_note)}` : ''}
+    </div>` : '';
+
+  const sessInfo = p.session_fecha
+    ? `${esc(p.session_fecha)} ${esc(p.session_hora || '')} · `
+    : '';
+
+  const actionBtn = isPaid
+    ? `<button class="btn btn-ghost btn-sm" onclick='openModal(${JSON.stringify(p)})'>✏️ Editar</button>`
+    : `<button class="btn btn-accent btn-sm" onclick='openModal(${JSON.stringify(p)})'>💸 Registrar Pago</button>`;
+
+  return `<div class="pay-row${isPaid ? ' is-paid' : ''}">
+    <div class="pay-info">
+      <div class="pay-name">${esc(p.nombre)} ${esc(p.apellidos||'')}</div>
+      <div class="pay-meta">
+        ${sessInfo}${esc(p.bingo_nombre||'')}
+        · Cartilla <strong>${esc(p.cartilla_id)}</strong>
+        · ${p.drawn_count} bolillas
+        ${contactLine ? `<br>${contactLine}` : ''}
+      </div>
+      ${proofHTML}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div class="pay-prize${p.linea_prize>0&&!p.prize?' linea':''}">${fmt(prizeTotal)}</div>
+      ${prizeLabel}
+      <span class="badge ${isPaid?'badge-paid':'badge-pending'}">${isPaid?'✅ Pagado':'⏳ Pendiente'}</span>
+      ${actionBtn}
+    </div>
+  </div>`;
+}
+
+// ── Modal ─────────────────────────────────────────────
+function openModal(p) {
+  _pendingTarget = p;
+  const prizeTotal = (p.prize||0) + (p.linea_prize||0);
+  document.getElementById('modal-pay-sub').innerHTML =
+    `<strong>${esc(p.nombre)} ${esc(p.apellidos||'')}</strong> · Cartilla <strong>${esc(p.cartilla_id)}</strong><br>` +
+    `Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeTotal)}</span>` +
+    (p.yape_plin ? ` · Yape/Plin: <strong>${esc(p.yape_plin)}</strong>` : '') +
+    (p.celular   ? ` · Tel: <strong>${esc(p.celular)}</strong>` : '');
+
+  document.getElementById('pay-method').value = p.paid_method || 'yape';
+  document.getElementById('pay-ref').value    = p.paid_ref    || '';
+  document.getElementById('pay-note').value   = p.paid_note   || '';
+  document.getElementById('modal-pay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-pay').classList.remove('open');
+  _pendingTarget = null;
+}
+
+async function confirmPay() {
+  if (!_pendingTarget) return;
+  const paid_method = document.getElementById('pay-method').value;
+  const paid_ref    = document.getElementById('pay-ref').value.trim();
+  const paid_note   = document.getElementById('pay-note').value.trim();
+
+  try {
+    const res  = await fetch('/api/admin/winner_payments/pay', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        session_id:  _pendingTarget.session_id,
+        cartilla_id: _pendingTarget.cartilla_id,
+        paid_method, paid_ref, paid_note,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
+    showToast('✅ Pago registrado correctamente');
+    closeModal();
+    load();
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+document.getElementById('modal-pay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
