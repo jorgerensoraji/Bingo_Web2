@@ -1747,7 +1747,8 @@ def api_cartillas_by_access():
     for v in vouchers:
         try:
             ids = _json.loads(v.cartillas_ids or "[]")
-            cartilla_ids.extend(ids)
+            for cid in ids:
+                cartilla_ids.append({"id": cid, "session_id": v.session_id or "", "bingo_type": v.bingo_type or ""})
         except Exception:
             pass
     return jsonify({"cartillas": cartilla_ids, "vouchers": len(vouchers)})
@@ -2407,9 +2408,11 @@ def api_winner_claim():
         chk     = check_winner(c["grid"], drawn2)
 
         # Validar que la cartilla pertenece a la sesión activa
-        if c.get("session_id") and game.session_id and c["session_id"] != game.session_id:
-            return jsonify({"error": "session_mismatch",
-                            "message": "Esta cartilla no pertenece a la sesión activa."}), 403
+        if game.session_id:
+            c_sid = c.get("session_id", "")
+            if not c.get("generada_por_admin") and c_sid != game.session_id:
+                return jsonify({"error": "session_mismatch",
+                                "message": "Esta cartilla no pertenece a la sesión activa."}), 403
 
         if not chk.get("bingo"):
             return jsonify({"ok": False, "error": "not_bingo",
@@ -2494,9 +2497,11 @@ def api_winner_claim_linea():
         chk      = check_winner(c["grid"], drawn2)
 
         # Validar que la cartilla pertenece a la sesión activa
-        if c.get("session_id") and game.session_id and c["session_id"] != game.session_id:
-            return jsonify({"error": "session_mismatch",
-                            "message": "Esta cartilla no pertenece a la sesión activa."}), 403
+        if game.session_id:
+            c_sid = c.get("session_id", "")
+            if not c.get("generada_por_admin") and c_sid != game.session_id:
+                return jsonify({"error": "session_mismatch",
+                                "message": "Esta cartilla no pertenece a la sesión activa."}), 403
 
         if not chk.get("linea"):
             return jsonify({"ok": False, "error": "not_linea"}), 400

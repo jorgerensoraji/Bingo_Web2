@@ -981,6 +981,16 @@ function removeClaimButtons() {
 async function loadAllCartillas() {
   const ids = getMyCartillasFromStorage();
   if (!ids.length) { showToast('⚠️ No tienes cartillas guardadas en este dispositivo'); return; }
+
+  // Ensure activeSessionId is known before filtering (avoid race on page load)
+  if (activeSessionId === null) {
+    try {
+      const st = await fetch('/api/state');
+      const sd = await st.json();
+      if (sd.session_id) activeSessionId = sd.session_id;
+    } catch(e) {}
+  }
+
   showToast('⏳ Cargando ' + ids.length + ' cartilla(s)…');
   const results = await Promise.allSettled(
     ids.map(function(entry) {
@@ -993,13 +1003,15 @@ async function loadAllCartillas() {
     .filter(function(r) { return r.status === 'fulfilled' && r.value && r.value.grid; })
     .map(function(r) { return r.value; });
 
-  // Filtrar por sesión activa
+  // Filtrar por sesión activa — si hay sesión activa, sólo cartillas de esa sesión
   let wrongSession = 0;
   if (activeSessionId) {
     myCartillas = all.filter(function(c) {
-      if (!c.session_id || c.session_id === activeSessionId) return true;
-      wrongSession++;
-      return false;
+      if (c.session_id && c.session_id !== activeSessionId) {
+        wrongSession++;
+        return false;
+      }
+      return true;
     });
   } else {
     myCartillas = all;
