@@ -1748,6 +1748,30 @@ def api_cartillas_by_access():
 def api_create_session():
     chk = admin_required()
     if chk: return chk
+
+    # ── Validar que haya al menos 1 método de pago configurado ───────────────
+    cfg = _load_config()
+    metodos = cfg.get("metodos_pago", [])
+    has_payment_method = any(
+        m.get("activo") and (m.get("numero") or "").strip()
+        for m in metodos
+        if m.get("id") != "efectivo"   # efectivo no requiere número
+    ) or any(
+        m.get("activo") and m.get("id") == "efectivo"
+        for m in metodos
+    )
+    nombre_org = (cfg.get("nombre_organizador") or "").strip()
+    config_ok  = has_payment_method and nombre_org and nombre_org != "Bingo Pro"
+    if not config_ok:
+        return jsonify({
+            "error": "config_incompleta",
+            "message": (
+                "Completa la configuración antes de crear una sesión: "
+                "necesitas un nombre de organizador (distinto al predeterminado) "
+                "y al menos un método de pago activo con número/datos."
+            )
+        }), 400
+
     data       = request.get_json() or {}
     bingo_type = data.get("bingo_type", "1sol")
     if bingo_type not in BINGO_TYPES:

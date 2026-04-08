@@ -655,7 +655,13 @@ async function createSession() {
   });
   const data = await res.json();
   if (!res.ok) {
-    const msg = data.error || 'Error al crear la sesión';
+    if (data.error === 'config_incompleta') {
+      if (confirm('⚙️ Configuración incompleta.\n\n' + data.message + '\n\n¿Ir a Configuración ahora?')) {
+        location.href = '/admin/config';
+      }
+      return;
+    }
+    const msg = data.message || data.error || 'Error al crear la sesión';
     if (res.status === 409) {
       alert('⚠️ ' + msg);
     } else {
