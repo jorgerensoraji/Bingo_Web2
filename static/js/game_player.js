@@ -45,7 +45,8 @@ let adminWasOnline = true;
 let resetPending   = false;
 
 // ── SESIÓN ACTIVA ─────────────────────────────────────
-let activeSessionId = null;   // se actualiza desde /api/state
+let activeSessionId  = null;   // se actualiza desde /api/state
+let adminWhatsapp    = '';     // número de WhatsApp del admin (desde /api/state)
 
 // ── MI CARTILLA ───────────────────────────────────────
 let myCartilla    = null;
@@ -376,6 +377,42 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
   }
 
   el.innerHTML = html;
+
+  // ── Payment notice for the current player if they won ──
+  var myIds = new Set(myCartillas.map(function(c){ return (c.id || c); }));
+  var iAmBingoWinner = hasBingo && winners.some(function(w){ return myIds.has(w.id); });
+  var iAmLineaWinner = hasLinea && lineaWinners.some(function(w){ return myIds.has(w.id); });
+
+  if (iAmBingoWinner || iAmLineaWinner) {
+    var waPhone = (adminWhatsapp || '').replace(/\D/g, '');
+    var waLink  = waPhone
+      ? 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent('Hola, acabo de ganar el bingo y quiero consultar sobre mi pago.')
+      : null;
+    var waBtn = waLink
+      ? '<a href="' + waLink + '" target="_blank" style="display:inline-block;margin-top:8px;padding:8px 20px;background:#25d366;color:#fff;border-radius:8px;font-weight:900;font-size:.85rem;text-decoration:none;">📲 Contactar por WhatsApp</a>'
+      : '';
+    var noticeId = 'payment-notice-winner';
+    var existing = document.getElementById(noticeId);
+    if (!existing) {
+      var notice = document.createElement('div');
+      notice.id = noticeId;
+      notice.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
+        'background:linear-gradient(135deg,#004d3a,#006b50);color:#d0fff5;' +
+        'border:2px solid #00e5b4;border-radius:16px;padding:16px 22px;' +
+        'text-align:center;z-index:900;max-width:90vw;width:360px;' +
+        'box-shadow:0 8px 40px rgba(0,229,180,.4);font-family:\'Outfit\',sans-serif;';
+      notice.innerHTML =
+        '<div style="font-size:1.5rem;margin-bottom:6px">💸</div>' +
+        '<div style="font-weight:900;font-size:1rem;margin-bottom:4px">¡Felicidades, ganador!</div>' +
+        '<div style="font-size:.82rem;opacity:.9;line-height:1.5">Tu pago será procesado en los próximos <strong>30 minutos</strong>.' +
+        (waLink ? '<br>Si no recibes el pago, contáctanos por WhatsApp.' : '') + '</div>' +
+        waBtn +
+        '<button onclick="document.getElementById(\'' + noticeId + '\').remove()" ' +
+        'style="display:block;margin:10px auto 0;background:rgba(255,255,255,.12);border:none;' +
+        'color:#d0fff5;padding:5px 16px;border-radius:6px;cursor:pointer;font-size:.76rem;">Cerrar</button>';
+      document.body.appendChild(notice);
+    }
+  }
 }
 
 // ── SESIÓN FINALIZADA ─────────────────────────────────
@@ -469,6 +506,7 @@ async function syncState() {
     const serverDrawn  = data.drawn || [];
     const serverGameId = data.game_id;
     if (data.session_id) activeSessionId = data.session_id;
+    if (data.admin_whatsapp) adminWhatsapp = data.admin_whatsapp;
 
     gameBalls = data.bingo_balls || 75;
 

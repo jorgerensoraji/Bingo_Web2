@@ -1591,6 +1591,7 @@ def api_state():
             "prepare_secs":     game.prepare_secs,
             "prepare_sid":      game.prepare_sid,
             "session_finished": game.session_finished,
+            "admin_whatsapp":   _load_config().get("whatsapp", ""),
         })
 
 @app.route("/api/game_stats")
@@ -1947,7 +1948,13 @@ def api_finish_session(sid):
     chk = admin_required()
     if chk: return chk
     with game_lock:
-        wf = list(game.winners_log)
+        # Tag each entry with tipo so the payments page can distinguish them
+        bingo_wf = [{**w, "tipo": "bingo"} for w in game.winners_log]
+        linea_wf = [{**w, "tipo": "linea"} for w in game.linea_winners_log]
+        wf = bingo_wf + linea_wf
+        # Clear in-memory logs now that they're persisted
+        game.winners_log        = []
+        game.linea_winners_log  = []
     with db_session() as db:
         sx = db.query(BingoSession).filter_by(id=sid).first()
         if not sx:
@@ -2044,6 +2051,7 @@ def api_winner_payments():
             try: wf = json.loads(s.winners_final or "[]")
             except Exception: pass
             for w in wf:
+                tipo = w.get("tipo", "bingo")
                 result.append({
                     "session_id":    s.id,
                     "session_fecha": s.date,
@@ -2057,24 +2065,27 @@ def api_winner_payments():
                     "celular":       w.get("celular", ""),
                     "yape_plin":     w.get("yape_plin", ""),
                     "email":         w.get("email", ""),
-                    "prize":         w.get("prize", 0),
-                    "linea_prize":   w.get("linea_prize", 0),
+                    "prize":         w.get("prize", 0) if tipo == "bingo" else 0,
+                    "linea_prize":   w.get("linea_prize", 0) if tipo == "linea" else 0,
                     "claimed_at":    w.get("claimed_at", ""),
                     "drawn_count":   w.get("drawn_count", 0),
-                    "tipo":          w.get("tipo", "bingo"),
+                    "tipo":          tipo,
                     "paid":          bool(w.get("paid", False)),
                     "paid_at":       w.get("paid_at", ""),
                     "paid_method":   w.get("paid_method", ""),
                     "paid_ref":      w.get("paid_ref", ""),
                     "paid_note":     w.get("paid_note", ""),
                 })
-    # Also include current in-memory game winners (active game)
+    # Also include current in-memory game winners (active game only — not stale data)
     with game_lock:
-        active_sid = game.session_id
-        live_winners = list(game.winners_log)
-    db_ids = {(r["session_id"], r["cartilla_id"]) for r in result}
+        active_sid   = game.session_id
+        live_bingo   = list(game.winners_log)       if active_sid else []
+        live_linea   = list(game.linea_winners_log) if active_sid else []
+    live_winners = [({**w, "tipo": "bingo"}) for w in live_bingo] + \
+                   [({**w, "tipo": "linea"}) for w in live_linea]
+    db_ids = {(r["session_id"], r["cartilla_id"], r["tipo"]) for r in result}
     for w in live_winners:
-        key = (active_sid or "", w.get("id", ""))
+        key = (active_sid or "", w.get("id", ""), w.get("tipo", "bingo"))
         if key not in db_ids:
             result.append({
                 "session_id":    active_sid or "—",
@@ -2089,11 +2100,11 @@ def api_winner_payments():
                 "celular":       w.get("celular", ""),
                 "yape_plin":     w.get("yape_plin", ""),
                 "email":         w.get("email", ""),
-                "prize":         w.get("prize", 0),
-                "linea_prize":   w.get("linea_prize", 0),
+                "prize":         w.get("prize", 0) if w.get("tipo") == "bingo" else 0,
+                "linea_prize":   w.get("linea_prize", 0) if w.get("tipo") == "linea" else 0,
                 "claimed_at":    w.get("claimed_at", ""),
                 "drawn_count":   w.get("drawn_count", 0),
-                "tipo":          "bingo",
+                "tipo":          w.get("tipo", "bingo"),
                 "paid":          False,
                 "paid_at":       "",
                 "paid_method":   "",

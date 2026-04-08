@@ -225,9 +225,10 @@ function render(payments) {
   const pending = payments.filter(p => !p.paid);
   const paid    = payments.filter(p =>  p.paid);
 
-  // KPIs
-  const totalPend = pending.reduce((s,p) => s + (p.prize||0) + (p.linea_prize||0), 0);
-  const totalPaid = paid.reduce((s,p)    => s + (p.prize||0) + (p.linea_prize||0), 0);
+  // KPIs — each entry has prize XOR linea_prize depending on tipo
+  const entryPrize = p => (p.tipo||'bingo')==='bingo' ? (p.prize||0) : (p.linea_prize||0);
+  const totalPend = pending.reduce((s,p) => s + entryPrize(p), 0);
+  const totalPaid = paid.reduce((s,p)    => s + entryPrize(p), 0);
   document.getElementById('k-pendiente').textContent = fmt(totalPend);
   document.getElementById('k-pagado').textContent    = fmt(totalPaid);
   document.getElementById('k-total-w').textContent   = payments.length;
@@ -250,14 +251,16 @@ function render(payments) {
 }
 
 function payRowHTML(p, isPaid) {
-  const prizeTotal = (p.prize||0) + (p.linea_prize||0);
-  const prizeLabel = p.linea_prize > 0
-    ? `<div style="font-size:.7rem;color:var(--warning)">+ Línea: ${fmt(p.linea_prize)}</div>`
-    : '';
+  const isBingo = (p.tipo || 'bingo') === 'bingo';
+  const prize   = isBingo ? (p.prize || 0) : (p.linea_prize || 0);
+  const tipoBadge = isBingo
+    ? '<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(0,229,180,.15);color:var(--accent);margin-left:6px;vertical-align:middle">🏆 BINGO</span>'
+    : '<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px;vertical-align:middle">⭐ LÍNEA</span>';
+
   const contactLine = [
-    p.celular   ? `📞 ${esc(p.celular)}`   : '',
-    p.yape_plin ? `💰 Yape/Plin: ${esc(p.yape_plin)}` : '',
-    p.email     ? `✉️ ${esc(p.email)}`     : '',
+    p.celular   ? `📞 ${esc(p.celular)}`                     : '',
+    p.yape_plin ? `💰 Yape/Plin: ${esc(p.yape_plin)}`       : '',
+    p.email     ? `✉️ ${esc(p.email)}`                       : '',
   ].filter(Boolean).join(' · ');
 
   const proofHTML = isPaid ? `
@@ -278,7 +281,7 @@ function payRowHTML(p, isPaid) {
 
   return `<div class="pay-row${isPaid ? ' is-paid' : ''}">
     <div class="pay-info">
-      <div class="pay-name">${esc(p.nombre)} ${esc(p.apellidos||'')}</div>
+      <div class="pay-name">${esc(p.nombre)} ${esc(p.apellidos||'')}${tipoBadge}</div>
       <div class="pay-meta">
         ${sessInfo}${esc(p.bingo_nombre||'')}
         · Cartilla <strong>${esc(p.cartilla_id)}</strong>
@@ -288,8 +291,7 @@ function payRowHTML(p, isPaid) {
       ${proofHTML}
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-      <div class="pay-prize${p.linea_prize>0&&!p.prize?' linea':''}">${fmt(prizeTotal)}</div>
-      ${prizeLabel}
+      <div class="pay-prize${!isBingo ? ' linea' : ''}">${fmt(prize)}</div>
       <span class="badge ${isPaid?'badge-paid':'badge-pending'}">${isPaid?'✅ Pagado':'⏳ Pendiente'}</span>
       ${actionBtn}
     </div>
@@ -299,10 +301,12 @@ function payRowHTML(p, isPaid) {
 // ── Modal ─────────────────────────────────────────────
 function openModal(p) {
   _pendingTarget = p;
-  const prizeTotal = (p.prize||0) + (p.linea_prize||0);
+  const isBingo   = (p.tipo || 'bingo') === 'bingo';
+  const prizeShow = isBingo ? (p.prize||0) : (p.linea_prize||0);
+  const tipoLabel = isBingo ? '🏆 BINGO' : '⭐ LÍNEA';
   document.getElementById('modal-pay-sub').innerHTML =
     `<strong>${esc(p.nombre)} ${esc(p.apellidos||'')}</strong> · Cartilla <strong>${esc(p.cartilla_id)}</strong><br>` +
-    `Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeTotal)}</span>` +
+    `${tipoLabel} · Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeShow)}</span>` +
     (p.yape_plin ? ` · Yape/Plin: <strong>${esc(p.yape_plin)}</strong>` : '') +
     (p.celular   ? ` · Tel: <strong>${esc(p.celular)}</strong>` : '');
 
