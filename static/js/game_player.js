@@ -39,8 +39,10 @@ let gameStarted    = false;
 let gameId         = null;
 let lastPhraseKey  = null;
 let soundEnabled   = false;
-let currentAudio   = null;
+let currentAudio   = null;  // kept for compat
 let testAudio      = null;
+let _speakAbort    = null;  // AbortController for in-flight TTS fetch
+let _audioEl       = null;  // single reusable <audio> element (mobile-safe)
 let adminWasOnline = true;
 let resetPending   = false;
 
@@ -120,57 +122,80 @@ function initGridReset() {
 }
 
 // ── AUDIO ─────────────────────────────────────────────
-function stopAudio() {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.src = '';
-    currentAudio     = null;
+// Single reusable <audio> element — avoids iOS audio-session resets
+// that happen when you create new Audio() objects repeatedly.
+function _getAudioEl() {
+  if (!_audioEl) {
+    _audioEl = document.createElement('audio');
+    _audioEl.preload = 'none';
+    document.body.appendChild(_audioEl);
   }
+  return _audioEl;
+}
+
+function stopAudio() {
+  // Cancel any pending TTS fetch first
+  if (_speakAbort) { _speakAbort.abort(); _speakAbort = null; }
+  // Pause without clearing src — clearing src on iOS resets the audio session
+  var a = _getAudioEl();
+  a.pause();
+  currentAudio = null;
 }
 
 function stopTestAudio() {
   if (testAudio) {
     testAudio.pause();
-    testAudio.src = '';
-    testAudio     = null;
+    testAudio = null;
   }
 }
 
 function playPhrase(text, voice) {
   if (!soundEnabled || !text) return;
-  stopAudio();
+
+  // Abort any in-flight TTS fetch so we never play two overlapping phrases
+  if (_speakAbort) { _speakAbort.abort(); }
+  _speakAbort = new AbortController();
+  var ctrl = _speakAbort;
+
   voice = voice || 'es-PE-CamilaNeural';
 
   fetch('/api/speak', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ text: text, voice: voice })
+    body:    JSON.stringify({ text: text, voice: voice }),
+    signal:  ctrl.signal,
   })
   .then(function(r) {
+    if (ctrl.signal.aborted) return null;
     if (!r.ok) throw new Error('speak HTTP ' + r.status);
     const ct = r.headers.get('content-type') || '';
     if (!ct.includes('audio')) throw new Error('speak returned non-audio: ' + ct);
     return r.blob();
   })
   .then(function(blob) {
-    if (!blob || blob.size < 100) throw new Error('empty audio blob');
-    const url    = URL.createObjectURL(blob);
-    currentAudio = new Audio(url);
-    currentAudio.volume = 0.9;
-    var playPromise = currentAudio.play();
-    if (playPromise && playPromise.catch) {
-      playPromise.catch(function(e) {
-        console.warn('Audio play blocked:', e);
-        showToast('🔇 Haz clic en la página para activar sonido');
+    if (!blob || blob.size < 100 || ctrl.signal.aborted) return;
+    var prevUrl = _audioEl ? _audioEl.src : '';
+    var a = _getAudioEl();
+    var url = URL.createObjectURL(blob);
+    a.pause();
+    a.src = url;
+    a.load();   // required on iOS to apply new src
+    var p = a.play();
+    if (p && p.catch) {
+      p.catch(function(e) {
+        if (e.name !== 'AbortError') {
+          console.warn('Audio play blocked:', e);
+          showToast('🔇 Haz clic en la página para activar sonido');
+        }
       });
     }
-    currentAudio.onended = function() {
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-    };
+    a.onended = function() { URL.revokeObjectURL(url); };
+    if (prevUrl && prevUrl.startsWith('blob:')) URL.revokeObjectURL(prevUrl);
+    _speakAbort = null;
+    currentAudio = a;
   })
   .catch(function(e) {
-    console.error('playPhrase error:', e);
+    if (e.name !== 'AbortError') console.error('playPhrase error:', e);
   });
 }
 
@@ -214,21 +239,21 @@ function enableSound() {
   })
   .then(function(blob) {
     if (!blob || blob.size < 100) throw new Error('empty');
-    stopTestAudio();
-    const url  = URL.createObjectURL(blob);
-    testAudio  = new Audio(url);
-    testAudio.volume = 0.9;
-    var p = testAudio.play();
+    var a = _getAudioEl();
+    var url = URL.createObjectURL(blob);
+    a.pause();
+    a.src = url;
+    a.load();
+    var p = a.play();
     if (p && p.catch) p.catch(function(e) {
       if (e.name === 'NotAllowedError') {
         showToast('❌ El navegador bloqueó el audio. Intenta de nuevo.');
         soundEnabled = false;
-        if (btn) { btn.textContent = '🔈 Activar sonido'; btn.style.background = ''; btn.style.color = ''; }
+        if (btn) { btn.textContent = '🔈 Activar sonido'; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
       }
     });
-    testAudio.onended = function() {
+    a.onended = function() {
       URL.revokeObjectURL(url);
-      testAudio = null;
       showToast('✅ Sonido OK — escucharás cada bolilla');
     };
   })
@@ -240,23 +265,8 @@ function enableSound() {
 
 // ── v6: Reproducir alerta de falta 1 ─────────────────
 function playAlmostAlert(voice) {
-  if (!soundEnabled) return;
-  const v = voice || 'es-PE-CamilaNeural';
-  fetch('/api/speak', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: '¡Falta uno para el bingo!', voice: v }),
-  })
-  .then(function(r) { return r.ok ? r.blob() : null; })
-  .then(function(blob) {
-    if (!blob || blob.size < 100) return;
-    stopAudio();
-    const url = URL.createObjectURL(blob);
-    currentAudio = new Audio(url);
-    currentAudio.volume = 0.9;
-    currentAudio.play().catch(function() {});
-    currentAudio.onended = function() { URL.revokeObjectURL(url); currentAudio = null; };
-  })
-  .catch(function() {});
+  // Routed through playPhrase so AbortController logic applies
+  playPhrase('¡Falta uno para el bingo!', voice || 'es-PE-CamilaNeural');
 }
 
 // ── ADMIN OFFLINE HANDLING ────────────────────────────

@@ -392,36 +392,109 @@
     border:1px solid transparent; transition:all .25s;
     background:var(--sub); color:var(--muted);
   }
+  /* ── Tablet (≤900px): single-column already handled by grid ── */
+  @media(max-width:900px) {
+    /* Compact header stats at tablet */
+    .header-right .stat { display:none; }
+  }
+
   @media(max-width:600px) {
+    /* ── Layout: right panel (cartilla) above left panel (grid) ── */
+    .layout {
+      display:flex !important;
+      flex-direction:column;
+      padding:6px; gap:6px;
+    }
+    .right { order:-1; }   /* My Cartilla + Game Status + Chat come first */
+    .left  { order:0; }
+
+    /* Within right: cartilla panel first, then game status, then chat */
+    .right { display:flex; flex-direction:column; }
+    #cartilla-panel { order:-1; }
+    #chat-panel     { order:1; }
+
     /* ── Cartilla grid ── */
-    .mc-cell { font-size:1rem; border-radius:6px; }
-    .mc-cell.marked span { font-size:.85rem; }
-    .mc-col-label { font-size:1rem; }
-    .mc-grid-wrap { padding:6px 4px 4px; }
-    .mc-grid-cols { gap:3px; margin-bottom:3px; }
-    .mc-grid { gap:3px; }
+    .mc-cell { font-size:.92rem; border-radius:5px; }
+    .mc-cell.marked span { font-size:.78rem; }
+    .mc-col-label { font-size:.92rem; }
+    .mc-grid-wrap { padding:4px 3px 3px; }
+    .mc-grid-cols { gap:2px; margin-bottom:2px; }
+    .mc-grid { gap:2px; }
 
     /* ── Header ── */
     .header-sub { display:none; }
-    .header-title { font-size:1.1rem; letter-spacing:1px; }
+    .header-title { font-size:1rem; letter-spacing:0; }
+    /* server URL in header: hide */
+    #server-url { display:none; }
 
-    /* ── Big panel: hide drum, compact layout ── */
+    /* ── Big panel: compact (ball + info only) ── */
     #ball-drum-wrap { display:none !important; }
-    .big-panel { gap:10px; padding:10px; flex-wrap:nowrap; align-items:center; }
-    /* hide the ▶ arrow (it's a sibling div with inline font-size:1.6rem) */
+    .big-panel { gap:8px; padding:8px 10px; flex-wrap:nowrap; align-items:center; }
     .big-panel > div[style*="1.6rem"] { display:none !important; }
-    .ball-wrap { width:80px !important; height:80px !important; }
-    #big-number { font-size:2.4rem !important; }
-    #words-display { font-size:.95rem !important; }
-    .number-info { min-width:0; }
-    .audio-bar { flex-wrap:wrap; gap:4px; margin-top:6px; }
-    #player-voice-select { font-size:.72rem; min-width:0; }
+    .ball-wrap { width:68px !important; height:68px !important; flex-shrink:0; }
+    #big-number { font-size:2rem !important; }
+    #words-display { font-size:.85rem !important; line-height:1.3; }
+    #group-tag { font-size:.72rem; }
+    #sync-status { font-size:.62rem; }
+    .number-info { min-width:0; flex:1; overflow:hidden; }
 
-    /* ── Layout padding ── */
-    .layout { padding:8px; gap:8px; }
+    /* ── Audio bar: stack button + select ── */
+    .audio-bar { flex-direction:column; gap:4px; margin-top:5px; padding:6px 8px; }
+    #btn-sound { width:100%; font-size:.78rem; padding:7px 10px; }
+    #player-voice-select { width:100%; font-size:.75rem; min-width:0; }
 
-    /* ── Game stats bar: wrap on small screens ── */
-    #game-stats-bar > div { flex-wrap:wrap !important; gap:6px !important; }
+    /* ── Game stats bar: single compact row ── */
+    #game-stats-bar {
+      padding:4px 10px;
+      font-size:.7rem;
+    }
+    #game-stats-bar > div {
+      flex-wrap:wrap !important;
+      gap:4px 12px !important;
+      padding:2px 0 !important;
+      border-bottom:none !important;
+    }
+    /* Hide "cerca de ganar" row on very small screens — too verbose */
+    #game-stats-bar > div:nth-child(2) { display:none; }
+
+    /* ── Grid section: compact ── */
+    .grid-section { padding:7px; }
+    .num-cell { height:22px !important; font-size:.58rem !important; }
+
+    /* ── Recent strip: tighter ── */
+    .recent-strip { padding:5px 8px; gap:6px; }
+    .recent-label { font-size:.65rem; }
+    .recent-num   { font-size:1rem; min-width:26px; }
+
+    /* ── Toast: no clip on long messages ── */
+    #toast {
+      white-space:normal !important;
+      max-width:88vw;
+      text-align:center;
+      line-height:1.4;
+      font-size:.82rem;
+      padding:9px 16px;
+    }
+
+    /* ── Chat: smaller height on mobile ── */
+    #chat-messages { height:160px !important; }
+
+    /* ── Panels: less padding ── */
+    .panel { padding:10px; }
+
+    /* ── Last-big number: smaller on mobile ── */
+    #last-big { font-size:36px !important; }
+
+    /* ── Game-status section title ── */
+    .section-title { font-size:.58rem; letter-spacing:2px; }
+  }
+
+  /* ── Very small phones (≤380px) ── */
+  @media(max-width:380px) {
+    .ball-wrap { width:58px !important; height:58px !important; }
+    #big-number { font-size:1.7rem !important; }
+    #words-display { font-size:.78rem !important; }
+    .mc-cell { font-size:.82rem; }
   }
   .mc-cell.empty  { background:rgba(10,18,26,.5); color:transparent; border:1px dashed var(--border); }
   .mc-cell.marked { border-color:currentColor; }
@@ -679,7 +752,7 @@
     </div>
 
     <!-- Mi Cartilla -->
-    <div class="panel">
+    <div class="panel" id="cartilla-panel">
       <div class="section-title">Mi Cartilla</div>
 
       <div class="c-btns">
