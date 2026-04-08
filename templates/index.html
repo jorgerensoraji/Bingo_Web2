@@ -386,6 +386,14 @@
     border:1px solid transparent; transition:all .25s;
     background:var(--sub); color:var(--muted);
   }
+  @media(max-width:600px) {
+    .mc-cell { font-size:1rem; border-radius:6px; }
+    .mc-cell.marked span { font-size:.85rem; }
+    .mc-col-label { font-size:1rem; }
+    .mc-grid-wrap { padding:6px 4px 4px; }
+    .mc-grid-cols { gap:3px; margin-bottom:3px; }
+    .mc-grid { gap:3px; }
+  }
   .mc-cell.empty  { background:rgba(10,18,26,.5); color:transparent; border:1px dashed var(--border); }
   .mc-cell.marked { border-color:currentColor; }
   .mc-cell.marked span {
@@ -599,7 +607,7 @@
         <div id="group-tag"></div>
         <div id="sync-status">🔄 Conectando…</div>
         <div class="audio-bar">
-          <button id="btn-sound" onclick="enableSound()">🔈 Activar sonido</button>
+          <button id="btn-sound" onclick="toggleSound()">🔈 Activar sonido</button>
           <select id="player-voice-select" onchange="if(soundEnabled) enableSound()">
             <option value="es-PE-CamilaNeural">🇵🇪 Camila (Perú)</option>
             <option value="es-MX-DaliaNeural">🇲🇽 Dalia (México)</option>

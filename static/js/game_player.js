@@ -173,6 +173,22 @@ function playPhrase(text, voice) {
   });
 }
 
+function toggleSound() {
+  if (soundEnabled) { disableSound(); } else { enableSound(); }
+}
+
+function disableSound() {
+  soundEnabled = false;
+  stopAudio();
+  const btn = document.getElementById('btn-sound');
+  if (btn) {
+    btn.textContent       = '🔈 Activar sonido';
+    btn.style.background  = '';
+    btn.style.color       = '';
+    btn.style.borderColor = '';
+  }
+}
+
 function enableSound() {
   soundEnabled = true;
   const btn = document.getElementById('btn-sound');
