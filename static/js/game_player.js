@@ -306,6 +306,78 @@ function handleAdminOffline() {
   }, 5000);
 }
 
+// ── BANNER GLOBAL DE GANADOR (visible para todos) ────────────────────────────
+var _lastBannerKey = '';
+
+function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
+  var hasBingo = winners && winners.length > 0;
+  var hasLinea = lineaWinners && lineaWinners.length > 0;
+
+  var key = (hasBingo ? winners.map(function(w){return w.id;}).join(',') : '') +
+            '|' + (hasLinea ? lineaWinners.map(function(w){return w.id;}).join(',') : '');
+
+  var el = document.getElementById('global-winner-banner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'global-winner-banner';
+    el.style.cssText = [
+      'position:fixed;top:0;left:0;right:0;z-index:800;',
+      'display:none;flex-direction:column;gap:0;',
+    ].join('');
+    document.body.appendChild(el);
+  }
+
+  if (!hasBingo && !hasLinea) {
+    el.style.display = 'none';
+    _lastBannerKey = '';
+    return;
+  }
+
+  el.style.display = 'flex';
+
+  // Only rebuild HTML when winners change
+  if (key === _lastBannerKey) return;
+  _lastBannerKey = key;
+
+  var html = '';
+
+  // LÍNEA banner (always on top, game continues)
+  if (hasLinea) {
+    var lw = lineaWinners[0];
+    var lp = Number(lw.linea_prize || 0).toFixed(2);
+    var lnames = lineaWinners.map(function(w){ return (w.nombre||w.id); }).join(' & ');
+    html += '<div style="background:linear-gradient(90deg,#7a5800,#c49200,#7a5800);' +
+      'color:#fff8e0;padding:10px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
+      'font-size:.92rem;font-weight:700;border-bottom:2px solid #f6c343;">' +
+      '⭐ <strong>' + esc(lnames) + '</strong> ganó la LÍNEA — Premio: S/. ' + lp +
+      ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">El juego continúa ▶</span>' +
+      '</div>';
+  }
+
+  // BINGO banner (game stopped)
+  if (hasBingo) {
+    var bw   = winners[0];
+    var bp   = Number(bw.prize || 0).toFixed(2);
+    var bnames = winners.map(function(w){ return (w.nombre||w.id); }).join(' & ');
+    var splitNote = winners.length > 1
+      ? ' (Empate — S/. ' + bp + ' c/u)'
+      : ' — Premio: S/. ' + bp;
+    html += '<div style="background:linear-gradient(90deg,#004d3a,#007a5a,#004d3a);' +
+      'color:#d0fff5;padding:14px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
+      'font-size:1rem;font-weight:700;animation:glowBanner 1.5s ease-in-out infinite;">' +
+      '🎉 ¡BINGO! <strong style="color:#00e5b4;font-size:1.15rem">' + esc(bnames) + '</strong>' +
+      esc(splitNote) +
+      ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">Juego detenido ⏸</span>' +
+      '</div>';
+
+    // Play winner alert sound once per new winner
+    if (soundEnabled) playWinAlert();
+    launchConfetti();
+  }
+
+  el.innerHTML = html;
+}
+
 // ── SESIÓN FINALIZADA ─────────────────────────────────
 var sessionFinishedShown = false;
 
@@ -328,8 +400,11 @@ function handleSessionFinished() {
   claimedLinea  = false;
   almostSpoken  = false;
   activeSessionId = null;
-  myCartillas   = [];
+  myCartillas    = [];
   cartillaStates = {};
+  _lastBannerKey = '';
+  var bannerEl = document.getElementById('global-winner-banner');
+  if (bannerEl) bannerEl.style.display = 'none';
 
   // Reset the drawn-balls grid
   initGridReset();
@@ -435,14 +510,9 @@ async function syncState() {
 
     // No change → skip
     if (serverDrawn.length === drawnLocal.length) {
-      // Aun sin cambio, actualizar pozo y ganadores en vivo
       updatePrizeDisplay(data);
       updateWinnersDisplay(data.winners || [], data.linea_winners || []);
-      if (data.paused) {
-        showPausedOverlay(data.winners || []);
-      } else {
-        hidePausedOverlay();
-      }
+      showGlobalWinnerBanner(data.winners || [], data.linea_winners || [], data.paused);
       return;
     }
 
@@ -485,13 +555,7 @@ async function syncState() {
     updatePrizeDisplay(data);
     updateWinnersDisplay(data.winners || [], data.linea_winners || []);
     updateMyCartillaAutoMark();
-
-    // Juego pausado por ganador
-    if (data.paused) {
-      showPausedOverlay(data.winners || []);
-    } else {
-      hidePausedOverlay();
-    }
+    showGlobalWinnerBanner(data.winners || [], data.linea_winners || [], data.paused);
 
     if (data.remaining === 0 && serverDrawn.length === gameBalls) {
       showGameOver();
@@ -959,8 +1023,17 @@ function updateMyCartillaAutoMark(force) {
     if (isBingo && !state.bingoFired) {
       state.bingoFired = true;
       playWinAlert();
-      showToast('🎉 BINGO en cartilla ' + cart.id + '! Toca el botón para reclamar.', 5000);
       showWinNotification('🎉 BINGO!', 'Cartilla ' + cart.id);
+    }
+    // Auto-claim bingo (only once, non-blocking)
+    if (isBingo && !state.claimedBingo && !state.claimingBingo) {
+      state.claimingBingo = true;
+      claimBingo(cart.id);
+    }
+    // Auto-claim línea (only once, non-blocking)
+    if (isLinea && !isBingo && !state.claimedLinea && !state.claimingLinea) {
+      state.claimingLinea = true;
+      claimLinea(cart.id);
     }
     if (isAlmost && !state.almostSpoken) {
       state.almostSpoken = true;
@@ -1051,26 +1124,24 @@ function updateMyCartillaAutoMark(force) {
         if (inLine) cell.style.boxShadow = '0 0 0 2px ' + g.fg + ', inset 0 0 8px ' + g.fg + '44';
       }
     }
-    let actions = panel.querySelector('.mc-actions');
-    if (!actions) {
-      actions = document.createElement('div');
-      actions.className = 'mc-actions';
-      panel.appendChild(actions);
+    // Show auto-claim status (no manual buttons)
+    var statusDiv = panel.querySelector('.mc-claim-status');
+    if (!statusDiv) {
+      statusDiv = document.createElement('div');
+      statusDiv.className = 'mc-claim-status';
+      statusDiv.style.cssText = 'padding:6px 10px;font-size:.75rem;font-weight:700;text-align:center';
+      panel.appendChild(statusDiv);
     }
-    actions.innerHTML = '';
-    if (isBingo && !state.claimedBingo) {
-      const btn = document.createElement('button');
-      btn.className = 'mc-claim-btn mc-claim-bingo';
-      btn.innerHTML = '🎉 ¡RECLAMAR BINGO!';
-      btn.onclick   = (function(cid) { return function() { claimBingo(cid); }; })(cart.id);
-      actions.appendChild(btn);
-    }
-    if (isLinea && !state.claimedLinea) {
-      const btn = document.createElement('button');
-      btn.className = 'mc-claim-btn mc-claim-linea';
-      btn.innerHTML = '⭐ ¡RECLAMAR LÍNEA!';
-      btn.onclick   = (function(cid) { return function() { claimLinea(cid); }; })(cart.id);
-      actions.appendChild(btn);
+    if (isBingo && state.claimedBingo) {
+      statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Bingo enviado — el admin verificará tu cartilla</span>';
+    } else if (isBingo && state.claimingBingo) {
+      statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Enviando bingo…</span>';
+    } else if (isLinea && state.claimedLinea) {
+      statusDiv.innerHTML = '<span style="color:#f6c343">⭐ Línea registrada — sigue jugando</span>';
+    } else if (isLinea && state.claimingLinea) {
+      statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando línea…</span>';
+    } else {
+      statusDiv.innerHTML = '';
     }
   });
 }
@@ -1081,7 +1152,7 @@ function initMyCartillaUI() {
   if (getMyCartillasFromStorage().length) setTimeout(loadAllCartillas, 800);
 }
 
-// ── v8: Reclamar BINGO (por cartilla) ────────────────
+// ── Auto-reclamar BINGO ───────────────────────────────
 async function claimBingo(cid) {
   const state = getCartillaState(cid);
   try {
@@ -1091,30 +1162,24 @@ async function claimBingo(cid) {
       body: JSON.stringify({ cid: cid }),
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) {
-      const msgs = {
-        not_bingo: '❌ Cartilla ' + cid + ' sin bingo (' + (data.marked||0) + '/' + (data.total||15) + ')',
-        not_found: '❌ Cartilla no encontrada',
-      };
-      showToast(msgs[data.error] || '❌ ' + data.error);
-      return;
+    // Mark claimed even on "already" so we don't retry
+    if (data.already || (res.ok && data.ok)) {
+      state.claimedBingo = true;
+    } else {
+      state.claimingBingo = false; // allow retry next cycle if server error
     }
-    state.claimedBingo = true;
+    if (!res.ok || !data.ok) return;
     const winner = data.winner || {};
     const prize  = Number(data.prize_each || winner.prize || 0).toFixed(2);
     const nW     = data.n_winners || 1;
-    if (data.split && nW > 1) {
-      showToast('🎉 ¡BINGO! Empate con ' + nW + ' — S/. ' + prize + ' c/u', 6000);
-      showWinNotification('🎉 ¡BINGO! Empate', 'Cartilla ' + cid + ' — S/. ' + prize);
-    } else {
-      showToast('🎉 ¡BINGO! Premio: S/. ' + prize + '. El admin confirmará.', 5000);
-      showWinNotification('🎉 ¡BINGO!', 'Premio: S/. ' + prize);
-    }
-    showGameOverPlayer({ ...winner, prize: Number(prize), n_winners: nW, split: data.split });
-  } catch(e) { showToast('❌ Error de conexión'); }
+    showWinNotification('🎉 ¡BINGO!', 'Premio: S/. ' + prize);
+    // The global winner banner will appear for all players via syncState
+  } catch(e) {
+    state.claimingBingo = false; // retry on next cycle
+  }
 }
 
-// ── v8: Reclamar LÍNEA (por cartilla) ────────────────
+// ── Auto-reclamar LÍNEA ───────────────────────────────
 async function claimLinea(cid) {
   const state = getCartillaState(cid);
   try {
@@ -1124,22 +1189,15 @@ async function claimLinea(cid) {
       body: JSON.stringify({ cid: cid }),
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) {
-      if (data.error === 'not_linea')         showToast('❌ Cartilla ' + cid + ' sin línea completa');
-      else if (data.error === 'linea_closed') showToast('⛔ La línea ya fue ganada');
-      else if (data.already)                  showToast('ℹ️ Ya reclamaste la línea de esta cartilla');
-      else                                    showToast('❌ ' + data.error);
-      return;
-    }
-    state.claimedLinea = true;
-    const lineaPrize = Number(data.linea_prize || 0).toFixed(2);
-    const nWL        = data.n_winners || 1;
-    if (data.split && nWL > 1) {
-      showToast('⭐ ¡Línea! Empate con ' + nWL + ' — S/. ' + lineaPrize + '. ¡Sigue jugando!', 5000);
+    if (data.already || data.error === 'linea_closed' || (res.ok && data.ok)) {
+      state.claimedLinea = true;
     } else {
-      showToast('⭐ ¡Línea! Premio: S/. ' + lineaPrize + '. ¡Sigue jugando!', 5000);
+      state.claimingLinea = false;
     }
-  } catch(e) { showToast('❌ Error de conexión'); }
+    // The global línea banner will appear for all players via syncState
+  } catch(e) {
+    state.claimingLinea = false;
+  }
 }
 
 // ── Pantalla de victoria del jugador ─────────────────
