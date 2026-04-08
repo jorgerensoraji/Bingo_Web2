@@ -515,8 +515,23 @@ async function syncState() {
 
     const serverDrawn  = data.drawn || [];
     const serverGameId = data.game_id;
-    if (data.session_id) activeSessionId = data.session_id;
     if (data.admin_whatsapp) adminWhatsapp = data.admin_whatsapp;
+
+    // Re-filter loaded cartillas if active session changed
+    const prevSid = activeSessionId;
+    if (data.session_id) activeSessionId = data.session_id;
+    if (activeSessionId && activeSessionId !== prevSid && myCartillas.length) {
+      var before = myCartillas.length;
+      myCartillas = myCartillas.filter(function(c) {
+        return !c.session_id || c.session_id === activeSessionId;
+      });
+      cartillaStates = {};
+      if (myCartillas.length < before) {
+        var removed = before - myCartillas.length;
+        showToast('⚠️ ' + removed + ' cartilla(s) son de otra sesión y fueron desactivadas.', 5000);
+        updateMyCartillaAutoMark(true);
+      }
+    }
 
     gameBalls = data.bingo_balls || 75;
 
