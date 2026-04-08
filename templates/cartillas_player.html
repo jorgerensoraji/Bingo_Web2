@@ -366,9 +366,10 @@
 
           <!-- TAB MANUAL -->
           <div class="tab-panel" id="tab-manual">
-            <div class="picker-info">Elige exactamente <strong>15 números</strong></div>
+            <div class="picker-info">Elige exactamente <strong>24 números</strong>: 5 de B, 5 de I, 4 de N, 5 de G, 5 de O (el centro es FREE)</div>
             <div class="picker-count" id="picker-count-display">
-              Seleccionados: <span>0</span> / 15
+              Seleccionados: <span>0</span> / 24
+              <span id="picker-col-counts" style="font-size:.7rem;color:var(--muted);margin-left:8px"></span>
             </div>
             <div id="picker-area"></div>
             <button class="btn btn-primary btn-full" id="btn-save-manual"
@@ -549,9 +550,9 @@ function selectBtype(id) {
   selBtype = id;
   loadBingoTypes();
   renderSessions(); // filtrar sesiones al cambiar tipo
-  // Tab manual siempre oculto (Bingo 75 usa generación automática)
+  // Tab manual disponible para Bingo 75
   const manualBtn = document.getElementById('tab-manual-btn');
-  if (manualBtn) manualBtn.style.display = 'none';
+  if (manualBtn) manualBtn.style.display = '';
 }
 
 // ── Cargar sesiones ─────────────────────────────────────
@@ -1000,52 +1001,73 @@ function buildPicker() {
 }
 
 function togglePickerNum(n, ci, btn) {
+  // Per-column maximums: B=5, I=5, N=4, G=5, O=5
+  const colMax = [5, 5, 4, 5, 5];
   if (selected.has(n)) {
     selected.delete(n);
     btn.style.borderColor='';btn.style.color='var(--muted)';
     btn.style.background='var(--card)';btn.style.transform='';
   } else {
-    if (selected.size >= 24) { showToast('⚠️ Máximo 24 números'); return; }
+    if (selected.size >= 24) { showToast('⚠️ Máximo 24 números en total'); return; }
+    // Count how many already selected in this column
+    const colCount = [...selected].filter(x => Math.min(Math.floor((x-1)/15), 4) === ci).length;
+    if (colCount >= colMax[ci]) {
+      const labels = ['B','I','N','G','O'];
+      showToast(`⚠️ Columna ${labels[ci]}: máximo ${colMax[ci]} números`); return;
+    }
     selected.add(n);
     btn.style.borderColor=COL_COLORS[ci];
     btn.style.color=COL_COLORS[ci];
     btn.style.background=`rgba(${hexToRgb(COL_COLORS[ci])},0.15)`;
     btn.style.transform='scale(1.1)';
   }
-  const cnt=selected.size;
-  const el=document.getElementById('picker-count-display');
-  if(el) el.querySelector('span').textContent=cnt;
-  const btn2=document.getElementById('btn-save-manual');
-  if(btn2) btn2.disabled=cnt!==15;
+  const cnt = selected.size;
+  const el = document.getElementById('picker-count-display');
+  if (el) el.querySelector('span').textContent = cnt;
+  // Show per-column counts
+  const colCounts = [0, 0, 0, 0, 0];
+  [...selected].forEach(x => { colCounts[Math.min(Math.floor((x-1)/15), 4)]++; });
+  const labels = ['B','I','N','G','O'];
+  const ccEl = document.getElementById('picker-col-counts');
+  if (ccEl) ccEl.textContent = '· ' + labels.map((l,i) => `${l}:${colCounts[i]}/${colMax[i]}`).join(' ');
+  const btn2 = document.getElementById('btn-save-manual');
+  if (btn2) btn2.disabled = cnt !== 24;
 }
 
 function clearPicker() {
-  selected=new Set(); buildPicker();
-  const el=document.getElementById('picker-count-display');
-  if(el) el.querySelector('span').textContent='0';
-  const btn=document.getElementById('btn-save-manual');
-  if(btn) btn.disabled=true;
+  selected = new Set(); buildPicker();
+  const el = document.getElementById('picker-count-display');
+  if (el) el.querySelector('span').textContent = '0';
+  const ccEl = document.getElementById('picker-col-counts');
+  if (ccEl) ccEl.textContent = '';
+  const btn = document.getElementById('btn-save-manual');
+  if (btn) btn.disabled = true;
   showToast('🧹 Selección limpiada');
 }
 
 function selectedToGrid() {
-  if (selected.size!==15) throw new Error('Selecciona exactamente 15 números');
-  const cols=Array.from({length:9},()=>[]);
-  [...selected].sort((a,b)=>a-b).forEach(n=>{
-    const ci=n<=9?0:Math.min(8,Math.floor(n/10)); cols[ci].push(n);
+  if (selected.size !== 24) throw new Error('Selecciona exactamente 24 números');
+  // Separate by BINGO 75 column (B=0…O=4, 15 nums each)
+  const cols = [[], [], [], [], []];
+  [...selected].sort((a, b) => a - b).forEach(n => {
+    cols[Math.min(Math.floor((n - 1) / 15), 4)].push(n);
   });
-  for(const arr of cols) if(arr.length>2) throw new Error('Máximo 2 números por columna');
-  const grid=Array.from({length:3},()=>Array(9).fill(null));
-  const rc=[0,0,0];
-  for(let ci=0;ci<9;ci++){
-    const nums=cols[ci].slice().sort((a,b)=>a-b);
-    if(!nums.length) continue;
-    const rows=[0,1,2].sort((r1,r2)=>rc[r1]-rc[r2]);
-    if(nums.length===1){grid[rows[0]][ci]=nums[0];rc[rows[0]]++;}
-    else{grid[rows[0]][ci]=nums[0];rc[rows[0]]++;grid[rows[1]][ci]=nums[1];rc[rows[1]]++;}
+  const colMax = [5, 5, 4, 5, 5];
+  const colNames = ['B (1-15)', 'I (16-30)', 'N (31-45)', 'G (46-60)', 'O (61-75)'];
+  for (let ci = 0; ci < 5; ci++) {
+    if (cols[ci].length !== colMax[ci])
+      throw new Error(`Columna ${colNames[ci]}: necesitas ${colMax[ci]} números (tienes ${cols[ci].length})`);
   }
-  if(!(rc[0]===5&&rc[1]===5&&rc[2]===5))
-    throw new Error('Tu selección no permite 5 números por fila.');
+  // Build 5×5 grid: rows 0-4, cols 0-4. Center [2][2] = null (FREE)
+  const grid = Array.from({ length: 5 }, () => Array(5).fill(null));
+  for (let ci = 0; ci < 5; ci++) {
+    const nums = cols[ci].slice().sort((a, b) => a - b);
+    let ni = 0;
+    for (let ri = 0; ri < 5; ri++) {
+      if (ci === 2 && ri === 2) { grid[ri][ci] = null; continue; } // FREE
+      grid[ri][ci] = nums[ni++];
+    }
+  }
   return grid;
 }
 
@@ -1053,7 +1075,7 @@ async function saveManual() {
   const code   = activeCode || document.getElementById('inp-code-check')?.value.trim().toUpperCase();
   const nombre = document.getElementById('inp-name-cartilla')?.value.trim() || 'Jugador';
   if (!code) { showToast('🔑 Ingresa tu código'); return; }
-  if (selected.size!==15) { showToast('⚠️ Selecciona exactamente 15 números'); return; }
+  if (selected.size!==24) { showToast('⚠️ Selecciona exactamente 24 números'); return; }
   let grid;
   try { grid = selectedToGrid(); } catch(e) { showToast('❌ '+e.message); return; }
   try {
