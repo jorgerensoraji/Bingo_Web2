@@ -306,6 +306,78 @@ function handleAdminOffline() {
   }, 5000);
 }
 
+// ── SESIÓN FINALIZADA ─────────────────────────────────
+var sessionFinishedShown = false;
+
+function handleSessionFinished() {
+  if (sessionFinishedShown) return;
+  sessionFinishedShown = true;
+
+  // Stop clock and audio
+  if (clockJob) { clearInterval(clockJob); clockJob = null; }
+  stopAudio();
+
+  // Reset all local game state
+  drawnLocal    = [];
+  lastLocal     = null;
+  gameStarted   = false;
+  gameId        = null;
+  lastPhraseKey = null;
+  elapsedSec    = 0;
+  claimedBingo  = false;
+  claimedLinea  = false;
+  almostSpoken  = false;
+  activeSessionId = null;
+  myCartillas   = [];
+  cartillaStates = {};
+
+  // Reset the drawn-balls grid
+  initGridReset();
+  removeClaimButtons();
+
+  // Reset display elements
+  var bn = document.getElementById('big-number');
+  if (bn) { bn.textContent = '?'; bn.style.color = ''; bn.style.fontSize = ''; }
+  var wd = document.getElementById('words-display');
+  if (wd) wd.textContent = '—';
+  var gt = document.getElementById('group-tag');
+  if (gt) gt.textContent = '';
+  var rn = document.getElementById('recent-nums');
+  if (rn) rn.innerHTML = '';
+  var lb = document.getElementById('last-big');
+  if (lb) { lb.textContent = '—'; lb.style.color = ''; }
+  var timer = document.getElementById('timer');
+  if (timer) timer.textContent = '⏱ 00:00';
+
+  updateStats(0, gameBalls);
+
+  // Clear cartilla panels
+  var wrap = document.getElementById('mis-cartillas-wrap');
+  if (wrap) wrap.innerHTML = '';
+
+  // Show finished message in status area
+  var statusEl = document.getElementById('game-status-msg');
+  if (statusEl) {
+    statusEl.innerHTML =
+      '<div style="text-align:center;padding:20px 10px">' +
+      '<div style="font-size:2rem;margin-bottom:8px">🏁</div>' +
+      '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.6rem;color:var(--accent);letter-spacing:2px">Sesión Finalizada</div>' +
+      '<div style="color:var(--muted);font-size:.83rem;margin-top:8px;line-height:1.6">' +
+      'Esta sesión de bingo ha terminado.<br>Gracias por participar. ¡Hasta la próxima!</div>' +
+      '</div>';
+  }
+
+  // Show banner to buy for next session
+  var banner = document.getElementById('banner-comprar');
+  if (banner) { banner.style.display = ''; banner.style.opacity = '1'; }
+
+  var syncEl = document.getElementById('sync-status');
+  if (syncEl) syncEl.innerHTML = '🏁 Sesión finalizada';
+
+  showToast('🏁 La sesión ha finalizado. ¡Hasta la próxima!', 5000);
+  hideGameOver();
+}
+
 // ── SYNC CON EL SERVIDOR ──────────────────────────────
 async function syncState() {
   if (resetPending) return;
@@ -331,6 +403,12 @@ async function syncState() {
     // Admin timeout detection
     if (gameStarted && data.admin_online === false) {
       handleAdminOffline();
+      return;
+    }
+
+    // Session finished by admin → reset player UI
+    if (data.session_finished) {
+      handleSessionFinished();
       return;
     }
 

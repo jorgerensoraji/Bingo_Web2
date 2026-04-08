@@ -597,6 +597,7 @@ class GameState:
         self.prepare_at        = None
         self.prepare_secs      = 60
         self.prepare_sid       = None
+        self.session_finished  = False   # True briefly after admin finishes session
 
     def draw(self):
         if not self.available:
@@ -1585,10 +1586,11 @@ def api_state():
             "bingo_grid":     bt_info.get("grid_type", "75"),
             "prize_pool":     game.prize_pool,
             "linea_pool":     game.linea_pool,
-            "preparing":      game.preparing,
-            "prepare_at":     game.prepare_at,
-            "prepare_secs":   game.prepare_secs,
-            "prepare_sid":    game.prepare_sid,
+            "preparing":        game.preparing,
+            "prepare_at":       game.prepare_at,
+            "prepare_secs":     game.prepare_secs,
+            "prepare_sid":      game.prepare_sid,
+            "session_finished": game.session_finished,
         })
 
 @app.route("/api/game_stats")
@@ -1925,7 +1927,8 @@ def api_finish_session(sid):
     # Limpiar game state si era la sesión activa
     with game_lock:
         if game.session_id == sid:
-            game.session_id = None
+            game.session_id       = None
+            game.session_finished = True
             game.save_to_db()
     return jsonify({"status": "ok"})
 
