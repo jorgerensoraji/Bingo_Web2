@@ -256,6 +256,26 @@
   <div class="toc-item h3-item"><span>Pagos (Yape/Plin vs tarjeta de credito)</span></div>
   <div class="toc-item h3-item"><span>Email (fix rapido)</span></div>
   <div class="toc-item h3-item"><span>Resumen de costos y orden de lanzamiento</span></div>
+
+  <div class="toc-item" style="margin-top:10px;"><span>7. Manual Detallado del Administrador</span><span class="toc-page">Pantalla a pantalla</span></div>
+  <div class="toc-item h3-item"><span>Dashboard principal</span></div>
+  <div class="toc-item h3-item"><span>Gestion de sesiones</span></div>
+  <div class="toc-item h3-item"><span>Pagos — KPIs, filtros, duplicados, reenvio</span></div>
+  <div class="toc-item h3-item"><span>Panel de juego en vivo — controles completos</span></div>
+  <div class="toc-item h3-item"><span>Voz y audio</span></div>
+  <div class="toc-item h3-item"><span>Limite de ganadores y pausas</span></div>
+  <div class="toc-item h3-item"><span>Control de sesion (finalizar vs cancelar)</span></div>
+  <div class="toc-item h3-item"><span>Ver cartillas del admin</span></div>
+  <div class="toc-item h3-item"><span>Caja y finanzas</span></div>
+  <div class="toc-item h3-item"><span>Configuracion de la plataforma</span></div>
+
+  <div class="toc-item" style="margin-top:10px;"><span>8. Guia Avanzada del Jugador</span><span class="toc-page">Mas detalle</span></div>
+  <div class="toc-item h3-item"><span>Estados del registro</span></div>
+  <div class="toc-item h3-item"><span>Jugar desde el celular</span></div>
+  <div class="toc-item h3-item"><span>Multiples cartillas</span></div>
+  <div class="toc-item h3-item"><span>Marcado automatico y alertas</span></div>
+  <div class="toc-item h3-item"><span>Consejos para ganar</span></div>
+  <div class="toc-item h3-item"><span>Que pasa despues de ganar</span></div>
 </div>
 
 
@@ -993,6 +1013,345 @@
       <div class="step-num">7</div>
       <div class="step-content"><strong>Lanza y comparte el link</strong> — Redes sociales, WhatsApp, grupos. Empieza a cobrar.</div>
     </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 7 -->
+<div class="section section-break">
+  <h2>7. Manual Detallado del Administrador — Pantalla a Pantalla</h2>
+  <p>Esta seccion describe cada pantalla del panel de administrador con todos sus controles. Usala como referencia cuando tengas dudas sobre una opcion especifica.</p>
+
+  <h3>Dashboard Principal — /admin</h3>
+  <p>La primera pantalla que ves al iniciar sesion. Muestra un resumen rapido del estado actual:</p>
+  <table>
+    <tr><th>Elemento</th><th>Que muestra</th></tr>
+    <tr><td>Alerta amarilla de pagos pendientes</td><td>Aparece si hay jugadores esperando aprobacion. Haz clic para ir directo a Pagos.</td></tr>
+    <tr><td>Selector de tipo de bingo</td><td>Tabs para elegir Bingo 1 Sol / 5 Soles / 10 Soles al crear sesiones desde el dashboard.</td></tr>
+    <tr><td>Info del tipo seleccionado</td><td>Muestra precio, cartillas maximas y porcentajes de premio del tipo elegido.</td></tr>
+    <tr><td>Formulario Nueva Sesion</td><td>Campos: fecha/hora, max jugadores, descripcion opcional.</td></tr>
+  </table>
+
+  <div class="box box-info">
+    <strong>Acceso rapido desde el dashboard</strong>
+    Los botones del menu (Sesiones, Pagos, Juego, Cartillas, Caja, Config) estan en el header de todas las pantallas admin para navegar sin perder el hilo.
+  </div>
+
+  <h3>Gestion de Sesiones — /admin/sessions</h3>
+  <p>Aqui administras todos los eventos de bingo: pasados, activos y futuros.</p>
+
+  <p><strong>Estadisticas rapidas (4 contadores en la parte superior):</strong></p>
+  <table>
+    <tr><th>Contador</th><th>Descripcion</th></tr>
+    <tr><td>Sesiones activas</td><td>Cuantos bingos estan en curso ahora mismo</td></tr>
+    <tr><td>Sesiones programadas</td><td>Bingos creados pero aun no iniciados</td></tr>
+    <tr><td>Jugadores hoy</td><td>Total de registros del dia</td></tr>
+    <tr><td>Recaudado hoy</td><td>Suma de pagos aprobados del dia en soles</td></tr>
+  </table>
+
+  <p><strong>Lista de sesiones:</strong> cada sesion muestra su estado con colores:</p>
+  <ul>
+    <li><strong style="color:#27ae60;">Verde — Activa:</strong> juego en curso ahora mismo</li>
+    <li><strong style="color:#f4d03f;">Amarillo — Programada:</strong> creada, esperando jugadores e inicio</li>
+    <li><strong style="color:#888;">Gris — Finalizada:</strong> terminada, datos guardados en historial</li>
+    <li><strong style="color:#e74c3c;">Rojo — Cancelada:</strong> anulada antes de terminar</li>
+  </ul>
+
+  <p><strong>Acciones sobre cada sesion:</strong></p>
+  <table>
+    <tr><th>Boton</th><th>Que hace</th><th>Cuando usarlo</th></tr>
+    <tr><td>Iniciar</td><td>Cambia la sesion de Programada a Activa</td><td>Cuando ya tienes jugadores pagados y es hora de jugar</td></tr>
+    <tr><td>Editar</td><td>Permite cambiar fecha, hora, maximo de jugadores y descripcion</td><td>Antes de iniciar; no se puede editar una sesion activa</td></tr>
+    <tr><td>Cancelar</td><td>Marca la sesion como cancelada</td><td>Solo si necesitas anular el evento completo</td></tr>
+  </table>
+
+  <div class="box box-warn">
+    <strong>No puedes tener dos sesiones activas al mismo tiempo</strong>
+    El sistema solo permite una sesion en estado Activa. Si intentas iniciar una segunda, te mostrara un error. Finaliza la sesion actual primero.
+  </div>
+
+  <h3>Pagos — /admin/payments</h3>
+  <p>La pantalla mas importante para el dia a dia. Aqui apruebas o rechazas los pagos de los jugadores.</p>
+
+  <p><strong>Barra de estado de email:</strong> aparece en la parte superior indicando si el envio de emails esta funcionando (verde) o hay un problema de configuracion (rojo). Si esta en rojo, los codigos de acceso no llegaran a los jugadores — revisa tu <code>EMAIL_PASS</code> en el <code>.env</code>.</p>
+
+  <p><strong>5 contadores KPI:</strong></p>
+  <table>
+    <tr><th>Contador</th><th>Que mide</th></tr>
+    <tr><td>Pendientes</td><td>Pagos esperando tu revision (resaltados en amarillo)</td></tr>
+    <tr><td>Aprobados</td><td>Pagos verificados; estos jugadores ya tienen codigo de acceso</td></tr>
+    <tr><td>Manuales</td><td>Aprobaciones manuales que hiciste directamente (sin numero de operacion)</td></tr>
+    <tr><td>Rechazados</td><td>Pagos que marcaste como invalidos o fraudulentos</td></tr>
+    <tr><td>Recaudado</td><td>Total en soles de todos los pagos aprobados</td></tr>
+  </table>
+
+  <p><strong>Filtros y busqueda:</strong></p>
+  <ul>
+    <li>Campo de busqueda: filtra por nombre, email o numero de operacion en tiempo real</li>
+    <li>Filtro por sesion: muestra solo los pagos de una sesion especifica</li>
+    <li>Filtro por estado: ver solo Pendientes, Aprobados, Rechazados, etc.</li>
+  </ul>
+
+  <p><strong>Para cada pago en la tabla puedes:</strong></p>
+  <table>
+    <tr><th>Accion</th><th>Descripcion</th></tr>
+    <tr><td>Aprobar</td><td>Confirma el pago y envia el codigo de acceso al email del jugador automaticamente</td></tr>
+    <tr><td>Rechazar</td><td>Marca el pago como invalido. El jugador recibe un email notificandole el rechazo</td></tr>
+    <tr><td>Reenviar codigo</td><td>Vuelve a enviar el email con el codigo a un jugador ya aprobado que no lo recibio</td></tr>
+  </table>
+
+  <div class="box box-danger">
+    <strong>Deteccion de numeros de operacion duplicados</strong>
+    Si dos jugadores envian exactamente el mismo numero de operacion, el sistema los resalta en rojo con una advertencia. Solo uno de los dos puede ser legítimo — el otro es un intento de fraude. Aprueba al primero y rechaza al segundo.
+  </div>
+
+  <p><strong>Aprobacion manual (sin numero de operacion):</strong> si un jugador pago en efectivo o por otro medio y no tiene numero de operacion, puedes aprobar su pago manualmente haciendo clic en el boton "Aprobar manual". Este pago queda marcado como "Manual" en los registros.</p>
+
+  <h3>Panel de Juego en Vivo — /admin/game</h3>
+  <p>El corazon del sistema durante el bingo. Esta pantalla tiene tres zonas:</p>
+
+  <p><strong>Barra de estadisticas (arriba):</strong></p>
+  <table>
+    <tr><th>Dato</th><th>Descripcion</th></tr>
+    <tr><td>Sorteadas</td><td>Cuantas bolillas han salido hasta ahora</td></tr>
+    <tr><td>Restantes</td><td>Bolillas que faltan por sortear</td></tr>
+    <tr><td>Barra de progreso</td><td>Representacion visual del avance del juego (0% a 100%)</td></tr>
+    <tr><td>Porcentaje</td><td>Numero exacto de progreso</td></tr>
+    <tr><td>Atajos de teclado</td><td>Recordatorio de los atajos disponibles</td></tr>
+  </table>
+
+  <p><strong>Zona izquierda — Display del sorteo:</strong></p>
+  <ul>
+    <li><strong>Bolilla actual:</strong> la ultima bolilla sorteada en grande, con animacion y color segun su grupo</li>
+    <li><strong>Numero en palabras:</strong> por ejemplo "cuarenta y dos" (lo dice la voz tambien)</li>
+    <li><strong>Etiqueta de grupo:</strong> indica el rango (ej. "40s")</li>
+    <li><strong>Tira de ultimas bolillas:</strong> las 5-6 bolillas mas recientes en pequeno, justo debajo del display</li>
+    <li><strong>Grilla de numeros sorteados:</strong> tablero con los 90 numeros organizados en grupos por decenas. Los sorteados se iluminan.</li>
+  </ul>
+
+  <p><strong>Zona derecha — Controles:</strong></p>
+
+  <h4>Panel de Controles</h4>
+  <table>
+    <tr><th>Boton / Control</th><th>Funcion</th><th>Atajo de teclado</th></tr>
+    <tr><td>SORTEAR</td><td>Saca una bolilla aleatoria de las que quedan</td><td>[Espacio]</td></tr>
+    <tr><td>Auto [A]</td><td>Activa/desactiva el sorteo automatico</td><td>[A]</td></tr>
+    <tr><td>Intervalo (segundos)</td><td>Campo numerico para ajustar cuantos segundos entre bolillas automaticas (minimo 3s, maximo 60s)</td><td>—</td></tr>
+    <tr><td>Repetir [R]</td><td>Vuelve a anunciar por voz la ultima bolilla sorteada</td><td>[R]</td></tr>
+    <tr><td>Silenciar</td><td>Para el audio inmediatamente</td><td>[Esc]</td></tr>
+    <tr><td>Nuevo Juego [N]</td><td>Reinicia el sorteo (limpia bolillas y empieza desde cero dentro de la misma sesion)</td><td>[N]</td></tr>
+    <tr><td>Velocidad animacion</td><td>Barra deslizante (0–100) que controla la velocidad de la animacion de la bolilla al aparecer</td><td>—</td></tr>
+  </table>
+
+  <div class="box box-info">
+    <strong>Atajos de teclado — muy utiles en vivo</strong>
+    Mientras controlas el bingo puedes usar el teclado sin hacer clic: <strong>[Espacio]</strong> para sortear, <strong>[A]</strong> para activar auto-sorteo, <strong>[R]</strong> para repetir la ultima bolilla, <strong>[Esc]</strong> para silenciar, <strong>[N]</strong> para nuevo juego.
+  </div>
+
+  <h4>Panel de Voz y Audio</h4>
+  <table>
+    <tr><th>Control</th><th>Opciones / Descripcion</th></tr>
+    <tr><td>Voz</td><td>Dalia Mexico · Jorge Mexico · Elena Argentina · Elvira Espana · Camila Peru</td></tr>
+    <tr><td>Volumen</td><td>Barra deslizante de 0% a 100% (por defecto: 85%)</td></tr>
+  </table>
+  <p>Puedes cambiar la voz y el volumen en cualquier momento durante el juego — el cambio se aplica desde la siguiente bolilla.</p>
+
+  <h4>Panel de Pausa Automatica (Limite de Ganadores)</h4>
+  <p>El sorteo automatico se pausa solo cuando se alcanza el numero de ganadores que configuras aqui:</p>
+  <table>
+    <tr><th>Opcion</th><th>Como funciona</th></tr>
+    <tr><td>1 ganador (por defecto)</td><td>El juego se pausa tan pronto como alguien canta BINGO valido</td></tr>
+    <tr><td>2 ganadores</td><td>Continua hasta que dos personas canten BINGO — util para premios dobles</td></tr>
+    <tr><td>3 o 5 ganadores</td><td>Para bingos grandes donde quieres repartir premios entre varios</td></tr>
+  </table>
+  <p>Si el juego esta pausado por un ganador, aparece el boton <strong>"Reanudar sorteo"</strong> para continuar sacando bolillas (util si quieres un segundo BINGO en la misma sesion).</p>
+
+  <h4>Panel de Control de Sesion</h4>
+  <div class="box box-danger">
+    <strong>Diferencia importante: Finalizar vs Cancelar forzado</strong>
+  </div>
+  <table>
+    <tr><th>Boton</th><th>Que hace</th><th>Cuando usarlo</th></tr>
+    <tr><td>Finalizar sesion (normal)</td><td>Cierra el juego correctamente. Registra los ganadores en la base de datos. Los datos quedan en historial.</td><td>Al terminar el bingo normalmente, despues de pagar a los ganadores</td></tr>
+    <tr><td>Cancelar sesion (forzado)</td><td>Anula la sesion completamente. Los datos del juego se borran. Los pagos quedan registrados pero la sesion queda como cancelada.</td><td>Solo en emergencias: servidor colgado, error grave, necesitas empezar de nuevo</td></tr>
+    <tr><td>Limpiar estado residual</td><td>Borra bolillas sorteadas que quedaron en memoria sin sesion activa (estado "fantasma")</td><td>Si reiniciaste el servidor a la fuerza y hay bolillas residuales</td></tr>
+  </table>
+
+  <h3>Cartillas del Administrador — /admin/cartillas</h3>
+  <p>Vista completa de todas las cartillas generadas en el sistema.</p>
+  <ul>
+    <li>Busqueda por email, nombre o codigo de acceso</li>
+    <li>Ver que cartillas tiene cada jugador (ID, fecha de generacion, sesion)</li>
+    <li>Verificar si una cartilla especifica gano: el admin puede ingresar el ID de cartilla para ver sus numeros y confirmar el BINGO manualmente si hay alguna disputa</li>
+    <li>Ver historial de ganadores: quienes cantaron BINGO o LINEA con sus montos</li>
+  </ul>
+
+  <div class="box box-info">
+    <strong>Util para resolver disputas</strong>
+    Si un jugador dice que canto BINGO pero el sistema no lo acepto, busca su cartilla aqui, compara sus numeros con las bolillas sorteadas y determina si realmente tenia bingo.
+  </div>
+
+  <h3>Panel Financiero — Caja — /admin/caja</h3>
+  <p>Resumen economico de cada sesion. Para cada sesion finalizada ves:</p>
+  <table>
+    <tr><th>Campo</th><th>Descripcion</th><th>Como se calcula</th></tr>
+    <tr><td>Total recaudado</td><td>Ingresos brutos de la sesion</td><td>Suma de todos los pagos aprobados</td></tr>
+    <tr><td>Premio BINGO</td><td>Monto pagado o por pagar al ganador de BINGO</td><td>Total recaudado × % BINGO segun tipo</td></tr>
+    <tr><td>Premio LINEA</td><td>Monto pagado o por pagar al ganador de LINEA</td><td>Total recaudado × % LINEA segun tipo</td></tr>
+    <tr><td>Ganancia neta</td><td>Tu ganancia como organizador</td><td>Total − Premio BINGO − Premio LINEA</td></tr>
+    <tr><td>Jugadores</td><td>Cuantos jugadores tuvieron pago aprobado en esa sesion</td><td>Conteo de pagos aprobados</td></tr>
+  </table>
+
+  <p>El boton <strong>"Exportar CSV"</strong> descarga los datos de todas las sesiones en formato de hoja de calculo para abrir en Excel o Google Sheets.</p>
+
+  <div class="box box-success">
+    <strong>Ejemplo de calculo — Bingo 5 Soles, 30 jugadores, 2 cartillas cada uno</strong>
+    <br>Recaudado: 30 × 2 × S/5 = <strong>S/. 300</strong>
+    <br>Premio BINGO (75%): <strong>S/. 225</strong>
+    <br>Premio LINEA (8%): <strong>S/. 24</strong>
+    <br>Tu ganancia (17%): <strong>S/. 51</strong>
+  </div>
+
+  <h3>Configuracion de la Plataforma — /admin/config</h3>
+  <p>Ajustes que afectan lo que ven los jugadores. Configura esto antes de tu primer bingo.</p>
+  <table>
+    <tr><th>Campo</th><th>Para que sirve</th><th>Ejemplo</th></tr>
+    <tr><td>Nombre del organizador</td><td>Aparece en emails y en la pagina de jugadores</td><td>"Bingo Familiar Perez"</td></tr>
+    <tr><td>WhatsApp del organizador</td><td>Boton directo en la pagina del jugador para contactarte</td><td>+51 999 888 777</td></tr>
+    <tr><td>Numero Yape</td><td>Numero al que los jugadores hacen el pago por Yape</td><td>999 888 777</td></tr>
+    <tr><td>Numero Plin</td><td>Numero al que los jugadores hacen el pago por Plin</td><td>999 888 777</td></tr>
+    <tr><td>Instrucciones de pago</td><td>Texto libre que aparece en la pagina de registro del jugador</td><td>"Paga a Yape 999-888-777 y escribe tu nombre en el mensaje"</td></tr>
+    <tr><td>Metodos activos</td><td>Cuales metodos de pago aparecen disponibles para el jugador</td><td>Yape ✓, Plin ✓, Transferencia ✓</td></tr>
+    <tr><td>Tiempo de auto-sorteo</td><td>Segundos entre bolillas en modo automatico (si se configura aqui)</td><td>10 segundos</td></tr>
+  </table>
+
+  <div class="box box-warn">
+    <strong>Configura el numero Yape/Plin ANTES de anunciar el bingo</strong>
+    Si los jugadores entran y no ven un numero de pago, no podran registrarse. Esta es la configuracion mas importante para que el flujo de pago funcione.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SECCION 8 -->
+<div class="section section-break">
+  <h2>8. Guia Avanzada del Jugador</h2>
+  <p>Esta seccion amplia la guia basica del Capitulo 3 con mas detalles, consejos y situaciones comunes que los jugadores encuentran.</p>
+
+  <h3>Estados del registro — que significa cada uno</h3>
+  <p>Despues de registrarte, tu pago pasa por varios estados. Aqui lo que significa cada uno y que debes hacer:</p>
+  <table>
+    <tr><th>Estado</th><th>Que significa</th><th>Que hacer</th></tr>
+    <tr><td><strong style="color:#f4d03f;">Pendiente de revision</strong></td><td>Tu pago fue enviado y el administrador lo esta revisando</td><td>Esperar. Puede tomar de 1 a 15 minutos segun que tan ocupado este el admin.</td></tr>
+    <tr><td><strong style="color:#27ae60;">Aprobado</strong></td><td>El admin confirmo tu pago. Tu codigo fue enviado a tu email.</td><td>Revisar tu correo (incluyendo spam). Usar el codigo para generar tu cartilla.</td></tr>
+    <tr><td><strong style="color:#00e5b4;">Aprobado manualmente</strong></td><td>El admin te aprobo de forma manual (pago en efectivo u otro)</td><td>Igual que aprobado — revisar tu correo para el codigo.</td></tr>
+    <tr><td><strong style="color:#e74c3c;">Rechazado</strong></td><td>El pago no se pudo verificar</td><td>Contactar al admin por WhatsApp para aclarar. Puede que hayas puesto mal el numero de operacion.</td></tr>
+  </table>
+
+  <div class="box box-warn">
+    <strong>El codigo llega por email, no por WhatsApp</strong>
+    El sistema envia el codigo de acceso automaticamente a tu correo electronico cuando el admin aprueba tu pago. Si pasaron mas de 20 minutos y no llego, escribe al admin para que reenvie el codigo.
+  </div>
+
+  <h3>Jugar desde el celular — recomendaciones</h3>
+  <ul>
+    <li><strong>Activa el volumen</strong> antes de entrar a la pagina del juego. La voz que anuncia las bolillas usa el audio del sistema.</li>
+    <li><strong>No cierres el navegador</strong> mientras juegas — si cierras la pestana y vuelves, la pagina se reconecta automaticamente y muestra el estado actual.</li>
+    <li><strong>Mantente conectado al WiFi</strong> (o usa datos moviles con buena senal). La pagina recibe actualizaciones en tiempo real — si pierdes conexion, las bolillas dejan de aparecer hasta que te reconectes.</li>
+    <li><strong>Pantalla siempre encendida:</strong> en tu celular, ve a Ajustes y pon el tiempo de apagado de pantalla en "Nunca" o en el maximo durante el juego, para no perderte bolillas.</li>
+    <li><strong>Modo horizontal:</strong> si tienes muchas cartillas o pantalla pequena, gira el celular para ver mejor el tablero.</li>
+  </ul>
+
+  <h3>Multiples cartillas — como manejarlas</h3>
+  <p>Puedes tener hasta 3 cartillas (Bingo 1 Sol) o hasta 5 cartillas (Bingo 5 y 10 Soles) por jugador. Cada una se genera por separado con el mismo codigo.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Genera tu primera cartilla con tu codigo. El sistema la guarda asociada a tu sesion.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">Vuelve a la pagina /cartillas, ingresa el mismo codigo y haz clic en "Generar Cartilla" de nuevo. Se crea una segunda cartilla diferente a la primera.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">Repite para tu tercera (o mas) cartilla. El sistema te avisa cuando alcanzas el maximo permitido.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">Abre cada cartilla en una pestana diferente del navegador para verlas todas durante el juego. Todas se actualizan automaticamente.</div>
+    </div>
+  </div>
+
+  <div class="box box-info">
+    <strong>Cada cartilla tiene su propio ID</strong>
+    El ID de cartilla (ej. <code>C-00142</code>) es el que el sistema usa para verificar tu BINGO. Si tienes dos cartillas y una de ellas gana, el boton BINGO de esa cartilla se activa — no el de la otra. Asegurate de estar mirando la cartilla correcta cuando cantes.
+  </div>
+
+  <h3>Marcado automatico y alertas visuales</h3>
+  <p>Si tienes tu cartilla abierta en el navegador (no en PDF), el sistema la actualiza en tiempo real:</p>
+  <table>
+    <tr><th>Que pasa</th><th>Cuando ocurre</th></tr>
+    <tr><td>El numero se resalta/marca en la cartilla</td><td>Cada vez que sale una bolilla que esta en tu cartilla</td></tr>
+    <tr><td>Alerta visual "¡Te falta 1!"</td><td>Cuando tienes 14 de 15 numeros marcados (a punto de BINGO)</td></tr>
+    <tr><td>El boton "CANTAR LINEA" se activa</td><td>Cuando completas todos los numeros de una fila</td></tr>
+    <tr><td>El boton "CANTAR BINGO" se activa</td><td>Cuando tienes los 15 numeros de tu cartilla marcados</td></tr>
+    <tr><td>Animacion y sonido de ganador</td><td>Cuando el sistema confirma tu BINGO como valido</td></tr>
+  </table>
+
+  <div class="box box-danger">
+    <strong>Canta en cuanto el boton se active</strong>
+    El boton BINGO solo se habilita cuando el sistema ya verifico que tienes todos los numeros. No esperes — otro jugador puede cantar primero. Si dos personas canta al mismo tiempo, el premio se divide.
+  </div>
+
+  <h3>Diferencia entre LINEA y BINGO</h3>
+  <table>
+    <tr><th>Premio</th><th>Condicion</th><th>Sigue jugando despues?</th></tr>
+    <tr><td><strong>LINEA</strong></td><td>Los 5 numeros de <em>una sola fila</em> (de las 3 que tiene tu cartilla) han salido</td><td>Si — puedes seguir jugando para intentar el BINGO</td></tr>
+    <tr><td><strong>BINGO</strong></td><td>Los 15 numeros totales de tu cartilla han salido</td><td>El juego se pausa (segun configuracion del admin)</td></tr>
+  </table>
+  <p>Si ya cantaste LINEA con la primera fila, el sistema lo sabe. Si despues completas toda la cartilla, puedes cantar BINGO y recibir ambos premios.</p>
+
+  <h3>Consejos para ganar</h3>
+  <ul>
+    <li><strong>Compra el maximo de cartillas permitidas</strong> — mas cartillas, mas probabilidades de tener numeros que salgan pronto.</li>
+    <li><strong>Abre cada cartilla en su propia pestana</strong> del navegador para no tener que cambiar entre ellas.</li>
+    <li><strong>No pongas el celular boca abajo</strong> — el marcado automatico funciona igual, pero si no lo ves puedes perderte la alerta de BINGO.</li>
+    <li><strong>Revisa la columna del medio</strong> (numeros del 41 al 50) — estadisticamente es la zona de la cartilla que mas variacion tiene.</li>
+    <li><strong>Canta LINEA aunque no creas ganar</strong> — el premio de linea es real y vale la pena. Ademas el juego sigue y aun puedes ganar el BINGO.</li>
+  </ul>
+
+  <h3>Que pasa despues de ganar</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>El sistema verifica tu cartilla automaticamente</strong> al momento de presionar el boton. Si es valido, apareces como ganador en pantalla y en el panel del administrador.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>El juego se pausa</strong> (dependiendo de la configuracion del admin). Los demas jugadores ven el anuncio del ganador.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>El administrador te contactara</strong> — generalmente por WhatsApp o llamada — para confirmar el envio del premio. Ten listo tu numero de Yape o Plin.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>Recibes el premio</strong> por Yape, Plin o transferencia. El monto exacto lo calcula el sistema automaticamente segun el pozo total de la sesion.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-success">
+    <strong>El sistema no miente — si el boton no se activa, aun no tienes BINGO</strong>
+    El sistema verifica estrictamente que todos tus numeros esten en la lista oficial de bolillas sorteadas. No es posible hacer trampa desde el lado del jugador porque el boton simplemente no responde hasta que la condicion sea correcta.
   </div>
 </div>
 
