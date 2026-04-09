@@ -848,8 +848,13 @@ function updateDisplay(num) {
   bigNum.style.textShadow = '0 0 20px ' + fg + '88, 0 2px 4px rgba(0,0,0,0.8)';
   // Shrink font slightly for letter-prefixed numbers (B-12)
   bigNum.style.fontSize   = 'clamp(1.8rem,4vw,3.2rem)';
-  // Update host speech bubble
-  setHostTalking(false, numLabel);
+  // Animate host on every ball draw (mouth moves regardless of sound state)
+  clearTimeout(window._hostTalkTimer);
+  setHostTalking(true, numLabel);
+  window._hostTalkTimer = setTimeout(function() {
+    var a = _audioEl;
+    if (!a || a.paused) setHostTalking(false);
+  }, 2800);
 
   const gt = document.getElementById('group-tag');
   if (gt) {
