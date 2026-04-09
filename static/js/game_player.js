@@ -1026,7 +1026,7 @@ function launchConfetti() {
 
 function getCartillaState(cid) {
   if (!cartillaStates[cid]) {
-    cartillaStates[cid] = { bingoFired: false, almostSpoken: false, claimedBingo: false, claimedLinea: false };
+    cartillaStates[cid] = { bingoFired: false, almostSpoken: false, claimedBingo: false, claimedLinea: false, claimedU: false, claimedO: false };
   }
   return cartillaStates[cid];
 }
@@ -1145,6 +1145,19 @@ function updateMyCartillaAutoMark(force) {
     for (var c=0;c<5&&!isLinea;c++) if ([0,1,2,3,4].every(function(r){return cellOk(r,c);})) { isLinea=true; lineaType='col'; lineaIdx=c; }
     if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,i);}))   { isLinea=true; lineaType='diag_main'; }
     if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,4-i);})) { isLinea=true; lineaType='diag_anti'; }
+    // U-pattern: left col (col 0) + right col (col 4) + bottom row (row 4)
+    const isU = !isBingo && (
+      [0,1,2,3,4].every(function(r){return cellOk(r,0);}) &&
+      [0,1,2,3,4].every(function(r){return cellOk(r,4);}) &&
+      [1,2,3].every(function(c){return cellOk(4,c);})
+    );
+    // O-pattern: full outer border (top row + bottom row + left col + right col)
+    const isO = !isBingo && (
+      [0,1,2,3,4].every(function(c){return cellOk(0,c);}) &&
+      [0,1,2,3,4].every(function(c){return cellOk(4,c);}) &&
+      [1,2,3].every(function(r){return cellOk(r,0);}) &&
+      [1,2,3].every(function(r){return cellOk(r,4);})
+    );
     const isAlmost = !isBingo && (nums.length - marked === 1);
     if (isBingo && !state.bingoFired) {
       state.bingoFired = true;
@@ -1161,11 +1174,23 @@ function updateMyCartillaAutoMark(force) {
       state.claimingLinea = true;
       claimLinea(cart.id);
     }
+    // Auto-claim U-pattern (only once, non-blocking)
+    if (isU && !isBingo && !state.claimedU && !state.claimingU) {
+      state.claimingU = true;
+      claimU(cart.id);
+    }
+    // Auto-claim O-pattern (only once, non-blocking)
+    if (isO && !isBingo && !state.claimedO && !state.claimingO) {
+      state.claimingO = true;
+      claimO(cart.id);
+    }
     if (isAlmost && !state.almostSpoken) {
       state.almostSpoken = true;
       if (soundEnabled) playPhrase('¡Falta uno!', voice);
     }
     const badge = isBingo  ? '<span class="mc-badge mc-badge-bingo">🎉 BINGO</span>'
+                : isO      ? '<span class="mc-badge mc-badge-o">⭕ O</span>'
+                : isU      ? '<span class="mc-badge mc-badge-u">🔷 U</span>'
                 : isLinea  ? '<span class="mc-badge mc-badge-linea">⭐ LÍNEA</span>'
                 : isAlmost ? '<span class="mc-badge mc-badge-almost">🔥 FALTA 1</span>'
                 : '';
@@ -1262,6 +1287,14 @@ function updateMyCartillaAutoMark(force) {
       statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Bingo enviado — el admin verificará tu cartilla</span>';
     } else if (isBingo && state.claimingBingo) {
       statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Enviando bingo…</span>';
+    } else if (isO && state.claimedO) {
+      statusDiv.innerHTML = '<span style="color:#ec4899">⭕ O registrada — sigue jugando para U o BINGO</span>';
+    } else if (isO && state.claimingO) {
+      statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando O…</span>';
+    } else if (isU && state.claimedU) {
+      statusDiv.innerHTML = '<span style="color:#3b82f6">🔷 U registrada — sigue jugando para O o BINGO</span>';
+    } else if (isU && state.claimingU) {
+      statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando U…</span>';
     } else if (isLinea && state.claimedLinea) {
       statusDiv.innerHTML = '<span style="color:#f6c343">⭐ Línea registrada — sigue jugando</span>';
     } else if (isLinea && state.claimingLinea) {
@@ -1378,9 +1411,54 @@ async function claimLinea(cid) {
     } else {
       state.claimingLinea = false;
     }
-    // The global línea banner will appear for all players via syncState
   } catch(e) {
     state.claimingLinea = false;
+  }
+}
+
+// ── Auto-reclamar U-pattern ───────────────────────────
+async function claimU(cid) {
+  const state = getCartillaState(cid);
+  try {
+    const res  = await fetch('/api/winner/claim_u', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cid: cid }),
+    });
+    const data = await res.json();
+    if (data.already || data.error === 'u_closed' || (res.ok && data.ok)) {
+      state.claimedU = true;
+      if (res.ok && data.ok && data.u_prize) {
+        showWinNotification('🔷 ¡U!', 'Premio: S/. ' + Number(data.u_prize).toFixed(2));
+      }
+    } else {
+      state.claimingU = false;
+    }
+  } catch(e) {
+    state.claimingU = false;
+  }
+}
+
+// ── Auto-reclamar O-pattern ───────────────────────────
+async function claimO(cid) {
+  const state = getCartillaState(cid);
+  try {
+    const res  = await fetch('/api/winner/claim_o', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cid: cid }),
+    });
+    const data = await res.json();
+    if (data.already || data.error === 'o_closed' || (res.ok && data.ok)) {
+      state.claimedO = true;
+      if (res.ok && data.ok && data.o_prize) {
+        showWinNotification('⭕ ¡O!', 'Premio: S/. ' + Number(data.o_prize).toFixed(2));
+      }
+    } else {
+      state.claimingO = false;
+    }
+  } catch(e) {
+    state.claimingO = false;
   }
 }
 

@@ -169,7 +169,7 @@ async function fetchDraw() {
     if (data.status === 'paused') {
       isDrawing = false;
       setDrawBtnState(true);
-      showPausedBanner(data.winners || [], data.linea_winners || []);
+      showPausedBanner(data.winners || [], data.linea_winners || [], data.u_winners || [], data.o_winners || []);
       return;
     }
 
@@ -535,7 +535,7 @@ async function loadExistingState() {
     if (!startTime) { startTime = Date.now(); startClock(); }
 
     if (data.paused) {
-      showPausedBanner(data.winners || [], data.linea_winners || []);
+      showPausedBanner(data.winners || [], data.linea_winners || [], data.u_winners || [], data.o_winners || []);
       showToast('⏸ Juego pausado — hay ganador(es)');
     } else {
       showToast('✅ Juego en curso: ' + drawn.length + ' bolillas ya sorteadas');
@@ -598,7 +598,7 @@ function startPlayerPolling() {
 }
 
 // ── PAUSA POR GANADOR ────────────────────────────
-function showPausedBanner(winners, lineaWinners) {
+function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
   stopAuto();
 
   let existing = document.getElementById('paused-banner');
@@ -653,6 +653,28 @@ function showPausedBanner(winners, lineaWinners) {
       '</div>';
   }).join('');
 
+  const uCards = (uWinners || []).map(function(w) {
+    const prize = w.u_prize ? '<span style="color:#3b82f6;font-weight:900"> · S/. ' + Number(w.u_prize).toFixed(2) + '</span>' : '';
+    const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
+    return '<div style="margin:6px 0;padding:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;text-align:left">' +
+      '<div style="font-size:.95rem;color:var(--text);font-weight:700">🔷 ' + nombre + prize + '</div>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">U-Pattern · Cartilla: <strong>' + w.id + '</strong>' +
+        (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
+      contactBlock(w, '#3b82f6') +
+      '</div>';
+  }).join('');
+
+  const oCards = (oWinners || []).map(function(w) {
+    const prize = w.o_prize ? '<span style="color:#ec4899;font-weight:900"> · S/. ' + Number(w.o_prize).toFixed(2) + '</span>' : '';
+    const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
+    return '<div style="margin:6px 0;padding:12px;background:rgba(236,72,153,.06);border:1px solid rgba(236,72,153,.2);border-radius:10px;text-align:left">' +
+      '<div style="font-size:.95rem;color:var(--text);font-weight:700">⭕ ' + nombre + prize + '</div>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">O-Pattern · Cartilla: <strong>' + w.id + '</strong>' +
+        (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
+      contactBlock(w, '#ec4899') +
+      '</div>';
+  }).join('');
+
   existing.innerHTML = `
     <div style="max-width:500px;overflow-y:auto;max-height:90vh;">
       <div style="font-size:4rem;margin-bottom:8px;">🎉</div>
@@ -661,8 +683,16 @@ function showPausedBanner(winners, lineaWinners) {
         ¡GANADOR!
       </h1>
       <div style="margin-bottom:12px;">${bingoCards || '<div style="color:var(--muted);">Verificando ganador…</div>'}</div>
+      ${oCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(236,72,153,.2);padding-top:10px;">
+        <div style="font-size:.72rem;color:#ec4899;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭕ Premio O-Pattern</div>
+        ${oCards}
+      </div>` : ''}
+      ${uCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(59,130,246,.2);padding-top:10px;">
+        <div style="font-size:.72rem;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🔷 Premio U-Pattern</div>
+        ${uCards}
+      </div>` : ''}
       ${lineaCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(246,195,67,.2);padding-top:10px;">
-        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Premio Línea</div>
+        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭐ Premio Línea</div>
         ${lineaCards}
       </div>` : ''}
       <div style="color:var(--muted);font-size:.9rem;margin-bottom:20px;">

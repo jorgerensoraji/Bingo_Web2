@@ -359,22 +359,30 @@ BINGO_TYPES = {
     "1sol": {
         "id": "1sol", "nombre": "Bingo 1 Sol", "precio": 1.00,
         "color": "#f472b6", "emoji": "🎯", "descripcion": "Bingo B-I-N-G-O · 1 Sol",
-        "prize_pct": 0.70, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
-        "balls": 75, "grid_type": "75",
+        "prize_pct": 0.55, "linea_pct": 0.04, "u_pct": 0.13, "o_pct": 0.15,
+        "max_cartillas_per_voucher": 1, "balls": 75, "grid_type": "75",
     },
     "5soles": {
         "id": "5soles", "nombre": "Bingo 5 Soles", "precio": 5.00,
         "color": "#a855f7", "emoji": "🎯", "descripcion": "Bingo B-I-N-G-O · 5 Soles",
-        "prize_pct": 0.75, "linea_pct": 0.10, "max_cartillas_per_voucher": 1,
-        "balls": 75, "grid_type": "75",
+        "prize_pct": 0.55, "linea_pct": 0.04, "u_pct": 0.13, "o_pct": 0.15,
+        "max_cartillas_per_voucher": 1, "balls": 75, "grid_type": "75",
     },
     "10soles": {
         "id": "10soles", "nombre": "Bingo 10 Soles", "precio": 10.00,
         "color": "#818cf8", "emoji": "🎯", "descripcion": "Bingo B-I-N-G-O · 10 Soles",
-        "prize_pct": 0.80, "linea_pct": 0.08, "max_cartillas_per_voucher": 1,
-        "balls": 75, "grid_type": "75",
+        "prize_pct": 0.55, "linea_pct": 0.04, "u_pct": 0.13, "o_pct": 0.15,
+        "max_cartillas_per_voucher": 1, "balls": 75, "grid_type": "75",
     },
 }
+# Prize breakdown (same for all types):
+#   55% BINGO (full card, 24 numbers)
+#   15% O-pattern (outer border, 16 numbers)
+#   13% U-pattern (left col + right col + bottom row, 13 numbers)
+#    4% LINEA (any complete row, 5 numbers)
+#   13% Admin / house cut
+#  ─────
+#  100%
 
 # ─── DEFAULT CONFIG ───────────────────────────────────────────────────────────
 DEFAULT_CONFIG = {
@@ -581,9 +589,15 @@ class GameState:
         self.game_id           = str(uuid.uuid4())[:8].upper()
         self.claimed_winners   = set()
         self.linea_claimed     = set()
-        self.linea_drawn_at    = None   # drawn_count cuando se reclamó la 1ª línea
+        self.u_claimed         = set()
+        self.o_claimed         = set()
+        self.linea_drawn_at    = None
+        self.u_drawn_at        = None
+        self.o_drawn_at        = None
         self.winners_log       = []
         self.linea_winners_log = []
+        self.u_winners_log     = []
+        self.o_winners_log     = []
         self.last_phrase       = None
         self.last_voice        = "es-PE-CamilaNeural"
         self.last_activity     = None
@@ -593,6 +607,8 @@ class GameState:
         self.bingo_type        = "1sol"
         self.prize_pool        = 0.0
         self.linea_pool        = 0.0
+        self.u_pool            = 0.0
+        self.o_pool            = 0.0
         self.preparing         = False
         self.prepare_at        = None
         self.prepare_secs      = 60
@@ -616,9 +632,15 @@ class GameState:
                 "last": self.last, "game_id": self.game_id,
                 "claimed_winners": list(self.claimed_winners),
                 "linea_claimed":   list(self.linea_claimed),
+                "u_claimed":       list(self.u_claimed),
+                "o_claimed":       list(self.o_claimed),
                 "linea_drawn_at":  self.linea_drawn_at,
+                "u_drawn_at":      self.u_drawn_at,
+                "o_drawn_at":      self.o_drawn_at,
                 "winners_log":          self.winners_log,
                 "linea_winners_log":    self.linea_winners_log,
+                "u_winners_log":        self.u_winners_log,
+                "o_winners_log":        self.o_winners_log,
                 "last_phrase":     self.last_phrase,
                 "last_voice":      self.last_voice,
                 "last_activity":   self.last_activity,
@@ -628,6 +650,8 @@ class GameState:
                 "bingo_type":      self.bingo_type,
                 "prize_pool":      self.prize_pool,
                 "linea_pool":      self.linea_pool,
+                "u_pool":          self.u_pool,
+                "o_pool":          self.o_pool,
                 "preparing":       self.preparing,
                 "prepare_at":      self.prepare_at,
                 "prepare_secs":    self.prepare_secs,
@@ -666,9 +690,15 @@ class GameState:
             self.game_id           = data.get("game_id", self.game_id)
             self.claimed_winners   = set(data.get("claimed_winners", []))
             self.linea_claimed     = set(data.get("linea_claimed", []))
+            self.u_claimed         = set(data.get("u_claimed", []))
+            self.o_claimed         = set(data.get("o_claimed", []))
             self.linea_drawn_at    = data.get("linea_drawn_at", None)
+            self.u_drawn_at        = data.get("u_drawn_at", None)
+            self.o_drawn_at        = data.get("o_drawn_at", None)
             self.winners_log       = data.get("winners_log", [])
             self.linea_winners_log = data.get("linea_winners_log", [])
+            self.u_winners_log     = data.get("u_winners_log", [])
+            self.o_winners_log     = data.get("o_winners_log", [])
             self.last_phrase       = data.get("last_phrase")
             self.last_voice        = data.get("last_voice", "es-PE-CamilaNeural")
             self.last_activity     = data.get("last_activity")
@@ -678,6 +708,8 @@ class GameState:
             self.bingo_type        = data.get("bingo_type", "1sol")
             self.prize_pool        = data.get("prize_pool", 0.0)
             self.linea_pool        = data.get("linea_pool", 0.0)
+            self.u_pool            = data.get("u_pool", 0.0)
+            self.o_pool            = data.get("o_pool", 0.0)
             self.preparing         = data.get("preparing", False)
             self.prepare_at        = data.get("prepare_at")
             self.prepare_secs      = data.get("prepare_secs", 60)
@@ -808,6 +840,7 @@ def _check_winner_75(grid: list, drawn: list) -> dict:
         "total": 24, "marked": len(marked_nums),
         "bingo": bingo,
         "linea": False, "linea_row": None, "linea_type": None,
+        "u_pattern": False, "o_pattern": False,
         "almost": False, "almost_num": None,
     }
     # Rows
@@ -825,6 +858,15 @@ def _check_winner_75(grid: list, drawn: list) -> dict:
             result["linea"] = True; result["linea_type"] = "diag_main"
         elif all(marked(i, 4 - i) for i in range(5)):
             result["linea"] = True; result["linea_type"] = "diag_anti"
+    # U-pattern: left column (col 0) + right column (col 4) + bottom row (row 4)
+    # Forms the letter U — 13 unique cells, none of which is the FREE center
+    u_cells = [(r, 0) for r in range(5)] + [(r, 4) for r in range(5)] + [(4, c) for c in range(1, 4)]
+    result["u_pattern"] = all(marked(r, c) for r, c in u_cells)
+    # O-pattern: full outer border — top row + bottom row + left col + right col
+    # 16 unique cells (4 corners shared between rows and cols counted once)
+    o_cells = ([(0, c) for c in range(5)] + [(4, c) for c in range(5)] +
+               [(r, 0) for r in range(1, 4)] + [(r, 4) for r in range(1, 4)])
+    result["o_pattern"] = all(marked(r, c) for r, c in o_cells)
     # Almost bingo (1 away)
     if not bingo and 24 - len(marked_nums) == 1:
         result["almost"]     = True
@@ -836,7 +878,9 @@ def compute_prize_pool(session_id: str, bingo_type: str) -> dict:
     btype     = BINGO_TYPES.get(bingo_type, BINGO_TYPES["1sol"])
     precio    = btype["precio"]
     prize_pct = btype["prize_pct"]
-    linea_pct = btype.get("linea_pct", 0.10)
+    linea_pct = btype.get("linea_pct", 0.04)
+    u_pct     = btype.get("u_pct", 0.13)
+    o_pct     = btype.get("o_pct", 0.15)
     with db_session() as db:
         paid = (db.query(Voucher)
                 .filter_by(session_id=session_id, bingo_type=bingo_type)
@@ -844,12 +888,16 @@ def compute_prize_pool(session_id: str, bingo_type: str) -> dict:
                 .count())
     gross  = paid * precio
     linea  = round(gross * linea_pct, 2)
+    u_amt  = round(gross * u_pct, 2)
+    o_amt  = round(gross * o_pct, 2)
     prize  = round(gross * prize_pct, 2)
-    house  = round(gross - prize - linea, 2)
+    house  = round(gross - prize - linea - u_amt - o_amt, 2)
     return {
         "total_players": paid, "precio_entrada": precio, "gross": gross,
-        "prize_pct": prize_pct, "linea_pct": linea_pct,
-        "prize_amount": prize, "linea_amount": linea, "house_cut": house,
+        "prize_pct": prize_pct, "linea_pct": linea_pct, "u_pct": u_pct, "o_pct": o_pct,
+        "prize_amount": prize, "linea_amount": linea,
+        "u_amount": u_amt, "o_amount": o_amt,
+        "house_cut": house,
         "bingo_type": bingo_type, "bingo_nombre": btype["nombre"],
     }
 
@@ -1576,6 +1624,8 @@ def api_state():
             "paused":         game.paused,
             "winners":            game.winners_log,
             "linea_winners":      game.linea_winners_log,
+            "u_winners":          game.u_winners_log,
+            "o_winners":          game.o_winners_log,
             "winners_count":      len(game.claimed_winners),
             "winners_limit":      game.winners_limit,
             "prize_per_winner": (
@@ -1591,6 +1641,8 @@ def api_state():
             "bingo_grid":     bt_info.get("grid_type", "75"),
             "prize_pool":     game.prize_pool,
             "linea_pool":     game.linea_pool,
+            "u_pool":         game.u_pool,
+            "o_pool":         game.o_pool,
             "preparing":        game.preparing,
             "prepare_at":       game.prepare_at,
             "prepare_secs":     game.prepare_secs,
@@ -1868,6 +1920,8 @@ def api_start_session(sid):
         game.available   = game._ball_pool()   # set correct pool after bingo_type is assigned
         game.prize_pool  = prize["prize_amount"]
         game.linea_pool  = prize["linea_amount"]
+        game.u_pool      = prize["u_amount"]
+        game.o_pool      = prize["o_amount"]
         game.preparing   = False
         game.prepare_at  = None
         game.prepare_sid = None
@@ -2561,6 +2615,141 @@ def api_winner_claim_linea():
         "row": chk.get("linea_row"), "nombre": c.get("nombre"),
         "puede_reclamar_bingo": True,
     })
+
+
+@app.route("/api/winner/claim_u", methods=["POST"])
+@rate_limit(max_calls=5, window_seconds=10)
+def api_winner_claim_u():
+    data = request.get_json() or {}
+    cid  = (data.get("cid") or "").strip().upper()
+    if not cid: return jsonify({"error": "missing_cid"}), 400
+    c = load_cartilla(cid)
+    if not c: return jsonify({"error": "not_found"}), 404
+
+    yape_plin = ""; winner_email = ""; celular = ""; apellidos = ""
+    with db_session() as db:
+        v_code = c.get("voucher_code", "")
+        if v_code:
+            v = db.query(Voucher).filter_by(code=v_code).first()
+            if v:
+                yape_plin = v.yape_plin or ""; winner_email = v.email or ""
+                celular = v.celular or ""; apellidos = v.apellidos or ""
+
+    with game_lock:
+        drawn2 = list(game.drawn)
+        gid    = game.game_id
+        u_cl   = game.u_claimed
+        chk    = check_winner(c["grid"], drawn2)
+
+        if game.session_id:
+            c_sid = c.get("session_id", "")
+            if not c.get("generada_por_admin") and c_sid != game.session_id:
+                return jsonify({"error": "session_mismatch"}), 403
+
+        if not chk.get("u_pattern"):
+            return jsonify({"ok": False, "error": "not_u_pattern"}), 400
+        if cid in u_cl:
+            entry = next((w for w in game.u_winners_log if w["id"] == cid), None)
+            return jsonify({"ok": True, "already": True, "winner": entry})
+
+        current_drawn = len(drawn2)
+        if game.u_drawn_at is not None and current_drawn > game.u_drawn_at:
+            return jsonify({"ok": False, "error": "u_closed",
+                            "message": "La U ya fue ganada en una bolilla anterior."}), 400
+        if game.u_drawn_at is None:
+            game.u_drawn_at = current_drawn
+
+        u_cl.add(cid)
+        n_u    = len(u_cl)
+        u_each = round(game.u_pool / n_u, 2)
+
+        for prev in game.u_winners_log:
+            if prev.get("game_id") == gid:
+                prev["u_prize"] = u_each; prev["n_winners"] = n_u; prev["split"] = n_u > 1
+
+        u_winner = {
+            "id": cid, "nombre": c.get("nombre"), "apellidos": apellidos,
+            "yape_plin": yape_plin, "email": winner_email, "celular": celular,
+            "claimed_at": datetime.now().isoformat(), "drawn_count": len(drawn2),
+            "game_id": gid, "u_prize": u_each, "n_winners": n_u, "split": n_u > 1,
+            "puede_reclamar_bingo": True,
+        }
+        game.u_winners_log.append(u_winner)
+        game.save_to_db()
+
+    return jsonify({
+        "ok": True, "already": False, "game_id": gid, "winner": u_winner,
+        "u_prize": u_each, "n_winners": n_u, "split": n_u > 1,
+        "nombre": c.get("nombre"), "puede_reclamar_bingo": True,
+    })
+
+
+@app.route("/api/winner/claim_o", methods=["POST"])
+@rate_limit(max_calls=5, window_seconds=10)
+def api_winner_claim_o():
+    data = request.get_json() or {}
+    cid  = (data.get("cid") or "").strip().upper()
+    if not cid: return jsonify({"error": "missing_cid"}), 400
+    c = load_cartilla(cid)
+    if not c: return jsonify({"error": "not_found"}), 404
+
+    yape_plin = ""; winner_email = ""; celular = ""; apellidos = ""
+    with db_session() as db:
+        v_code = c.get("voucher_code", "")
+        if v_code:
+            v = db.query(Voucher).filter_by(code=v_code).first()
+            if v:
+                yape_plin = v.yape_plin or ""; winner_email = v.email or ""
+                celular = v.celular or ""; apellidos = v.apellidos or ""
+
+    with game_lock:
+        drawn2 = list(game.drawn)
+        gid    = game.game_id
+        o_cl   = game.o_claimed
+        chk    = check_winner(c["grid"], drawn2)
+
+        if game.session_id:
+            c_sid = c.get("session_id", "")
+            if not c.get("generada_por_admin") and c_sid != game.session_id:
+                return jsonify({"error": "session_mismatch"}), 403
+
+        if not chk.get("o_pattern"):
+            return jsonify({"ok": False, "error": "not_o_pattern"}), 400
+        if cid in o_cl:
+            entry = next((w for w in game.o_winners_log if w["id"] == cid), None)
+            return jsonify({"ok": True, "already": True, "winner": entry})
+
+        current_drawn = len(drawn2)
+        if game.o_drawn_at is not None and current_drawn > game.o_drawn_at:
+            return jsonify({"ok": False, "error": "o_closed",
+                            "message": "La O ya fue ganada en una bolilla anterior."}), 400
+        if game.o_drawn_at is None:
+            game.o_drawn_at = current_drawn
+
+        o_cl.add(cid)
+        n_o    = len(o_cl)
+        o_each = round(game.o_pool / n_o, 2)
+
+        for prev in game.o_winners_log:
+            if prev.get("game_id") == gid:
+                prev["o_prize"] = o_each; prev["n_winners"] = n_o; prev["split"] = n_o > 1
+
+        o_winner = {
+            "id": cid, "nombre": c.get("nombre"), "apellidos": apellidos,
+            "yape_plin": yape_plin, "email": winner_email, "celular": celular,
+            "claimed_at": datetime.now().isoformat(), "drawn_count": len(drawn2),
+            "game_id": gid, "o_prize": o_each, "n_winners": n_o, "split": n_o > 1,
+            "puede_reclamar_bingo": True,
+        }
+        game.o_winners_log.append(o_winner)
+        game.save_to_db()
+
+    return jsonify({
+        "ok": True, "already": False, "game_id": gid, "winner": o_winner,
+        "o_prize": o_each, "n_winners": n_o, "split": n_o > 1,
+        "nombre": c.get("nombre"), "puede_reclamar_bingo": True,
+    })
+
 
 # ─── Config API ───────────────────────────────────────────────────────────────
 @app.route("/api/config")
