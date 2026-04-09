@@ -398,6 +398,116 @@
     .header-right .stat { display:none; }
   }
 
+  /* ── Bingo Bot Host Character ── */
+  #bingo-host {
+    display:flex; flex-direction:column; align-items:center;
+    flex-shrink:0; align-self:center; gap:2px;
+    position:relative; cursor:default; user-select:none;
+  }
+
+  /* Speech bubble */
+  #host-bubble {
+    background:rgba(0,229,180,.15); border:1px solid rgba(0,229,180,.4);
+    border-radius:10px; padding:3px 8px;
+    font-family:'Bebas Neue',sans-serif; font-size:1rem;
+    color:var(--accent); letter-spacing:1px;
+    white-space:nowrap;
+    position:relative;
+    transition:opacity .2s;
+    box-shadow:0 0 8px rgba(0,229,180,.15);
+    min-width:42px; text-align:center;
+  }
+  #host-bubble::after {
+    content:''; position:absolute; bottom:-6px; left:50%;
+    transform:translateX(-50%);
+    border:6px solid transparent;
+    border-top-color:rgba(0,229,180,.4);
+    border-bottom:none;
+  }
+
+  /* Head */
+  .host-head {
+    display:flex; flex-direction:column; align-items:center;
+    position:relative;
+  }
+  .host-antenna {
+    width:3px; height:10px;
+    background:linear-gradient(to top, rgba(0,229,180,.5), rgba(0,229,180,.9));
+    border-radius:2px;
+  }
+  .host-antenna-tip {
+    width:7px; height:7px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 6px var(--accent);
+    margin-top:-3px; margin-left:-2px;
+    animation:antennaPulse 2s ease-in-out infinite;
+  }
+  @keyframes antennaPulse {
+    0%,100% { opacity:.6; transform:scale(1); box-shadow:0 0 4px var(--accent); }
+    50%     { opacity:1;  transform:scale(1.3); box-shadow:0 0 10px var(--accent); }
+  }
+  .host-face {
+    width:52px; height:48px;
+    background:linear-gradient(160deg, #0e2b38 0%, #071820 100%);
+    border:2px solid rgba(0,229,180,.35);
+    border-radius:10px;
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:5px;
+    box-shadow:0 0 12px rgba(0,229,180,.12), inset 0 1px 0 rgba(255,255,255,.05);
+    position:relative; overflow:hidden;
+  }
+  .host-face::before {
+    content:''; position:absolute; top:3px; left:8px; width:36px; height:8px;
+    background:radial-gradient(ellipse, rgba(255,255,255,.07) 0%, transparent 80%);
+    border-radius:50%; pointer-events:none;
+  }
+  .host-eyes { display:flex; gap:10px; }
+  .host-eye {
+    width:12px; height:10px; border-radius:3px;
+    background:var(--accent);
+    box-shadow:0 0 6px var(--accent);
+    animation:eyeBlink 4s ease-in-out infinite;
+  }
+  @keyframes eyeBlink {
+    0%,92%,100% { transform:scaleY(1); }
+    95%         { transform:scaleY(.15); }
+  }
+  /* Eyes animate when talking */
+  #bingo-host.talking .host-eye {
+    animation:eyeActive 0.3s ease-in-out infinite alternate;
+  }
+  @keyframes eyeActive {
+    from { box-shadow:0 0 5px var(--accent); opacity:.8; }
+    to   { box-shadow:0 0 14px var(--accent), 0 0 20px rgba(0,229,180,.4); opacity:1; }
+  }
+
+  .host-mouth {
+    display:flex; gap:3px; align-items:flex-end; height:7px;
+  }
+  .host-tooth {
+    width:4px; border-radius:1px;
+    background:rgba(0,229,180,.6);
+    height:5px;
+    transition:height .1s ease;
+  }
+  /* Mouth animation when talking */
+  #bingo-host.talking .host-tooth:nth-child(1) { animation:mouthTalk1 .18s ease-in-out infinite alternate; }
+  #bingo-host.talking .host-tooth:nth-child(2) { animation:mouthTalk2 .22s ease-in-out infinite alternate; }
+  #bingo-host.talking .host-tooth:nth-child(3) { animation:mouthTalk3 .15s ease-in-out infinite alternate; }
+  @keyframes mouthTalk1 { from { height:2px; } to { height:7px; } }
+  @keyframes mouthTalk2 { from { height:5px; } to { height:2px; } }
+  @keyframes mouthTalk3 { from { height:3px; } to { height:7px; } }
+
+  /* Body */
+  .host-body {
+    width:44px; height:20px;
+    background:linear-gradient(160deg, #0d2535 0%, #071820 100%);
+    border:1px solid rgba(0,229,180,.25);
+    border-radius:0 0 8px 8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.75rem;
+  }
+
   @media(max-width:600px) {
     /* ── Layout: dissolve left/right containers so each section can be
        individually ordered: ball → game-status → grid → cartilla → chat ── */
@@ -428,6 +538,7 @@
 
     /* ── Big panel: compact (ball + info only) ── */
     #ball-drum-wrap { display:none !important; }
+    #bingo-host     { display:none !important; }
     .big-panel { gap:8px; padding:8px 10px; flex-wrap:nowrap; align-items:center; }
     .big-panel > div[style*="1.6rem"] { display:none !important; }
     .ball-wrap { width:68px !important; height:68px !important; flex-shrink:0; }
@@ -694,8 +805,30 @@
         <div class="drum-label">Bolillero</div>
       </div>
 
-      <!-- Flecha indicadora -->
-      <div style="font-size:1.6rem;color:rgba(0,229,180,.5);flex-shrink:0;align-self:center">▶</div>
+      <!-- Bingo Bot Host -->
+      <div id="bingo-host" title="¡Bingo Bot!">
+        <!-- Speech bubble -->
+        <div id="host-bubble"><span id="host-bubble-text">?</span></div>
+        <!-- Head -->
+        <div class="host-head">
+          <div class="host-antenna"><div class="host-antenna-tip"></div></div>
+          <div class="host-face">
+            <div class="host-eyes">
+              <div class="host-eye host-eye-l"></div>
+              <div class="host-eye host-eye-r"></div>
+            </div>
+            <div class="host-mouth">
+              <div class="host-tooth"></div>
+              <div class="host-tooth"></div>
+              <div class="host-tooth"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Body -->
+        <div class="host-body">
+          <span class="host-mic">🎤</span>
+        </div>
+      </div>
 
       <!-- Bolilla seleccionada -->
       <div class="ball-wrap">

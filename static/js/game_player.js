@@ -140,12 +140,28 @@ function stopAudio() {
   var a = _getAudioEl();
   a.pause();
   currentAudio = null;
+  setHostTalking(false);
 }
 
 function stopTestAudio() {
   if (testAudio) {
     testAudio.pause();
     testAudio = null;
+  }
+}
+
+/* ── Bingo Bot host character ── */
+function setHostTalking(talking, ballText) {
+  var host = document.getElementById('bingo-host');
+  if (!host) return;
+  if (talking) {
+    host.classList.add('talking');
+  } else {
+    host.classList.remove('talking');
+  }
+  if (ballText !== undefined) {
+    var bubble = document.getElementById('host-bubble-text');
+    if (bubble) bubble.textContent = ballText;
   }
 }
 
@@ -180,16 +196,18 @@ function playPhrase(text, voice) {
     a.pause();
     a.src = url;
     a.load();   // required on iOS to apply new src
+    setHostTalking(true);
     var p = a.play();
     if (p && p.catch) {
       p.catch(function(e) {
         if (e.name !== 'AbortError') {
           console.warn('Audio play blocked:', e);
           showToast('🔇 Haz clic en la página para activar sonido');
+          setHostTalking(false);
         }
       });
     }
-    a.onended = function() { URL.revokeObjectURL(url); };
+    a.onended = function() { URL.revokeObjectURL(url); setHostTalking(false); };
     if (prevUrl && prevUrl.startsWith('blob:')) URL.revokeObjectURL(prevUrl);
     _speakAbort = null;
     currentAudio = a;
@@ -824,11 +842,14 @@ function updateDisplay(num) {
     setTimeout(function() { ball.classList.remove('reveal'); }, 600);
   }, 420);
 
-  bigNum.textContent      = getNumLabel(num);
+  var numLabel = getNumLabel(num);
+  bigNum.textContent      = numLabel;
   bigNum.style.color      = fg;
   bigNum.style.textShadow = '0 0 20px ' + fg + '88, 0 2px 4px rgba(0,0,0,0.8)';
   // Shrink font slightly for letter-prefixed numbers (B-12)
   bigNum.style.fontSize   = 'clamp(1.8rem,4vw,3.2rem)';
+  // Update host speech bubble
+  setHostTalking(false, numLabel);
 
   const gt = document.getElementById('group-tag');
   if (gt) {
