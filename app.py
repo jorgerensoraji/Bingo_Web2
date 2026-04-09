@@ -1084,6 +1084,11 @@ def admin_pagos_ganadores_page():
     if not is_admin(): return redirect("/admin/login")
     return render_template("admin_pagos_ganadores.html")
 
+@app.route("/admin/manual")
+def admin_manual_page():
+    if not is_admin(): return redirect("/admin/login")
+    return send_file(os.path.join(os.path.dirname(__file__), "MANUAL_BINGO_PRO.html"))
+
 # ─── Auth ──────────────────────────────────────────────────────────────────────
 
 @app.route("/api/admin/login", methods=["POST"])
