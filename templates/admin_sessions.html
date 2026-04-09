@@ -306,8 +306,10 @@ function updatePreview() {
   const ejemplo = max > 0 ? max : 10;
   const gross   = ejemplo * bt.precio;
   const bingo   = gross * bt.prize_pct;
+  const oAmt    = gross * (bt.o_pct || 0.15);
+  const uAmt    = gross * (bt.u_pct || 0.13);
   const linea   = gross * bt.linea_pct;
-  const casa    = gross - bingo - linea;
+  const casa    = gross - bingo - oAmt - uAmt - linea;
   const label   = max > 0 ? `${max} jugadores (límite)` : `${ejemplo} jugadores (ejemplo)`;
 
   body.innerHTML = `
@@ -321,11 +323,19 @@ function updatePreview() {
       <span style="color:var(--accent)">S/. ${bingo.toFixed(2)}</span>
     </div>
     <div class="prize-row">
+      <span>⭕ Premio O (${((bt.o_pct||0.15)*100).toFixed(0)}%)</span>
+      <span style="color:#ec4899">S/. ${oAmt.toFixed(2)}</span>
+    </div>
+    <div class="prize-row">
+      <span>🔷 Premio U (${((bt.u_pct||0.13)*100).toFixed(0)}%)</span>
+      <span style="color:#3b82f6">S/. ${uAmt.toFixed(2)}</span>
+    </div>
+    <div class="prize-row">
       <span>⭐ Premio LÍNEA (${(bt.linea_pct*100).toFixed(0)}%)</span>
       <span style="color:var(--warning)">S/. ${linea.toFixed(2)}</span>
     </div>
     <div class="prize-row">
-      <span>💼 Casa / Organización</span>
+      <span>💼 Casa / Organización (13%)</span>
       <span style="color:#27ae60">S/. ${casa.toFixed(2)}</span>
     </div>`;
   box.classList.add('show');
@@ -389,11 +399,19 @@ function renderSessions() {
           <span style="color:var(--accent)">S/. ${(prize.prize_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
+          <span>⭕ Premio O (${((prize.o_pct||0)*100).toFixed(0)}%)</span>
+          <span style="color:#ec4899">S/. ${(prize.o_amount||0).toFixed(2)}</span>
+        </div>
+        <div class="prize-row">
+          <span>🔷 Premio U (${((prize.u_pct||0)*100).toFixed(0)}%)</span>
+          <span style="color:#3b82f6">S/. ${(prize.u_amount||0).toFixed(2)}</span>
+        </div>
+        <div class="prize-row">
           <span>⭐ Premio LÍNEA (${((prize.linea_pct||0)*100).toFixed(0)}%)</span>
           <span style="color:var(--warning)">S/. ${(prize.linea_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
-          <span>💼 Ganancia casa</span>
+          <span>💼 Ganancia casa (13%)</span>
           <span style="color:#27ae60">S/. ${(prize.house_cut||0).toFixed(2)}</span>
         </div>
       </div>` : '';
@@ -684,9 +702,11 @@ async function showPrize(sid) {
       `💰 POZO SESIÓN #${sid}\n` +
       `Jugadores: ${data.total_players}\n` +
       `Recaudado: S/. ${data.gross?.toFixed(2)}\n` +
-      `Premio BINGO (${((data.prize_pct||0)*100).toFixed(0)}%): S/. ${data.prize_amount?.toFixed(2)}\n` +
-      `Premio LÍNEA (${((data.linea_pct||0)*100).toFixed(0)}%): S/. ${data.linea_amount?.toFixed(2)}\n` +
-      `Casa: S/. ${data.house_cut?.toFixed(2)}`
+      `🎉 BINGO (${((data.prize_pct||0)*100).toFixed(0)}%): S/. ${data.prize_amount?.toFixed(2)}\n` +
+      `⭕ O (${((data.o_pct||0)*100).toFixed(0)}%): S/. ${data.o_amount?.toFixed(2)}\n` +
+      `🔷 U (${((data.u_pct||0)*100).toFixed(0)}%): S/. ${data.u_amount?.toFixed(2)}\n` +
+      `⭐ LÍNEA (${((data.linea_pct||0)*100).toFixed(0)}%): S/. ${data.linea_amount?.toFixed(2)}\n` +
+      `💼 Casa (13%): S/. ${data.house_cut?.toFixed(2)}`
     );
   } catch(e) {
     showToast('❌ Error al cargar pozo');

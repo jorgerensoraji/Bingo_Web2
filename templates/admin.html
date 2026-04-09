@@ -381,11 +381,11 @@ tr:hover td{background:rgba(17,31,46,.5)}
 <script>
 const BINGO_TYPES = {
   "1sol":    {nombre:"Bingo 1 Sol",    precio:1,  color:"#f472b6",
-              emoji:"🎯", prize_pct:.70, linea_pct:.10, max_cartillas:1},
+              emoji:"🎯", prize_pct:.55, linea_pct:.04, u_pct:.13, o_pct:.15, max_cartillas:1},
   "5soles":  {nombre:"Bingo 5 Soles",  precio:5,  color:"#a855f7",
-              emoji:"🎯", prize_pct:.75, linea_pct:.10, max_cartillas:1},
+              emoji:"🎯", prize_pct:.55, linea_pct:.04, u_pct:.13, o_pct:.15, max_cartillas:1},
   "10soles": {nombre:"Bingo 10 Soles", precio:10, color:"#818cf8",
-              emoji:"🎯", prize_pct:.80, linea_pct:.08, max_cartillas:1},
+              emoji:"🎯", prize_pct:.55, linea_pct:.04, u_pct:.13, o_pct:.15, max_cartillas:1},
 };
 
 let selBtype = "1sol";
@@ -487,8 +487,11 @@ function updateTypeInfo() {
     <strong style="color:${bt.color}">${bt.emoji} ${bt.nombre}</strong> —
     S/. ${bt.precio.toFixed(2)} por cartilla ·
     Máx. <strong>${bt.max_cartillas} cartillas</strong> por jugador ·
-    Premio bingo: <strong>${(bt.prize_pct*100).toFixed(0)}%</strong> ·
-    Premio línea: <strong>${(bt.linea_pct*100).toFixed(0)}%</strong>
+    🎉 BINGO <strong>${(bt.prize_pct*100).toFixed(0)}%</strong> ·
+    ⭕ O <strong>${(bt.o_pct*100).toFixed(0)}%</strong> ·
+    🔷 U <strong>${(bt.u_pct*100).toFixed(0)}%</strong> ·
+    ⭐ Línea <strong>${(bt.linea_pct*100).toFixed(0)}%</strong> ·
+    💼 Casa <strong>13%</strong>
   `;
 }
 

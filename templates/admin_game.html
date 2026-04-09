@@ -298,12 +298,16 @@ setInterval(async function() {
       const drawn  = (data.drawn || []).length;
       const pool   = Number(data.prize_pool || 0).toFixed(2);
       const linea  = Number(data.linea_pool  || 0).toFixed(2);
+      const uPool  = Number(data.u_pool || 0).toFixed(2);
+      const oPool  = Number(data.o_pool || 0).toFixed(2);
       infoEl.innerHTML =
         `Sesión: <strong style="color:var(--accent)">#${sid}</strong><br>` +
         `Tipo: <strong>${bt}</strong><br>` +
         `Bolillas sorteadas: <strong>${drawn}/75</strong><br>` +
-        `Premio BINGO: <strong style="color:var(--accent)">S/. ${pool}</strong><br>` +
-        `Premio LÍNEA: <strong style="color:var(--warning)">S/. ${linea}</strong>`;
+        `🎉 Premio BINGO: <strong style="color:var(--accent)">S/. ${pool}</strong><br>` +
+        `⭕ Premio O: <strong style="color:#ec4899">S/. ${oPool}</strong><br>` +
+        `🔷 Premio U: <strong style="color:#3b82f6">S/. ${uPool}</strong><br>` +
+        `⭐ Premio LÍNEA: <strong style="color:var(--warning)">S/. ${linea}</strong>`;
       if (panelSes) panelSes.style.display = 'block';
       // Hay sesión activa — ocultar botón limpiar
       const btnLimpiar = document.getElementById('btn-limpiar-wrap');

@@ -312,34 +312,41 @@
     <h4>Bingo 1 Sol (entrada basica)</h4>
     <div class="prize-row"><span>Precio por entrada:</span><span><strong>S/. 1.00</strong></span></div>
     <div class="prize-row"><span>Maximo de cartillas por jugador:</span><span>3</span></div>
-    <div class="prize-row"><span>Premio BINGO (cartilla completa):</span><span><strong>70% del pozo</strong></span></div>
-    <div class="prize-row"><span>Premio LINEA (una fila completa):</span><span>10% del pozo</span></div>
-    <div class="prize-row"><span>Ganancia del organizador:</span><span>20% del pozo</span></div>
-    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 3 cartillas = S/. 60 &rarr; Premio bingo: S/. 42, Premio linea: S/. 6, Para ti: S/. 12</div>
+    <div class="prize-row"><span>🎉 Premio BINGO (cartilla completa, 24 num.):</span><span><strong>55% del pozo</strong></span></div>
+    <div class="prize-row"><span>⭕ Premio O (borde exterior, 16 num.):</span><span>15% del pozo</span></div>
+    <div class="prize-row"><span>🔷 Premio U (cols. ext. + fila inf., 13 num.):</span><span>13% del pozo</span></div>
+    <div class="prize-row"><span>⭐ Premio LINEA (una fila completa, 5 num.):</span><span>4% del pozo</span></div>
+    <div class="prize-row"><span>Ganancia del organizador:</span><span>13% del pozo</span></div>
+    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 3 cartillas = S/. 60 &rarr; BINGO: S/. 33, O: S/. 9, U: S/. 7.80, LINEA: S/. 2.40, Para ti: S/. 7.80</div>
   </div>
 
   <div class="prize-card cinco">
     <h4>Bingo 5 Soles (entrada estandar)</h4>
     <div class="prize-row"><span>Precio por entrada:</span><span><strong>S/. 5.00</strong></span></div>
     <div class="prize-row"><span>Maximo de cartillas por jugador:</span><span>5</span></div>
-    <div class="prize-row"><span>Premio BINGO:</span><span><strong>75% del pozo</strong></span></div>
-    <div class="prize-row"><span>Premio LINEA:</span><span>8% del pozo</span></div>
-    <div class="prize-row"><span>Ganancia del organizador:</span><span>17% del pozo</span></div>
-    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 5 cartillas = S/. 500 &rarr; Premio bingo: S/. 375, Premio linea: S/. 40, Para ti: S/. 85</div>
+    <div class="prize-row"><span>🎉 Premio BINGO:</span><span><strong>55% del pozo</strong></span></div>
+    <div class="prize-row"><span>⭕ Premio O:</span><span>15% del pozo</span></div>
+    <div class="prize-row"><span>🔷 Premio U:</span><span>13% del pozo</span></div>
+    <div class="prize-row"><span>⭐ Premio LINEA:</span><span>4% del pozo</span></div>
+    <div class="prize-row"><span>Ganancia del organizador:</span><span>13% del pozo</span></div>
+    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 5 cartillas = S/. 500 &rarr; BINGO: S/. 275, O: S/. 75, U: S/. 65, LINEA: S/. 20, Para ti: S/. 65</div>
   </div>
 
   <div class="prize-card diez">
     <h4>Bingo 10 Soles (entrada premium)</h4>
     <div class="prize-row"><span>Precio por entrada:</span><span><strong>S/. 10.00</strong></span></div>
     <div class="prize-row"><span>Maximo de cartillas por jugador:</span><span>5</span></div>
-    <div class="prize-row"><span>Premio BINGO:</span><span><strong>80% del pozo</strong></span></div>
-    <div class="prize-row"><span>Premio LINEA:</span><span>5% del pozo</span></div>
-    <div class="prize-row"><span>Ganancia del organizador:</span><span>15% del pozo</span></div>
+    <div class="prize-row"><span>🎉 Premio BINGO:</span><span><strong>55% del pozo</strong></span></div>
+    <div class="prize-row"><span>⭕ Premio O:</span><span>15% del pozo</span></div>
+    <div class="prize-row"><span>🔷 Premio U:</span><span>13% del pozo</span></div>
+    <div class="prize-row"><span>⭐ Premio LINEA:</span><span>4% del pozo</span></div>
+    <div class="prize-row"><span>Ganancia del organizador:</span><span>13% del pozo</span></div>
+    <div style="margin-top:10px; font-size:12px; color:#666;">Ejemplo: 20 jugadores x 5 cartillas = S/. 1000 &rarr; BINGO: S/. 550, O: S/. 150, U: S/. 130, LINEA: S/. 40, Para ti: S/. 130</div>
   </div>
 
   <div class="box box-warn">
     <strong>Nota sobre premios divididos</strong>
-    Si dos jugadores cantan BINGO al mismo tiempo, el premio se divide entre ambos. El sistema lo calcula automaticamente.
+    Si dos jugadores completan el mismo patron al mismo tiempo, el premio de ese patron se divide entre ambos. El sistema lo calcula automaticamente para cada tipo (LINEA, U, O y BINGO).
   </div>
 
   <h3>Metodos de pago aceptados</h3>
@@ -514,11 +521,11 @@
 
   <div class="box box-warn">
     <strong>Limite de ganadores</strong>
-    Por defecto el juego se pausa cuando hay 1 ganador de BINGO. Puedes cambiar esto a 2 o mas ganadores antes de iniciar. Utiles para bingos grandes con multiple premios.
+    Por defecto el juego se pausa cuando hay 1 ganador de BINGO completo. Los premios LINEA, U y O se otorgan automaticamente sin pausar el juego — el juego continua hasta que alguien complete el BINGO. Puedes cambiar el numero de ganadores de BINGO a 2 o mas antes de iniciar.
   </div>
 
   <h3>Verificar ganadores</h3>
-  <p>Cuando un jugador canta BINGO o LINEA:</p>
+  <p>Cuando un jugador canta LINEA, U, O o BINGO:</p>
   <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
@@ -529,7 +536,7 @@
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        Si el BINGO es valido, el jugador aparece en la pantalla de ganadores con su nombre, ID de cartilla y el monto del premio.
+        Si el patron es valido, el jugador aparece en la pantalla de ganadores con su nombre, ID de cartilla, tipo de patron y el monto del premio.
       </div>
     </div>
     <div class="step">
@@ -542,7 +549,7 @@
 
   <div class="box box-success">
     <strong>Cuanto pagar al ganador</strong>
-    El sistema calcula el monto exacto automaticamente en base al numero de jugadores pagados. Lo ves en el panel de juego como "Premio BINGO: S/. XXX". Ese es el monto que debes transferir al ganador.
+    El sistema calcula los montos exactos automaticamente en base al numero de jugadores pagados. Los ves en el panel de juego como "Premio BINGO: S/. XXX", "Premio O: S/. XXX", etc. Esos son los montos que debes transferir a cada ganador.
   </div>
 
   <h3>Cerrar la sesion</h3>
@@ -571,9 +578,11 @@
   <table>
     <tr><th>Campo</th><th>Descripcion</th></tr>
     <tr><td>Total recaudado</td><td>Suma de todos los pagos aprobados</td></tr>
-    <tr><td>Premio bingo</td><td>Lo que se pago o se debe pagar al ganador de BINGO</td></tr>
-    <tr><td>Premio linea</td><td>Lo que se pago o se debe pagar al ganador de LINEA</td></tr>
-    <tr><td>Ganancia neta</td><td>Tu ganancia despues de premios (la casa)</td></tr>
+    <tr><td>Premio BINGO</td><td>Lo que se pago o se debe pagar al ganador de BINGO</td></tr>
+    <tr><td>Premio O</td><td>Lo que se pago o se debe pagar al ganador del patron O</td></tr>
+    <tr><td>Premio U</td><td>Lo que se pago o se debe pagar al ganador del patron U</td></tr>
+    <tr><td>Premio LINEA</td><td>Lo que se pago o se debe pagar al ganador de LINEA</td></tr>
+    <tr><td>Ganancia neta</td><td>Tu ganancia como organizador (13% del pozo)</td></tr>
   </table>
 
   <p>Puedes exportar el reporte como CSV para abrirlo en Excel.</p>
@@ -725,18 +734,28 @@
     </div>
   </div>
 
-  <h3>Paso 4 — Cantar LINEA y BINGO</h3>
+  <h3>Paso 4 — Cantar LINEA, U, O o BINGO</h3>
   <table>
     <tr><th>Tipo</th><th>Cuando cantar</th><th>Premio</th></tr>
     <tr>
-      <td><strong>LINEA</strong></td>
-      <td>Cuando tienes <strong>una fila completa</strong> marcada (los 5 numeros de una de las 5 filas — la FREE del centro ya cuenta)</td>
-      <td>8–10% del pozo (segun tipo de bingo)</td>
+      <td><strong>⭐ LINEA</strong></td>
+      <td>Cuando tienes <strong>una fila completa</strong> marcada (5 numeros en cualquier fila — la FREE del centro ya cuenta)</td>
+      <td>4% del pozo</td>
     </tr>
     <tr>
-      <td><strong>BINGO</strong></td>
+      <td><strong>🔷 U</strong></td>
+      <td>Cuando tienes las <strong>columnas izquierda y derecha + la fila inferior</strong> completas (13 celdas)</td>
+      <td>13% del pozo</td>
+    </tr>
+    <tr>
+      <td><strong>⭕ O</strong></td>
+      <td>Cuando tienes el <strong>borde exterior completo</strong> de la cartilla marcado (16 celdas — toda la fila superior, inferior y columnas externas)</td>
+      <td>15% del pozo</td>
+    </tr>
+    <tr>
+      <td><strong>🎉 BINGO</strong></td>
       <td>Cuando tienes <strong>la cartilla completa</strong> marcada (los 24 numeros han salido — la FREE ya esta marcada)</td>
-      <td>70–80% del pozo (segun tipo de bingo)</td>
+      <td>55% del pozo</td>
     </tr>
   </table>
 
@@ -744,7 +763,7 @@
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        Cuando tengas todos los numeros marcados, haz clic en el boton <strong>"CANTAR BINGO"</strong> o <strong>"CANTAR LINEA"</strong> en la pagina del juego.
+        Cuando tengas el patron completo, haz clic en el boton correspondiente: <strong>"CANTAR LINEA"</strong>, <strong>"CANTAR U"</strong>, <strong>"CANTAR O"</strong> o <strong>"CANTAR BINGO"</strong> en la pagina del juego. El sistema detecta el patron automaticamente y activa el boton correcto.
       </div>
     </div>
     <div class="step">
@@ -762,8 +781,8 @@
   </div>
 
   <div class="box box-danger">
-    <strong>No esperes demasiado para cantar BINGO</strong>
-    Si otro jugador canta antes que tu y el juego se pausa, pierdes la oportunidad. En cuanto completes la cartilla, canta inmediatamente. Si dos personas cantan al mismo tiempo, el premio se divide entre ambas.
+    <strong>No esperes demasiado para cantar</strong>
+    Si otro jugador canta el mismo patron antes que tu y el juego se pausa, pierdes la oportunidad. En cuanto completes un patron (LINEA, U, O o BINGO), canta inmediatamente. Si dos personas cantan al mismo tiempo, el premio de ese patron se divide entre ambas.
   </div>
 
   <h3>Como funciona la cartilla — formato B-I-N-G-O 5x5</h3>
@@ -776,7 +795,7 @@
     <tr><td>Columna 4</td><td style="color:#10b981;font-weight:bold;">G</td><td>46 – 60</td><td>5 numeros</td></tr>
     <tr><td>Columna 5</td><td style="color:#a855f7;font-weight:bold;">O</td><td>61 – 75</td><td>5 numeros</td></tr>
   </table>
-  <p>La casilla FREE del centro ya cuenta como marcada desde el inicio. Necesitas que salgan los 5 numeros de una fila para cantar LINEA (la fila del centro ya tiene FREE marcado, por lo que solo necesitas 4 numeros mas en esa fila), o los 24 numeros totales para cantar BINGO.</p>
+  <p>La casilla FREE del centro ya cuenta como marcada desde el inicio. Los 4 patrones disponibles son: <strong>LINEA</strong> (5 celdas en una fila), <strong>U</strong> (13 celdas: columnas izquierda y derecha + fila inferior), <strong>O</strong> (16 celdas: todo el borde exterior) y <strong>BINGO</strong> (las 24 celdas con numero). La FREE cuenta en cualquier patron que la incluya.</p>
 </div>
 
 
@@ -828,11 +847,11 @@
   <h4>El sistema no detecta un BINGO valido</h4>
   <p>El sistema verifica estrictamente que todos los numeros de la cartilla esten en la lista de bolillas sacadas. Si el jugador dice que tiene BINGO pero el sistema no lo acepta, probablemente le falta al menos un numero. Pide que verifique su cartilla con cuidado.</p>
 
-  <h4>Dos jugadores cantaron BINGO al mismo tiempo</h4>
-  <p>El sistema divide el premio automaticamente entre los dos. Ambos son ganadores y cada uno recibe la mitad del pozo de BINGO.</p>
+  <h4>Dos jugadores cantaron BINGO (o U, O, LINEA) al mismo tiempo</h4>
+  <p>El sistema divide el premio de ese patron automaticamente entre los dos. Ambos son ganadores y cada uno recibe la mitad del pozo correspondiente.</p>
 
-  <h4>Quiero hacer un bingo con varios premios (linea + bingo)</h4>
-  <p>El sistema soporta LINEA y BINGO automaticamente. La LINEA se puede cantar antes del BINGO. El jugador que canta LINEA puede seguir jugando y tambien cantar BINGO si completa su cartilla.</p>
+  <h4>Quiero hacer un bingo con varios premios</h4>
+  <p>El sistema soporta 4 patrones automaticamente: LINEA (4%), U (13%), O (15%) y BINGO (55%). Los patrones se pueden cantar en cualquier orden segun aparezcan. Un jugador que canto LINEA puede seguir jugando y tambien cantar U, O o BINGO si completa los patrones correspondientes.</p>
 
   <h4>Puedo hacer bingos por internet (no solo WiFi local)?</h4>
   <p>Si, pero necesitas exponer el servidor a internet. Opciones: usar un servicio como ngrok, contratar un VPS (servidor), o configurar port forwarding en tu router. Esto requiere configuracion adicional.</p>
@@ -1156,9 +1175,9 @@
   <p>El sorteo automatico se pausa solo cuando se alcanza el numero de ganadores que configuras aqui:</p>
   <table>
     <tr><th>Opcion</th><th>Como funciona</th></tr>
-    <tr><td>1 ganador (por defecto)</td><td>El juego se pausa tan pronto como alguien canta BINGO valido</td></tr>
+    <tr><td>1 ganador (por defecto)</td><td>El juego se pausa tan pronto como alguien canta BINGO completo valido</td></tr>
     <tr><td>2 ganadores</td><td>Continua hasta que dos personas canten BINGO — util para premios dobles</td></tr>
-    <tr><td>3 o 5 ganadores</td><td>Para bingos grandes donde quieres repartir premios entre varios</td></tr>
+    <tr><td>3 o 5 ganadores</td><td>Para bingos grandes donde quieres repartir el premio BINGO entre varios</td></tr>
   </table>
   <p>Si el juego esta pausado por un ganador, aparece el boton <strong>"Reanudar sorteo"</strong> para continuar sacando bolillas (util si quieres un segundo BINGO en la misma sesion).</p>
 
@@ -1179,12 +1198,12 @@
     <li>Busqueda por email, nombre o codigo de acceso</li>
     <li>Ver que cartillas tiene cada jugador (ID, fecha de generacion, sesion)</li>
     <li>Verificar si una cartilla especifica gano: el admin puede ingresar el ID de cartilla para ver sus numeros y confirmar el BINGO manualmente si hay alguna disputa</li>
-    <li>Ver historial de ganadores: quienes cantaron BINGO o LINEA con sus montos</li>
+    <li>Ver historial de ganadores: quienes cantaron LINEA, U, O o BINGO con sus montos</li>
   </ul>
 
   <div class="box box-info">
     <strong>Util para resolver disputas</strong>
-    Si un jugador dice que canto BINGO pero el sistema no lo acepto, busca su cartilla aqui, compara sus numeros con las bolillas sorteadas y determina si realmente tenia bingo.
+    Si un jugador dice que canto BINGO (o U, O, LINEA) pero el sistema no lo acepto, busca su cartilla aqui, compara sus numeros con las bolillas sorteadas y determina si realmente tenia el patron.
   </div>
 
   <h3>Panel Financiero — Caja — /admin/caja</h3>
@@ -1192,9 +1211,11 @@
   <table>
     <tr><th>Campo</th><th>Descripcion</th><th>Como se calcula</th></tr>
     <tr><td>Total recaudado</td><td>Ingresos brutos de la sesion</td><td>Suma de todos los pagos aprobados</td></tr>
-    <tr><td>Premio BINGO</td><td>Monto pagado o por pagar al ganador de BINGO</td><td>Total recaudado × % BINGO segun tipo</td></tr>
-    <tr><td>Premio LINEA</td><td>Monto pagado o por pagar al ganador de LINEA</td><td>Total recaudado × % LINEA segun tipo</td></tr>
-    <tr><td>Ganancia neta</td><td>Tu ganancia como organizador</td><td>Total − Premio BINGO − Premio LINEA</td></tr>
+    <tr><td>Premio BINGO</td><td>Monto pagado o por pagar al ganador de BINGO</td><td>Total recaudado × 55%</td></tr>
+    <tr><td>Premio O</td><td>Monto pagado o por pagar al ganador del patron O</td><td>Total recaudado × 15%</td></tr>
+    <tr><td>Premio U</td><td>Monto pagado o por pagar al ganador del patron U</td><td>Total recaudado × 13%</td></tr>
+    <tr><td>Premio LINEA</td><td>Monto pagado o por pagar al ganador de LINEA</td><td>Total recaudado × 4%</td></tr>
+    <tr><td>Ganancia neta</td><td>Tu ganancia como organizador (13%)</td><td>Total − BINGO − O − U − LINEA</td></tr>
     <tr><td>Jugadores</td><td>Cuantos jugadores tuvieron pago aprobado en esa sesion</td><td>Conteo de pagos aprobados</td></tr>
   </table>
 
@@ -1203,9 +1224,11 @@
   <div class="box box-success">
     <strong>Ejemplo de calculo — Bingo 5 Soles, 30 jugadores, 2 cartillas cada uno</strong>
     <br>Recaudado: 30 × 2 × S/5 = <strong>S/. 300</strong>
-    <br>Premio BINGO (75%): <strong>S/. 225</strong>
-    <br>Premio LINEA (8%): <strong>S/. 24</strong>
-    <br>Tu ganancia (17%): <strong>S/. 51</strong>
+    <br>🎉 Premio BINGO (55%): <strong>S/. 165</strong>
+    <br>⭕ Premio O (15%): <strong>S/. 45</strong>
+    <br>🔷 Premio U (13%): <strong>S/. 39</strong>
+    <br>⭐ Premio LINEA (4%): <strong>S/. 12</strong>
+    <br>Tu ganancia (13%): <strong>S/. 39</strong>
   </div>
 
   <h3>Configuracion de la Plataforma — /admin/config</h3>

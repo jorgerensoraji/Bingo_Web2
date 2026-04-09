@@ -1677,12 +1677,18 @@ def api_game_stats():
         if 1 <= missing <= 5:
             close[str(missing)] = close.get(str(missing), 0) + 1
 
+    with game_lock:
+        u_pool = game.u_pool
+        o_pool = game.o_pool
+
     return jsonify({
         "n_players":    n_players,
         "n_cartillas":  n_cartillas,
-        "close_to_win": close,   # {"1": X, "2": Y, ...}
+        "close_to_win": close,
         "prize_bingo":  prize,
         "prize_linea":  linea,
+        "prize_u":      u_pool,
+        "prize_o":      o_pool,
     })
 
 @app.route("/api/chat/messages")

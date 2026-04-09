@@ -924,9 +924,10 @@ function updatePrizeDisplay(data) {
   const el = document.getElementById('game-status-msg');
   if (!el || !gameStarted) return;
   const pool  = data.prize_pool  || 0;
+  const oPool = data.o_pool      || 0;
+  const uPool = data.u_pool      || 0;
   const linea = data.linea_pool  || 0;
   const nW    = data.winners_count || 0;
-  // Agregar línea de pozo al panel si no está ya
   let prizeEl = document.getElementById('prize-pool-display');
   if (!prizeEl) {
     prizeEl = document.createElement('div');
@@ -938,40 +939,42 @@ function updatePrizeDisplay(data) {
     ? ' <span style="color:var(--warning);font-size:.75rem">(÷' + nW + ' ganadores)</span>'
     : '';
   prizeEl.innerHTML =
-    '🎉 Premio BINGO: <strong style="color:var(--accent)">S/. ' + pool.toFixed(2) + '</strong>' + splitNote + '<br>' +
-    '⭐ Premio LÍNEA: <strong style="color:var(--warning)">S/. ' + linea.toFixed(2) + '</strong>';
+    '🎉 BINGO: <strong style="color:var(--accent)">S/. ' + pool.toFixed(2) + '</strong>' + splitNote + ' &nbsp;' +
+    '⭕ O: <strong style="color:#ec4899">S/. ' + oPool.toFixed(2) + '</strong> &nbsp;' +
+    '🔷 U: <strong style="color:#3b82f6">S/. ' + uPool.toFixed(2) + '</strong> &nbsp;' +
+    '⭐ Línea: <strong style="color:var(--warning)">S/. ' + linea.toFixed(2) + '</strong>';
 }
 
 // ── v6: Mostrar ganadores en vivo ─────────────────────
-function updateWinnersDisplay(winners, lineaWinners) {
-  if ((!winners || !winners.length) && (!lineaWinners || !lineaWinners.length)) return;
+function updateWinnersDisplay(winners, lineaWinners, uWinners, oWinners) {
+  const any = [winners, lineaWinners, uWinners, oWinners].some(function(a){ return a && a.length; });
+  if (!any) return;
   let wEl = document.getElementById('live-winners-display');
   if (!wEl) {
     wEl = document.createElement('div');
     wEl.id = 'live-winners-display';
     wEl.style.cssText = 'margin-top:10px;font-size:.82rem;border-top:1px solid var(--border);padding-top:8px';
     const statusEl = document.getElementById('game-status-msg');
-    if (statusEl && statusEl.parentNode) {
-      statusEl.parentNode.appendChild(wEl);
-    }
+    if (statusEl && statusEl.parentNode) statusEl.parentNode.appendChild(wEl);
   }
-  let html = '';
-  if (winners && winners.length) {
-    html += '🏆 <strong>BINGO:</strong> ' +
-      winners.map(function(w) {
-        const p = Number(w.prize || 0).toFixed(2);
-        return '<span style="color:var(--accent)">' + (w.nombre || w.id) + '</span> (S/. ' + p + ')';
-      }).join(', ');
-  }
-  if (lineaWinners && lineaWinners.length) {
-    if (html) html += '<br>';
-    html += '⭐ <strong>LÍNEA:</strong> ' +
-      lineaWinners.map(function(w) {
-        const p = Number(w.linea_prize || 0).toFixed(2);
-        return '<span style="color:var(--warning)">' + (w.nombre || w.id) + '</span> (S/. ' + p + ')';
-      }).join(', ');
-  }
-  wEl.innerHTML = html;
+  const rows = [];
+  if (winners && winners.length)
+    rows.push('🎉 <strong>BINGO:</strong> ' + winners.map(function(w){
+      return '<span style="color:var(--accent)">' + (w.nombre||w.id) + '</span> (S/. ' + Number(w.prize||0).toFixed(2) + ')';
+    }).join(', '));
+  if (oWinners && oWinners.length)
+    rows.push('⭕ <strong>O:</strong> ' + oWinners.map(function(w){
+      return '<span style="color:#ec4899">' + (w.nombre||w.id) + '</span> (S/. ' + Number(w.o_prize||0).toFixed(2) + ')';
+    }).join(', '));
+  if (uWinners && uWinners.length)
+    rows.push('🔷 <strong>U:</strong> ' + uWinners.map(function(w){
+      return '<span style="color:#3b82f6">' + (w.nombre||w.id) + '</span> (S/. ' + Number(w.u_prize||0).toFixed(2) + ')';
+    }).join(', '));
+  if (lineaWinners && lineaWinners.length)
+    rows.push('⭐ <strong>LÍNEA:</strong> ' + lineaWinners.map(function(w){
+      return '<span style="color:var(--warning)">' + (w.nombre||w.id) + '</span> (S/. ' + Number(w.linea_prize||0).toFixed(2) + ')';
+    }).join(', '));
+  wEl.innerHTML = rows.join('<br>');
 }
 
 // ── RELOJ ─────────────────────────────────────────────
@@ -1602,8 +1605,12 @@ async function updateGameStats() {
 
     // Línea 3: premios
     const pb = document.getElementById('gst-prize-bingo');
+    const po = document.getElementById('gst-prize-o');
+    const pu = document.getElementById('gst-prize-u');
     const pl2 = document.getElementById('gst-prize-linea');
     if (pb) pb.textContent = d.prize_bingo > 0 ? 'S/. ' + d.prize_bingo.toFixed(2) : '—';
+    if (po) po.textContent = d.prize_o > 0 ? 'S/. ' + d.prize_o.toFixed(2) : '—';
+    if (pu) pu.textContent = d.prize_u > 0 ? 'S/. ' + d.prize_u.toFixed(2) : '—';
     if (pl2) pl2.textContent = d.prize_linea > 0 ? 'S/. ' + d.prize_linea.toFixed(2) : '—';
   } catch(e) {}
 }
