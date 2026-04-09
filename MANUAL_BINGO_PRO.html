@@ -236,7 +236,8 @@
   <div class="toc-item h3-item"><span>Iniciar el juego</span></div>
   <div class="toc-item h3-item"><span>Sacar bolillas / juego en vivo</span></div>
   <div class="toc-item h3-item"><span>Verificar ganadores</span></div>
-  <div class="toc-item h3-item"><span>Cerrar la sesion / Pagar premios</span></div>
+  <div class="toc-item h3-item"><span>Pagar a ganadores (LINEA / U / O / BINGO)</span></div>
+  <div class="toc-item h3-item"><span>Cerrar la sesion</span></div>
   <div class="toc-item h3-item"><span>Panel financiero (Caja)</span></div>
   <div class="toc-item h3-item"><span>Configurar la plataforma</span></div>
 
@@ -244,7 +245,7 @@
   <div class="toc-item h3-item"><span>Registrarse y pagar</span></div>
   <div class="toc-item h3-item"><span>Obtener la cartilla</span></div>
   <div class="toc-item h3-item"><span>Ver el juego en vivo</span></div>
-  <div class="toc-item h3-item"><span>Cantar LINEA y BINGO</span></div>
+  <div class="toc-item h3-item"><span>Cantar LINEA, U, O o BINGO</span></div>
 
   <div class="toc-item" style="margin-top:10px;"><span>4. URLs del sistema</span></div>
   <div class="toc-item" style="margin-top:4px;"><span>5. Preguntas frecuentes</span></div>
@@ -549,7 +550,36 @@
 
   <div class="box box-success">
     <strong>Cuanto pagar al ganador</strong>
-    El sistema calcula los montos exactos automaticamente en base al numero de jugadores pagados. Los ves en el panel de juego como "Premio BINGO: S/. XXX", "Premio O: S/. XXX", etc. Esos son los montos que debes transferir a cada ganador.
+    El sistema calcula los montos exactos automaticamente en base al numero de jugadores pagados. Los ves en el panel de juego como "Premio BINGO: S/. XXX", "Premio O: S/. XXX", etc.
+  </div>
+
+  <h3>Pagar a ganadores — /admin/pagos_ganadores</h3>
+  <p>Despues de que el sistema detecta un ganador, ve a esta pagina para gestionar el pago del premio:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Ve a <strong>"Pagos Ganadores"</strong> en el menu admin o a:
+        <div class="url-box">http://[IP]:5000/admin/pagos_ganadores</div>
+        Veras la lista de premios pendientes con nombre del ganador, tipo de patron (⭐ LINEA / 🔷 U / ⭕ O / 🎉 BINGO), monto y datos de contacto.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Envia el pago</strong> por Yape, Plin o transferencia al numero que aparece en la fila del ganador (el que el jugador registro al inscribirse).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        Haz clic en <strong>"Registrar Pago"</strong>, selecciona el metodo (Yape/Plin/Transferencia/Efectivo), ingresa el codigo de operacion y confirma. El pago queda guardado como comprobante.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-warn">
+    <strong>Registra el pago ANTES de cerrar la sesion</strong>
+    Una vez que finalizas la sesion, los datos del juego se archivan. Es posible ver el historial de pagos en Caja, pero la pantalla de Pagos Ganadores es la mas comoda para gestionarlo. Paga y registra todos los premios primero, luego cierra la sesion.
   </div>
 
   <h3>Cerrar la sesion</h3>
@@ -611,9 +641,10 @@
     <tr><td>Dashboard principal</td><td>/admin</td></tr>
     <tr><td>Iniciar sesion</td><td>/admin/login</td></tr>
     <tr><td>Sesiones de bingo</td><td>/admin/sessions</td></tr>
-    <tr><td>Pagos pendientes</td><td>/admin/payments</td></tr>
-    <tr><td>Gestion de cartillas</td><td>/admin/cartillas</td></tr>
+    <tr><td>Aprobar pagos de jugadores</td><td>/admin/payments</td></tr>
     <tr><td>Panel de juego en vivo</td><td>/admin/game</td></tr>
+    <tr><td>Gestion de cartillas</td><td>/admin/cartillas</td></tr>
+    <tr><td><strong>Pagar a ganadores</strong></td><td>/admin/pagos_ganadores</td></tr>
     <tr><td>Caja / Finanzas</td><td>/admin/caja</td></tr>
     <tr><td>Configuracion</td><td>/admin/config</td></tr>
   </table>
@@ -729,7 +760,7 @@
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        Si tienes tu cartilla abierta en el navegador (no en PDF), los <strong>numeros se marcan automaticamente</strong> cuando salen. El sistema te avisa cuando te falta solo 1 numero para BINGO.
+        Si tienes tu cartilla abierta en el navegador (no en PDF), los <strong>numeros se marcan automaticamente</strong> cuando salen. El sistema activa los botones de LINEA, U, O o BINGO en cuanto completas cada patron, y te avisa cuando te falta solo 1 numero para el BINGO completo.
       </div>
     </div>
   </div>
@@ -818,9 +849,10 @@
     <tr><td>Dashboard</td><td><code>http://[IP]:5000/admin</code></td></tr>
     <tr><td>Login</td><td><code>http://[IP]:5000/admin/login</code></td></tr>
     <tr><td>Gestionar sesiones</td><td><code>http://[IP]:5000/admin/sessions</code></td></tr>
-    <tr><td>Aprobar pagos</td><td><code>http://[IP]:5000/admin/payments</code></td></tr>
+    <tr><td>Aprobar pagos de jugadores</td><td><code>http://[IP]:5000/admin/payments</code></td></tr>
     <tr><td>Control del juego</td><td><code>http://[IP]:5000/admin/game</code></td></tr>
     <tr><td>Ver cartillas</td><td><code>http://[IP]:5000/admin/cartillas</code></td></tr>
+    <tr><td><strong>Pagar a ganadores</strong></td><td><code>http://[IP]:5000/admin/pagos_ganadores</code></td></tr>
     <tr><td>Caja / Finanzas</td><td><code>http://[IP]:5000/admin/caja</code></td></tr>
     <tr><td>Configuracion</td><td><code>http://[IP]:5000/admin/config</code></td></tr>
   </table>
@@ -1206,6 +1238,66 @@
     Si un jugador dice que canto BINGO (o U, O, LINEA) pero el sistema no lo acepto, busca su cartilla aqui, compara sus numeros con las bolillas sorteadas y determina si realmente tenia el patron.
   </div>
 
+  <h3>Pagos a Ganadores — /admin/pagos_ganadores</h3>
+  <p>Esta pantalla es donde registras cada premio que entregas a los ganadores. Es la diferencia entre un bingo bien gestionado y uno desordenado — aqui queda constancia de todo lo que pagas.</p>
+
+  <p><strong>3 contadores KPI en la parte superior:</strong></p>
+  <table>
+    <tr><th>Contador</th><th>Que mide</th></tr>
+    <tr><td>Por Pagar</td><td>Total en soles de premios pendientes de entrega (suma de todos los ganadores no pagados)</td></tr>
+    <tr><td>Ya Pagado</td><td>Total en soles de premios ya entregados y registrados</td></tr>
+    <tr><td>Total Ganadores</td><td>Numero de ganadores registrados en el sistema (todas las sesiones)</td></tr>
+  </table>
+
+  <p><strong>Dos listas:</strong></p>
+  <ul>
+    <li><strong>Pagos Pendientes:</strong> ganadores que aun no han recibido su premio. Cada fila muestra nombre, cartilla, tipo de patron ganado (BINGO/O/U/LINEA), monto a pagar, celular y numero Yape/Plin del ganador.</li>
+    <li><strong>Pagos Realizados:</strong> historial de premios ya entregados con fecha, metodo y codigo de transferencia.</li>
+  </ul>
+
+  <p><strong>Como registrar un pago a un ganador:</strong></p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        En la lista de <strong>Pagos Pendientes</strong>, encuentra al ganador. Vera su nombre, el tipo de premio (🏆 BINGO / ⭕ O / 🔷 U / ⭐ LINEA) y el monto exacto calculado por el sistema.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        Envia el monto indicado por <strong>Yape o Plin al numero</strong> que aparece en la fila del ganador (el numero que el jugador registro al inscribirse).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        Haz clic en <strong>"Registrar Pago"</strong>. Se abre un formulario:
+        <ul>
+          <li><strong>Metodo de pago:</strong> Yape, Plin, Transferencia bancaria, Efectivo u Otro</li>
+          <li><strong>Codigo / N° de Operacion:</strong> el codigo de la transferencia que hiciste (ej: <code>YAP-12345678</code>)</li>
+          <li><strong>Notas adicionales:</strong> opcional — cualquier detalle extra (ej: "Confirmado por WhatsApp")</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        Haz clic en <strong>"Confirmar Pago"</strong>. El ganador pasa a la lista de Pagados y queda el registro permanente.
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-success">
+    <strong>Orden recomendado para pagar los premios</strong>
+    Paga en este orden: primero <strong>⭐ LINEA</strong> (el juego pudo continuar mientras esperabas), luego <strong>🔷 U</strong>, luego <strong>⭕ O</strong>, y finalmente <strong>🎉 BINGO</strong> (el premio mas grande). Registrar cada pago en el sistema te protege en caso de disputas futuras.
+  </div>
+
+  <div class="box box-warn">
+    <strong>Que pasa si dos jugadores ganaron el mismo patron</strong>
+    El sistema divide el premio automaticamente. Por ejemplo, si dos jugadores cantaron BINGO al mismo tiempo, cada uno aparece en la lista con la mitad del pozo. Paga cada uno por separado y registra ambos.
+  </div>
+
   <h3>Panel Financiero — Caja — /admin/caja</h3>
   <p>Resumen economico de cada sesion. Para cada sesion finalizada ves:</p>
   <table>
@@ -1312,24 +1404,28 @@
   <table>
     <tr><th>Que pasa</th><th>Cuando ocurre</th></tr>
     <tr><td>El numero se resalta/marca en la cartilla</td><td>Cada vez que sale una bolilla que esta en tu cartilla</td></tr>
-    <tr><td>Alerta visual "¡Te falta 1!"</td><td>Cuando tienes 23 de 24 numeros marcados (a punto de BINGO)</td></tr>
-    <tr><td>El boton "CANTAR LINEA" se activa</td><td>Cuando completas todos los numeros de una fila (la casilla FREE del centro ya cuenta)</td></tr>
-    <tr><td>El boton "CANTAR BINGO" se activa</td><td>Cuando tienes los 24 numeros de tu cartilla marcados (la FREE ya esta marcada)</td></tr>
-    <tr><td>Animacion y sonido de ganador</td><td>Cuando el sistema confirma tu BINGO como valido</td></tr>
+    <tr><td>Alerta visual "¡Te falta 1!"</td><td>Cuando tienes 23 de 24 numeros marcados (a punto de BINGO completo)</td></tr>
+    <tr><td>El boton <strong>"CANTAR LINEA"</strong> se activa</td><td>Cuando completas los 5 numeros de una fila completa (la FREE del centro ya cuenta)</td></tr>
+    <tr><td>El boton <strong>"CANTAR U"</strong> se activa</td><td>Cuando completas las dos columnas externas + la fila inferior (13 celdas en forma de U)</td></tr>
+    <tr><td>El boton <strong>"CANTAR O"</strong> se activa</td><td>Cuando completas todo el borde exterior de la cartilla (16 celdas en forma de O)</td></tr>
+    <tr><td>El boton <strong>"CANTAR BINGO"</strong> se activa</td><td>Cuando tienes los 24 numeros de tu cartilla marcados (la FREE ya esta marcada)</td></tr>
+    <tr><td>Animacion y sonido de ganador</td><td>Cuando el sistema confirma tu patron como valido y apareces como ganador</td></tr>
   </table>
 
   <div class="box box-danger">
     <strong>Canta en cuanto el boton se active</strong>
-    El boton BINGO solo se habilita cuando el sistema ya verifico que tienes todos los numeros. No esperes — otro jugador puede cantar primero. Si dos personas canta al mismo tiempo, el premio se divide.
+    Los botones solo se habilitan cuando el sistema ya verifico que tienes el patron completo. No esperes — otro jugador puede cantar primero. Si dos personas cantan al mismo tiempo, el premio de ese patron se divide entre ambas.
   </div>
 
-  <h3>Diferencia entre LINEA y BINGO</h3>
+  <h3>Los 4 patrones de premio — diferencias</h3>
   <table>
-    <tr><th>Premio</th><th>Condicion</th><th>Sigue jugando despues?</th></tr>
-    <tr><td><strong>LINEA</strong></td><td>Los 5 numeros de <em>una sola fila</em> (de las 3 que tiene tu cartilla) han salido</td><td>Si — puedes seguir jugando para intentar el BINGO</td></tr>
-    <tr><td><strong>BINGO</strong></td><td>Los 24 numeros de tu cartilla han salido (la casilla FREE ya cuenta)</td><td>El juego se pausa (segun configuracion del admin)</td></tr>
+    <tr><th>Premio</th><th>Condicion</th><th>Celdas</th><th>% del pozo</th><th>El juego continua?</th></tr>
+    <tr><td><strong>⭐ LINEA</strong></td><td>Los 5 numeros de <em>una fila completa</em> han salido (la FREE del centro ya cuenta)</td><td>5</td><td>4%</td><td>Si — el juego sigue sin pausa</td></tr>
+    <tr><td><strong>🔷 U</strong></td><td>Columna izquierda (B) + columna derecha (O) + fila inferior completas</td><td>13</td><td>13%</td><td>Si — el juego sigue sin pausa</td></tr>
+    <tr><td><strong>⭕ O</strong></td><td>Todo el borde exterior de la cartilla marcado (fila sup + inf + columnas externas)</td><td>16</td><td>15%</td><td>Si — el juego sigue sin pausa</td></tr>
+    <tr><td><strong>🎉 BINGO</strong></td><td>Los 24 numeros de tu cartilla han salido (la FREE ya esta marcada)</td><td>24</td><td>55%</td><td>El juego se pausa (segun config del admin)</td></tr>
   </table>
-  <p>Si ya cantaste LINEA con la primera fila, el sistema lo sabe. Si despues completas toda la cartilla, puedes cantar BINGO y recibir ambos premios.</p>
+  <p>Los premios LINEA, U y O no pausan el juego — puedes cantarlos y seguir jugando para intentar el patron siguiente. Si ya cantaste LINEA y luego completas la U, puedes cantar U y recibir ese premio tambien. Un jugador puede ganar varios premios en la misma sesion.</p>
 
   <h3>Consejos para ganar</h3>
   <ul>
@@ -1337,7 +1433,8 @@
     <li><strong>Abre cada cartilla en su propia pestana</strong> del navegador para no tener que cambiar entre ellas.</li>
     <li><strong>No pongas el celular boca abajo</strong> — el marcado automatico funciona igual, pero si no lo ves puedes perderte la alerta de BINGO.</li>
     <li><strong>Revisa la columna del medio</strong> (numeros del 41 al 50) — estadisticamente es la zona de la cartilla que mas variacion tiene.</li>
-    <li><strong>Canta LINEA aunque no creas ganar</strong> — el premio de linea es real y vale la pena. Ademas el juego sigue y aun puedes ganar el BINGO.</li>
+    <li><strong>Canta cada patron en cuanto se active el boton</strong> — LINEA (4%), U (13%) y O (15%) son premios reales y el juego continua despues. No esperes al BINGO si ya completaste otro patron primero.</li>
+    <li><strong>Puedes ganar varios premios en la misma sesion</strong> — si completas LINEA, luego U, luego O y finalmente BINGO con la misma cartilla, cobras los 4 premios.</li>
   </ul>
 
   <h3>Que pasa despues de ganar</h3>
@@ -1368,9 +1465,16 @@
     </div>
   </div>
 
+  <div class="box box-info">
+    <strong>Cuanto cobras segun el tipo de premio</strong>
+    El monto depende del total recaudado en la sesion (jugadores × precio × numero de cartillas). Los porcentajes son fijos:
+    <br>⭐ LINEA: 4% del pozo total · 🔷 U: 13% · ⭕ O: 15% · 🎉 BINGO: 55%
+    <br>Ejemplo: si el pozo es S/. 300 → LINEA: S/12 · U: S/39 · O: S/45 · BINGO: S/165
+  </div>
+
   <div class="box box-success">
-    <strong>El sistema no miente — si el boton no se activa, aun no tienes BINGO</strong>
-    El sistema verifica estrictamente que todos tus numeros esten en la lista oficial de bolillas sorteadas. No es posible hacer trampa desde el lado del jugador porque el boton simplemente no responde hasta que la condicion sea correcta.
+    <strong>El sistema no miente — si el boton no se activa, aun no tienes el patron</strong>
+    El sistema verifica estrictamente que todas las celdas del patron esten marcadas con bolillas ya sorteadas. No es posible hacer trampa desde el lado del jugador porque el boton simplemente no responde hasta que la condicion sea correcta.
   </div>
 </div>
 
