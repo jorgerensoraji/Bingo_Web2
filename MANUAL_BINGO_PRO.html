@@ -197,11 +197,11 @@
       <div class="blabel">Tipos de Bingo</div>
     </div>
     <div class="badge">
-      <div class="bnum">90</div>
+      <div class="bnum">75</div>
       <div class="blabel">Bolillas</div>
     </div>
     <div class="badge">
-      <div class="bnum">3x9</div>
+      <div class="bnum">5x5</div>
       <div class="blabel">Cartilla</div>
     </div>
     <div class="badge">
@@ -685,7 +685,7 @@
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <strong>Haz clic en "Generar Cartilla".</strong> El sistema crea una cartilla unica con numeros del 1 al 90 distribuidos en una cuadricula de 3 filas x 9 columnas.
+        <strong>Haz clic en "Generar Cartilla".</strong> El sistema crea una cartilla unica con 24 numeros del 1 al 75 distribuidos en una grilla de 5 filas x 5 columnas (formato B-I-N-G-O), mas una casilla FREE en el centro.
       </div>
     </div>
     <div class="step">
@@ -730,12 +730,12 @@
     <tr><th>Tipo</th><th>Cuando cantar</th><th>Premio</th></tr>
     <tr>
       <td><strong>LINEA</strong></td>
-      <td>Cuando tienes <strong>una fila completa</strong> marcada (los 5 numeros de una de las 3 filas)</td>
+      <td>Cuando tienes <strong>una fila completa</strong> marcada (los 5 numeros de una de las 5 filas — la FREE del centro ya cuenta)</td>
       <td>8–10% del pozo (segun tipo de bingo)</td>
     </tr>
     <tr>
       <td><strong>BINGO</strong></td>
-      <td>Cuando tienes <strong>la cartilla completa</strong> marcada (todos tus numeros han salido)</td>
+      <td>Cuando tienes <strong>la cartilla completa</strong> marcada (los 24 numeros han salido — la FREE ya esta marcada)</td>
       <td>70–80% del pozo (segun tipo de bingo)</td>
     </tr>
   </table>
@@ -766,21 +766,17 @@
     Si otro jugador canta antes que tu y el juego se pausa, pierdes la oportunidad. En cuanto completes la cartilla, canta inmediatamente. Si dos personas cantan al mismo tiempo, el premio se divide entre ambas.
   </div>
 
-  <h3>Como funciona la cartilla — formato 3x9</h3>
-  <p>La cartilla de bingo contiene <strong>15 numeros</strong> distribuidos en una grilla de 3 filas y 9 columnas:</p>
+  <h3>Como funciona la cartilla — formato B-I-N-G-O 5x5</h3>
+  <p>La cartilla de bingo contiene <strong>24 numeros</strong> distribuidos en una grilla de 5 filas y 5 columnas, mas una casilla <strong>FREE</strong> en el centro (fila 3, columna N):</p>
   <table>
-    <tr><th>Columna</th><th>Rango de numeros</th></tr>
-    <tr><td>Columna 1</td><td>1 – 10</td></tr>
-    <tr><td>Columna 2</td><td>11 – 20</td></tr>
-    <tr><td>Columna 3</td><td>21 – 30</td></tr>
-    <tr><td>Columna 4</td><td>31 – 40</td></tr>
-    <tr><td>Columna 5</td><td>41 – 50</td></tr>
-    <tr><td>Columna 6</td><td>51 – 60</td></tr>
-    <tr><td>Columna 7</td><td>61 – 70</td></tr>
-    <tr><td>Columna 8</td><td>71 – 80</td></tr>
-    <tr><td>Columna 9</td><td>81 – 90</td></tr>
+    <tr><th>Columna</th><th>Letra</th><th>Rango de numeros</th><th>Cuantos numeros hay</th></tr>
+    <tr><td>Columna 1</td><td style="color:#3b82f6;font-weight:bold;">B</td><td>1 – 15</td><td>5 numeros</td></tr>
+    <tr><td>Columna 2</td><td style="color:#f59e0b;font-weight:bold;">I</td><td>16 – 30</td><td>5 numeros</td></tr>
+    <tr><td>Columna 3</td><td style="color:#ef4444;font-weight:bold;">N</td><td>31 – 45</td><td>4 numeros + FREE en el centro</td></tr>
+    <tr><td>Columna 4</td><td style="color:#10b981;font-weight:bold;">G</td><td>46 – 60</td><td>5 numeros</td></tr>
+    <tr><td>Columna 5</td><td style="color:#a855f7;font-weight:bold;">O</td><td>61 – 75</td><td>5 numeros</td></tr>
   </table>
-  <p>Cada fila tiene exactamente <strong>5 numeros</strong> (el resto de celdas estan vacias). Necesitas que salgan los 5 numeros de una fila para cantar LINEA, o los 15 numeros totales para cantar BINGO.</p>
+  <p>La casilla FREE del centro ya cuenta como marcada desde el inicio. Necesitas que salgan los 5 numeros de una fila para cantar LINEA (la fila del centro ya tiene FREE marcado, por lo que solo necesitas 4 numeros mas en esa fila), o los 24 numeros totales para cantar BINGO.</p>
 </div>
 
 
@@ -1126,7 +1122,7 @@
     <li><strong>Numero en palabras:</strong> por ejemplo "cuarenta y dos" (lo dice la voz tambien)</li>
     <li><strong>Etiqueta de grupo:</strong> indica el rango (ej. "40s")</li>
     <li><strong>Tira de ultimas bolillas:</strong> las 5-6 bolillas mas recientes en pequeno, justo debajo del display</li>
-    <li><strong>Grilla de numeros sorteados:</strong> tablero con los 90 numeros organizados en grupos por decenas. Los sorteados se iluminan.</li>
+    <li><strong>Grilla de numeros sorteados:</strong> tablero con los 75 numeros organizados en 5 columnas B-I-N-G-O (B:1-15, I:16-30, N:31-45, G:46-60, O:61-75). Los sorteados se iluminan con el color de su columna.</li>
   </ul>
 
   <p><strong>Zona derecha — Controles:</strong></p>
@@ -1293,9 +1289,9 @@
   <table>
     <tr><th>Que pasa</th><th>Cuando ocurre</th></tr>
     <tr><td>El numero se resalta/marca en la cartilla</td><td>Cada vez que sale una bolilla que esta en tu cartilla</td></tr>
-    <tr><td>Alerta visual "¡Te falta 1!"</td><td>Cuando tienes 14 de 15 numeros marcados (a punto de BINGO)</td></tr>
-    <tr><td>El boton "CANTAR LINEA" se activa</td><td>Cuando completas todos los numeros de una fila</td></tr>
-    <tr><td>El boton "CANTAR BINGO" se activa</td><td>Cuando tienes los 15 numeros de tu cartilla marcados</td></tr>
+    <tr><td>Alerta visual "¡Te falta 1!"</td><td>Cuando tienes 23 de 24 numeros marcados (a punto de BINGO)</td></tr>
+    <tr><td>El boton "CANTAR LINEA" se activa</td><td>Cuando completas todos los numeros de una fila (la casilla FREE del centro ya cuenta)</td></tr>
+    <tr><td>El boton "CANTAR BINGO" se activa</td><td>Cuando tienes los 24 numeros de tu cartilla marcados (la FREE ya esta marcada)</td></tr>
     <tr><td>Animacion y sonido de ganador</td><td>Cuando el sistema confirma tu BINGO como valido</td></tr>
   </table>
 
@@ -1308,7 +1304,7 @@
   <table>
     <tr><th>Premio</th><th>Condicion</th><th>Sigue jugando despues?</th></tr>
     <tr><td><strong>LINEA</strong></td><td>Los 5 numeros de <em>una sola fila</em> (de las 3 que tiene tu cartilla) han salido</td><td>Si — puedes seguir jugando para intentar el BINGO</td></tr>
-    <tr><td><strong>BINGO</strong></td><td>Los 15 numeros totales de tu cartilla han salido</td><td>El juego se pausa (segun configuracion del admin)</td></tr>
+    <tr><td><strong>BINGO</strong></td><td>Los 24 numeros de tu cartilla han salido (la casilla FREE ya cuenta)</td><td>El juego se pausa (segun configuracion del admin)</td></tr>
   </table>
   <p>Si ya cantaste LINEA con la primera fila, el sistema lo sabe. Si despues completas toda la cartilla, puedes cantar BINGO y recibir ambos premios.</p>
 

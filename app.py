@@ -575,7 +575,7 @@ class GameState:
         return list(range(1, balls + 1))
 
     def reset(self):
-        self.available         = list(range(1, 91))  # overridden after bingo_type is set
+        self.available         = list(range(1, 76))  # overridden after bingo_type is set
         self.drawn: list       = []
         self.last              = None
         self.game_id           = str(uuid.uuid4())[:8].upper()
@@ -660,7 +660,7 @@ class GameState:
                     self._delete_state_row()
                     return False
 
-            self.available         = data.get("available", list(range(1, 91)))
+            self.available         = data.get("available", list(range(1, 76)))
             self.drawn             = data.get("drawn", [])
             self.last              = data.get("last")
             self.game_id           = data.get("game_id", self.game_id)
