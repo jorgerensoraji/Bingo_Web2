@@ -601,18 +601,13 @@ function startPlayerPolling() {
 function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
   stopAuto();
 
-  let existing = document.getElementById('paused-banner');
-  if (!existing) {
-    existing = document.createElement('div');
-    existing.id = 'paused-banner';
-    existing.style.cssText = `
-      position:fixed;top:0;left:0;right:0;bottom:0;
-      background:rgba(7,13,20,.92);z-index:490;
-      display:flex;align-items:center;justify-content:center;flex-direction:column;
-      text-align:center;padding:28px;
-    `;
-    document.body.appendChild(existing);
-  }
+  const existing = document.getElementById('winner-zone');
+  if (!existing) return;
+  existing.style.cssText = `
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    text-align:center;padding:28px;
+    background:rgba(7,13,20,.92);border-bottom:1px solid rgba(0,229,180,.2);
+  `;
 
   function contactBlock(w, accentColor) {
     var lines = [];
@@ -720,8 +715,8 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
 }
 
 function hidePausedBanner() {
-  const b = document.getElementById('paused-banner');
-  if (b) b.remove();
+  const b = document.getElementById('winner-zone');
+  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
 }
 
 async function resumeGame() {

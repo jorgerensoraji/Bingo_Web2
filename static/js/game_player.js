@@ -345,24 +345,17 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
   var key = (hasBingo ? winners.map(function(w){return w.id;}).join(',') : '') +
             '|' + (hasLinea ? lineaWinners.map(function(w){return w.id;}).join(',') : '');
 
-  var el = document.getElementById('global-winner-banner');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'global-winner-banner';
-    el.style.cssText = [
-      'position:fixed;top:0;left:0;right:0;z-index:800;',
-      'display:none;flex-direction:column;gap:0;',
-    ].join('');
-    document.body.appendChild(el);
-  }
+  var el = document.getElementById('winner-zone');
+  if (!el) return;
 
   if (!hasBingo && !hasLinea) {
     el.style.display = 'none';
+    el.innerHTML = '';
     _lastBannerKey = '';
     return;
   }
 
-  el.style.display = 'flex';
+  el.style.cssText = 'display:flex;flex-direction:column;gap:0;';
 
   // Only rebuild HTML when winners change
   if (key === _lastBannerKey) return;
@@ -490,8 +483,8 @@ function handleSessionFinished() {
   myCartillas    = [];
   cartillaStates = {};
   _lastBannerKey = '';
-  var bannerEl = document.getElementById('global-winner-banner');
-  if (bannerEl) bannerEl.style.display = 'none';
+  var bannerEl = document.getElementById('winner-zone');
+  if (bannerEl) { bannerEl.style.display = 'none'; bannerEl.innerHTML = ''; }
   var psBanner = document.getElementById('player-session-banner');
   if (psBanner) psBanner.style.display = 'none';
 
