@@ -217,18 +217,7 @@
           <input type="tel" id="inp-yape-plin" placeholder="Ej: 987654321" maxlength="20"
                  style="border-color:rgba(0,229,180,.4)">
           <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            Usaremos este número para enviarte el premio si ganas y para acceder a tus cartillas con tu PIN.
-          </div>
-        </div>
-
-        <!-- PIN de acceso -->
-        <div class="form-group">
-          <label>🔑 PIN de acceso * <span style="color:var(--muted);font-weight:400">(4 dígitos)</span></label>
-          <input type="tel" id="inp-pin" placeholder="Ej: 4521" maxlength="4" pattern="[0-9]{4}"
-                 style="letter-spacing:8px;font-size:1.3rem;font-weight:900;text-align:center;border-color:rgba(246,195,67,.5)">
-          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            Con tu número + este PIN podrás ver tus cartillas desde <strong style="color:var(--text)">cualquier dispositivo</strong>.
-            Elige uno que recuerdes y te lo enviaremos al correo.
+            Usaremos este número para enviarte el premio si ganas.
           </div>
         </div>
 
@@ -653,7 +642,6 @@ async function enviarSolicitud() {
   const email          = document.getElementById('inp-email').value.trim();
   const yape_plin      = document.getElementById('inp-yape-plin').value.trim();
   const celular        = yape_plin;
-  const access_pin     = document.getElementById('inp-pin').value.trim();
   const terms_accepted = document.getElementById('inp-terms').checked;
   const method         = document.getElementById('inp-method').value;
   const ref            = document.getElementById('inp-ref').value.trim();
@@ -662,7 +650,6 @@ async function enviarSolicitud() {
   if (!nombres)                { showToast('⚠️ Ingresa tu nombre'); return; }
   if (!email || !email.includes('@')) { showToast('⚠️ Ingresa un email válido'); return; }
   if (!yape_plin)              { showToast('⚠️ Ingresa tu número de celular/Yape/Plin'); return; }
-  if (!access_pin || !/^\d{4}$/.test(access_pin)) { showToast('⚠️ El PIN debe ser exactamente 4 dígitos'); return; }
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
   if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
 
@@ -695,7 +682,7 @@ async function enviarSolicitud() {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        nombres, apellidos, email, celular, yape_plin, access_pin, terms_accepted,
+        nombres, apellidos, email, celular, yape_plin, terms_accepted,
         bingo_type: selBtype, session_id,
         method, reference: ref,
       }),

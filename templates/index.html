@@ -980,29 +980,29 @@
         <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar mis cartillas</button>
       </div>
 
-      <!-- Acceso por celular + PIN -->
+      <!-- Acceso por código de voucher -->
       <div id="pin-access-form" style="margin-bottom:8px;background:var(--card);border:1px solid var(--border);border-radius:11px;overflow:hidden">
         <div style="padding:8px 12px;background:rgba(246,195,67,.06);border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between"
              onclick="togglePinForm()">
-          <span style="font-size:.78rem;font-weight:700;color:var(--muted)">🔑 ¿Compraste desde otro dispositivo?</span>
+          <span style="font-size:.78rem;font-weight:700;color:var(--muted)">🎫 ¿Compraste desde otro dispositivo?</span>
           <span id="pin-form-arrow" style="color:var(--muted);font-size:.7rem">▼</span>
         </div>
         <div id="pin-form-body" style="display:none;padding:10px 12px">
-          <div style="display:flex;gap:6px;margin-bottom:6px">
-            <input id="pin-celular" type="tel" placeholder="Celular (Ej: 987654321)"
-                   style="flex:2;background:var(--sub);border:1px solid var(--border);border-radius:8px;
-                          padding:7px 10px;color:var(--text);font-family:Outfit,sans-serif;font-size:.82rem;outline:none">
-            <input id="pin-code" type="tel" placeholder="PIN" maxlength="4"
-                   style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
-                          padding:7px 10px;color:var(--text);font-family:Outfit,sans-serif;font-size:.9rem;
-                          font-weight:900;text-align:center;letter-spacing:4px;outline:none">
-          </div>
-          <button onclick="loadCartillasByPin()"
+          <input id="voucher-code-input" type="text" placeholder="Tu código de voucher (ej: ABC123)"
+                 maxlength="10"
+                 style="width:100%;box-sizing:border-box;background:var(--sub);border:1px solid var(--border);
+                        border-radius:8px;padding:8px 12px;color:var(--text);font-family:Outfit,sans-serif;
+                        font-size:.95rem;font-weight:900;text-align:center;letter-spacing:3px;outline:none;
+                        margin-bottom:6px;text-transform:uppercase">
+          <button onclick="loadCartillasByCode()"
                   style="width:100%;padding:8px;border:none;border-radius:8px;
                          background:rgba(246,195,67,.15);border:1px solid rgba(246,195,67,.4);
                          color:#f6c343;font-family:Outfit,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">
             🔓 Cargar mis cartillas
           </button>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:5px;text-align:center">
+            Encuentra tu código en el email de aprobación que recibiste.
+          </div>
         </div>
       </div>
 
@@ -1106,12 +1106,8 @@
             <div class="guia-step-text">Completa el formulario con tu <strong>nombre, apellidos, celular, email</strong> y número de <strong>Yape/Plin</strong> (para recibir premios).</div>
           </div>
           <div class="guia-step">
-            <span class="guia-step-icon">🔑</span>
-            <div class="guia-step-text">Elige un <strong>PIN de 4 dígitos</strong> que recuerdes fácil. Lo usarás para ver tus cartillas desde <strong>cualquier dispositivo</strong> el día del juego.</div>
-          </div>
-          <div class="guia-step">
             <span class="guia-step-icon">🎱</span>
-            <div class="guia-step-text">Elige el <strong>tipo de bingo</strong> y la <strong>sesión</strong> en la que quieres jugar.</div>
+            <div class="guia-step-text">Elige el <strong>tipo de bingo</strong> y el <strong>Bingo</strong> en el que quieres jugar.</div>
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">💳</span>
@@ -1119,7 +1115,7 @@
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">✅</span>
-            <div class="guia-step-text">Envía la solicitud. Recibirás un <strong>email inmediato</strong> con tu PIN y otro cuando el admin apruebe tu pago con el código de cartilla.</div>
+            <div class="guia-step-text">Envía la solicitud. Recibirás un email cuando el admin apruebe tu pago con tu <strong>código único de cartilla</strong>.</div>
           </div>
         </div>
       </div>
@@ -1191,20 +1187,20 @@
             <div class="guia-step-text">Abre la página del juego desde <strong>cualquier dispositivo</strong> — celular, tablet, PC, no importa cuál.</div>
           </div>
           <div class="guia-step">
-            <span class="guia-step-icon">🔑</span>
-            <div class="guia-step-text">En el panel <strong>"Mi Cartilla"</strong> toca <strong>"¿Compraste desde otro dispositivo?"</strong> para expandir el formulario de acceso.</div>
+            <span class="guia-step-icon">🎫</span>
+            <div class="guia-step-text">En el panel <strong>"Mi Cartilla"</strong> toca <strong>"¿Compraste desde otro dispositivo?"</strong> para expandir el formulario.</div>
           </div>
           <div class="guia-step">
-            <span class="guia-step-icon">📞</span>
-            <div class="guia-step-text">Ingresa tu <strong>número de celular</strong> y el <strong>PIN de 4 dígitos</strong> que elegiste al comprar.</div>
+            <span class="guia-step-icon">🔢</span>
+            <div class="guia-step-text">Ingresa tu <strong>código de voucher</strong> (ej: <code style="background:rgba(0,229,180,.1);padding:1px 5px;border-radius:4px">ABC123</code>) que recibiste en el email de aprobación.</div>
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🎴</span>
-            <div class="guia-step-text">Toca <strong>"Cargar mis cartillas"</strong> — todas tus cartillas aparecerán automáticamente y se marcarán en tiempo real.</div>
+            <div class="guia-step-text">Toca <strong>"Cargar mis cartillas"</strong> — tus cartillas aparecerán automáticamente y se marcarán en tiempo real.</div>
           </div>
         </div>
         <div class="guia-tip">
-          💡 <strong>Tip:</strong> Tu PIN está en el email que recibiste al comprar. Si no lo encuentras, búscalo en tu bandeja de entrada con el asunto "Recibimos tu solicitud".
+          💡 <strong>Tip:</strong> Tu código de voucher está en el email de aprobación con asunto "Tu código para…". ¡Guárdalo!
         </div>
       </div>
 
@@ -1337,7 +1333,7 @@ document.getElementById('modal-guia').addEventListener('click', function(e){
   if (e.target === this) this.classList.remove('open');
 });
 
-// ── Acceso por celular + PIN ──
+// ── Acceso por código de voucher ──
 function togglePinForm() {
   const body  = document.getElementById('pin-form-body');
   const arrow = document.getElementById('pin-form-arrow');
@@ -1346,29 +1342,25 @@ function togglePinForm() {
   arrow.textContent   = open ? '▲' : '▼';
 }
 
-async function loadCartillasByPin() {
-  const celular = (document.getElementById('pin-celular').value || '').trim();
-  const pin     = (document.getElementById('pin-code').value    || '').trim();
-  if (!celular) { alert('Ingresa tu número de celular'); return; }
-  if (!/^\d{4}$/.test(pin)) { alert('El PIN debe ser de 4 dígitos'); return; }
+async function loadCartillasByCode() {
+  const code = (document.getElementById('voucher-code-input').value || '').trim().toUpperCase();
+  if (!code) { alert('Ingresa tu código de voucher'); return; }
 
   try {
     const res  = await fetch('/api/cartillas/by_access', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ celular, pin }),
+      body: JSON.stringify({ code }),
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.error || 'Error al buscar cartillas'); return; }
+    if (!res.ok) { alert(data.error || 'Código no encontrado o pago no aprobado.'); return; }
 
     const ids = data.cartillas || [];
-    if (!ids.length) { alert('No se encontraron cartillas para ese celular y PIN.'); return; }
+    if (!ids.length) { alert('No se encontraron cartillas para ese código.'); return; }
 
-    // Guardar en localStorage y cargar
     try { localStorage.setItem('my_cartillas', JSON.stringify(ids)); } catch(e) {}
     if (typeof loadAllCartillas === 'function') loadAllCartillas();
 
-    // Cerrar el formulario
     document.getElementById('pin-form-body').style.display = 'none';
     document.getElementById('pin-form-arrow').textContent  = '▼';
   } catch(e) {
