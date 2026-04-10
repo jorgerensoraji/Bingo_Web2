@@ -141,6 +141,7 @@ tr:hover td{background:rgba(17,31,46,.5)}
     <a class="nav-link" href="/admin/pagos_ganadores">💸 Pagar Ganadores</a>
     <a class="nav-link" href="/admin/cartillas">🎴 Cartillas</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
     <a class="nav-link" href="/admin/manual" target="_blank">📖 Manual</a>
     <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
   </div>
@@ -379,16 +380,20 @@ tr:hover td{background:rgba(17,31,46,.5)}
 <div id="toast" class="toast"></div>
 
 <script>
-const BINGO_TYPES = {
-  "1sol":    {nombre:"Bingo 1 Sol",    precio:1,  color:"#f472b6",
-              emoji:"🎯", prize_pct:.55, linea_pct:.04, u_pct:.13, o_pct:.15, max_cartillas:1},
-  "5soles":  {nombre:"Bingo 5 Soles",  precio:5,  color:"#a855f7",
-              emoji:"🎯", prize_pct:.55, linea_pct:.04, u_pct:.13, o_pct:.15, max_cartillas:1},
-  "10soles": {nombre:"Bingo 10 Soles", precio:10, color:"#818cf8",
-              emoji:"🎯", prize_pct:.55, linea_pct:.04, u_pct:.13, o_pct:.15, max_cartillas:1},
-};
-
+let BINGO_TYPES = {};
 let selBtype = "1sol";
+
+async function loadBingoTypes() {
+  try {
+    const res  = await fetch('/api/bingo_types');
+    const data = await res.json();
+    (data.bingo_types || []).forEach(bt => { BINGO_TYPES[bt.id] = bt; });
+    if (!Object.keys(BINGO_TYPES).length) return;
+    // Default selection = first type
+    if (!BINGO_TYPES[selBtype]) selBtype = Object.keys(BINGO_TYPES)[0];
+    buildBtypeTabs();
+  } catch(e) {}
+}
 
 // ── Toast ──────────────────────────────────────────────
 let _tj = null;
@@ -491,7 +496,8 @@ function updateTypeInfo() {
     ⭕ O <strong>${(bt.o_pct*100).toFixed(0)}%</strong> ·
     🔷 U <strong>${(bt.u_pct*100).toFixed(0)}%</strong> ·
     ⭐ Línea <strong>${(bt.linea_pct*100).toFixed(0)}%</strong> ·
-    💼 Casa <strong>13%</strong>
+    💼 Casa <strong>${((bt.house_pct||0)*100).toFixed(0)}%</strong>
+    ${bt.is_special ? `<span style="background:rgba(246,195,67,.2);color:#f6c343;padding:2px 8px;border-radius:6px;font-size:.75rem;margin-left:4px">✨ ${bt.special_label||'Especial'}</span>` : ''}
   `;
 }
 
@@ -772,7 +778,7 @@ async function logout() {
 const urlParams    = new URLSearchParams(window.location.search);
 const sessionParam = urlParams.get('session_id');
 
-buildBtypeTabs();
+loadBingoTypes();
 actualizarBoton();   // botón deshabilitado al inicio
 refresh().then(() => {
   if (sessionParam) {

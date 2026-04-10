@@ -66,7 +66,7 @@ import qrcode
 
 
 from database import init_db, SessionLocal
-from models import Voucher, Session as BingoSession, Cartilla, Config
+from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB
 
 # ── Cargar .env ───────────────────────────────────────────────────────────────
 try:
@@ -354,35 +354,64 @@ BASE_DIR  = Path(__file__).parent
 TTS_DIR   = Path(tempfile.gettempdir()) / "bingo_web_tts"
 TTS_DIR.mkdir(exist_ok=True)
 
-# ─── Tipos de Bingo — B-I-N-G-O 75 bolas ─────────────────────────────────────
-BINGO_TYPES = {
+# ─── Tipos de Bingo — loaded from DB, seeded on first run ────────────────────
+BINGO_TYPES: dict = {}   # populated by _reload_bingo_types() inside _startup()
+
+# Default seed data — only inserted once when the DB is brand new
+_SEED_BINGO_TYPES = {
     "1sol": {
         "id": "1sol", "nombre": "Bingo 1 Sol", "precio": 1.00,
         "color": "#f472b6", "emoji": "🎯", "descripcion": "Bingo B-I-N-G-O · 1 Sol",
         "prize_pct": 0.55, "linea_pct": 0.04, "u_pct": 0.13, "o_pct": 0.15,
-        "max_cartillas_per_voucher": 1, "balls": 75, "grid_type": "75",
+        "house_pct": 0.13, "max_cartillas": 1, "max_cartillas_per_voucher": 1,
+        "balls": 75, "grid_type": "75", "is_active": True, "is_special": False,
+        "special_label": "", "sort_order": 1,
     },
     "5soles": {
         "id": "5soles", "nombre": "Bingo 5 Soles", "precio": 5.00,
         "color": "#a855f7", "emoji": "🎯", "descripcion": "Bingo B-I-N-G-O · 5 Soles",
         "prize_pct": 0.55, "linea_pct": 0.04, "u_pct": 0.13, "o_pct": 0.15,
-        "max_cartillas_per_voucher": 1, "balls": 75, "grid_type": "75",
+        "house_pct": 0.13, "max_cartillas": 1, "max_cartillas_per_voucher": 1,
+        "balls": 75, "grid_type": "75", "is_active": True, "is_special": False,
+        "special_label": "", "sort_order": 2,
     },
     "10soles": {
         "id": "10soles", "nombre": "Bingo 10 Soles", "precio": 10.00,
         "color": "#818cf8", "emoji": "🎯", "descripcion": "Bingo B-I-N-G-O · 10 Soles",
         "prize_pct": 0.55, "linea_pct": 0.04, "u_pct": 0.13, "o_pct": 0.15,
-        "max_cartillas_per_voucher": 1, "balls": 75, "grid_type": "75",
+        "house_pct": 0.13, "max_cartillas": 1, "max_cartillas_per_voucher": 1,
+        "balls": 75, "grid_type": "75", "is_active": True, "is_special": False,
+        "special_label": "", "sort_order": 3,
     },
 }
-# Prize breakdown (same for all types):
-#   55% BINGO (full card, 24 numbers)
-#   15% O-pattern (outer border, 16 numbers)
-#   13% U-pattern (left col + right col + bottom row, 13 numbers)
-#    4% LINEA (any complete row, 5 numbers)
-#   13% Admin / house cut
-#  ─────
-#  100%
+
+def _seed_bingo_types() -> None:
+    """Insert default bingo types on first run (skips if table already has rows)."""
+    with db_session() as db:
+        if db.query(BingoTypeDB).count() > 0:
+            return
+        for i, (tid, bt) in enumerate(_SEED_BINGO_TYPES.items(), 1):
+            db.add(BingoTypeDB(
+                id=tid, nombre=bt["nombre"], precio=bt["precio"],
+                color=bt["color"], emoji=bt["emoji"], descripcion=bt["descripcion"],
+                prize_pct=bt["prize_pct"], linea_pct=bt["linea_pct"],
+                u_pct=bt["u_pct"], o_pct=bt["o_pct"],
+                max_cartillas=bt["max_cartillas"],
+                is_active=True, sort_order=i,
+                created_at=datetime.now().isoformat(),
+            ))
+
+def _reload_bingo_types() -> None:
+    """Reload the in-memory BINGO_TYPES dict from DB (call after any admin CRUD)."""
+    global BINGO_TYPES
+    try:
+        with db_session() as db:
+            rows = db.query(BingoTypeDB).order_by(BingoTypeDB.sort_order, BingoTypeDB.id).all()
+            BINGO_TYPES = {r.id: r.to_dict() for r in rows}
+    except Exception:
+        pass
+    if not BINGO_TYPES:
+        BINGO_TYPES = dict(_SEED_BINGO_TYPES)
 
 # ─── DEFAULT CONFIG ───────────────────────────────────────────────────────────
 DEFAULT_CONFIG = {
@@ -2811,11 +2840,136 @@ def api_stats():
 
 @app.route("/api/bingo_types")
 def api_bingo_types():
-    return jsonify({"bingo_types": list(BINGO_TYPES.values())})
+    with db_session() as db:
+        rows = db.query(BingoTypeDB).filter_by(is_active=True)\
+                 .order_by(BingoTypeDB.sort_order, BingoTypeDB.id).all()
+        return jsonify({"bingo_types": [r.to_dict() for r in rows]})
+
+# ─── Admin: Bingo Types CRUD ──────────────────────────────────────────────────
+@app.route("/admin/bingo_types")
+def admin_bingo_types_page():
+    chk = admin_required()
+    if chk: return chk
+    return render_template("admin_bingo_types.html")
+
+@app.route("/api/admin/bingo_types")
+def api_admin_list_bingo_types():
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        rows = db.query(BingoTypeDB).order_by(BingoTypeDB.sort_order, BingoTypeDB.id).all()
+        return jsonify({"bingo_types": [r.to_dict() for r in rows]})
+
+@app.route("/api/admin/bingo_types", methods=["POST"])
+def api_admin_create_bingo_type():
+    chk = admin_required()
+    if chk: return chk
+    data = request.get_json() or {}
+
+    nombre = sanitize_text(data.get("nombre", "")).strip()
+    if not nombre:
+        return jsonify({"error": "El nombre es requerido"}), 400
+
+    try:
+        precio = float(data.get("precio", 0))
+    except (ValueError, TypeError):
+        precio = 0
+    if precio <= 0:
+        return jsonify({"error": "El precio debe ser mayor a 0"}), 400
+
+    try:
+        prize_pct = round(float(data.get("prize_pct", 0.55)), 4)
+        linea_pct = round(float(data.get("linea_pct", 0.04)), 4)
+        u_pct     = round(float(data.get("u_pct",     0.13)), 4)
+        o_pct     = round(float(data.get("o_pct",     0.15)), 4)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Porcentajes inválidos"}), 400
+
+    if prize_pct + linea_pct + u_pct + o_pct > 1.0001:
+        return jsonify({"error": "Los premios suman más del 100% — queda menos de 0% para la casa"}), 400
+
+    bid = "bt_" + str(int(time.time()))
+    with db_session() as db:
+        max_order = db.query(BingoTypeDB).count()
+        db.add(BingoTypeDB(
+            id=bid,
+            nombre=nombre,
+            precio=precio,
+            color=data.get("color", "#00e5b4"),
+            emoji=data.get("emoji", "🎯"),
+            descripcion=sanitize_text(data.get("descripcion", "")),
+            prize_pct=prize_pct,
+            linea_pct=linea_pct,
+            u_pct=u_pct,
+            o_pct=o_pct,
+            max_cartillas=max(1, int(data.get("max_cartillas", 1))),
+            is_active=bool(data.get("is_active", True)),
+            is_special=bool(data.get("is_special", False)),
+            special_label=sanitize_text(data.get("special_label", "")),
+            sort_order=max_order + 1,
+            created_at=datetime.now().isoformat(),
+        ))
+    _reload_bingo_types()
+    return jsonify({"status": "ok", "id": bid})
+
+@app.route("/api/admin/bingo_types/<bid>", methods=["PUT"])
+def api_admin_update_bingo_type(bid):
+    chk = admin_required()
+    if chk: return chk
+    data = request.get_json() or {}
+
+    with db_session() as db:
+        bt = db.query(BingoTypeDB).filter_by(id=bid).first()
+        if not bt:
+            return jsonify({"error": "not found"}), 404
+
+        if "nombre" in data:
+            bt.nombre = sanitize_text(str(data["nombre"])).strip()
+        if "precio" in data:
+            p = float(data["precio"])
+            if p <= 0:
+                return jsonify({"error": "El precio debe ser mayor a 0"}), 400
+            bt.precio = p
+        if "color"         in data: bt.color         = str(data["color"])
+        if "emoji"         in data: bt.emoji         = str(data["emoji"])
+        if "descripcion"   in data: bt.descripcion   = sanitize_text(str(data["descripcion"]))
+        if "prize_pct"     in data: bt.prize_pct     = round(float(data["prize_pct"]), 4)
+        if "linea_pct"     in data: bt.linea_pct     = round(float(data["linea_pct"]), 4)
+        if "u_pct"         in data: bt.u_pct         = round(float(data["u_pct"]),     4)
+        if "o_pct"         in data: bt.o_pct         = round(float(data["o_pct"]),     4)
+        if "max_cartillas" in data: bt.max_cartillas = max(1, int(data["max_cartillas"]))
+        if "is_active"     in data: bt.is_active     = bool(data["is_active"])
+        if "is_special"    in data: bt.is_special    = bool(data["is_special"])
+        if "special_label" in data: bt.special_label = sanitize_text(str(data["special_label"]))
+        if "sort_order"    in data: bt.sort_order    = int(data["sort_order"])
+
+        total = bt.prize_pct + bt.linea_pct + bt.u_pct + bt.o_pct
+        if total > 1.0001:
+            return jsonify({"error": "Los premios suman más del 100%"}), 400
+
+    _reload_bingo_types()
+    return jsonify({"status": "ok"})
+
+@app.route("/api/admin/bingo_types/<bid>", methods=["DELETE"])
+def api_admin_delete_bingo_type(bid):
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        bt = db.query(BingoTypeDB).filter_by(id=bid).first()
+        if not bt:
+            return jsonify({"error": "not found"}), 404
+        refs = db.query(BingoSession).filter_by(bingo_type=bid).count()
+        if refs > 0:
+            return jsonify({"error": f"No se puede eliminar: {refs} sesión(es) ya usaron este tipo. Desactívalo en su lugar."}), 400
+        db.delete(bt)
+    _reload_bingo_types()
+    return jsonify({"status": "ok"})
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
 def _startup():
     init_db()
+    _seed_bingo_types()
+    _reload_bingo_types()
     print("\n" + "=" * 58)
     print("  BINGO PRO WEB v8.0  (SQLite backend)")
     print("=" * 58)

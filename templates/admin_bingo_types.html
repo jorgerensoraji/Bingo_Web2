@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 Tipos de Bingo — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap { max-width:1100px; margin:0 auto; padding:20px }
+
+/* Cards grid */
+.types-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; margin-bottom:24px }
+
+.type-card {
+  background:var(--panel); border:2px solid var(--border);
+  border-radius:18px; padding:20px; position:relative;
+  transition:border-color .2s;
+}
+.type-card.inactive { opacity:.5 }
+.type-card .tc-badge {
+  position:absolute; top:14px; right:14px;
+  font-size:.6rem; letter-spacing:2px; padding:3px 9px;
+  border-radius:20px; font-weight:700; text-transform:uppercase;
+}
+.tc-badge.active  { background:rgba(39,174,96,.2);  color:#27ae60 }
+.tc-badge.inactive-b{ background:rgba(231,76,60,.15); color:var(--danger) }
+.tc-badge.special { background:rgba(246,195,67,.2); color:#f6c343 }
+
+.type-card h3 {
+  font-family:'Bebas Neue',sans-serif; font-size:1.6rem;
+  letter-spacing:2px; margin:0 0 4px; line-height:1;
+}
+.type-card .tc-price {
+  font-family:'Bebas Neue',sans-serif; font-size:2.4rem;
+  line-height:1; margin-bottom:12px;
+}
+.type-card .tc-desc { font-size:.78rem; color:var(--muted); margin-bottom:14px }
+
+/* Prize bar */
+.prize-bar { height:10px; border-radius:6px; overflow:hidden; display:flex; margin-bottom:10px }
+.prize-bar .pb-seg { height:100%; transition:width .3s }
+
+.prize-rows { margin-bottom:14px }
+.prize-row { display:flex; justify-content:space-between; font-size:.78rem; padding:3px 0 }
+.prize-row .pr-label { color:var(--muted) }
+.prize-row .pr-val   { font-weight:700 }
+.prize-row.house     { border-top:1px solid var(--border); margin-top:4px; padding-top:6px }
+
+.tc-meta { font-size:.72rem; color:var(--muted); margin-bottom:14px }
+
+.tc-actions { display:flex; gap:8px; flex-wrap:wrap }
+
+/* Buttons */
+.btn { padding:8px 16px; border-radius:9px; border:none; font-weight:900; cursor:pointer;
+       font-family:'Outfit',sans-serif; font-size:.82rem; transition:filter .15s }
+.btn:hover { filter:brightness(1.1) }
+.btn-accent  { background:var(--accent); color:#041015 }
+.btn-ghost   { background:var(--card); color:var(--text); border:1px solid var(--border) }
+.btn-warn    { background:rgba(246,195,67,.2); color:#f6c343; border:1px solid rgba(246,195,67,.3) }
+.btn-danger  { background:rgba(231,76,60,.2);  color:var(--danger); border:1px solid rgba(231,76,60,.3) }
+.btn-sm { padding:6px 12px; font-size:.76rem }
+
+/* Modal */
+.modal-bg {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.75);
+  z-index:900; align-items:center; justify-content:center; padding:20px;
+}
+.modal-bg.open { display:flex }
+.modal {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:18px; padding:28px; width:100%; max-width:560px;
+  max-height:90vh; overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.modal h3 { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; color:var(--accent);
+             letter-spacing:2px; margin:0 0 20px }
+
+.field { margin-bottom:14px }
+.field label { display:block; font-size:.72rem; color:var(--muted); letter-spacing:1px;
+               text-transform:uppercase; margin-bottom:5px }
+.field input, .field select {
+  width:100%; padding:10px 12px; background:var(--sub);
+  border:1px solid var(--border); border-radius:9px;
+  color:var(--text); font-family:'Outfit',sans-serif; font-size:.88rem;
+  outline:none; box-sizing:border-box;
+}
+.field input:focus, .field select:focus { border-color:var(--accent) }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+
+/* Percent inputs */
+.pct-row { display:grid; grid-template-columns:repeat(2,1fr); gap:10px }
+.pct-field label { color:var(--muted) }
+.pct-input-wrap { position:relative }
+.pct-input-wrap input { padding-right:28px }
+.pct-input-wrap::after { content:'%'; position:absolute; right:10px; top:50%;
+                          transform:translateY(-50%); color:var(--muted); font-size:.82rem; pointer-events:none }
+
+/* Live house-cut display */
+.house-calc {
+  background:var(--sub); border:1px solid var(--border); border-radius:10px;
+  padding:14px; margin:14px 0; text-align:center;
+}
+.house-calc .hc-bar { height:12px; border-radius:6px; overflow:hidden; display:flex; margin:10px 0 }
+.house-calc .hc-val { font-family:'Bebas Neue',sans-serif; font-size:2rem }
+.house-calc .hc-label { font-size:.72rem; color:var(--muted); letter-spacing:1px }
+.house-calc .hc-warn { color:var(--danger); font-size:.78rem; margin-top:4px }
+
+/* Color swatches */
+.color-swatches { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px }
+.swatch { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid transparent;
+          transition:transform .15s, border-color .15s; flex-shrink:0 }
+.swatch.sel, .swatch:hover { transform:scale(1.2); border-color:#fff }
+
+/* Emoji picker */
+.emoji-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px }
+.emoji-opt { font-size:1.4rem; cursor:pointer; padding:4px 6px; border-radius:8px;
+              border:2px solid transparent; transition:border-color .15s }
+.emoji-opt.sel, .emoji-opt:hover { border-color:var(--accent) }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:12px 22px; z-index:1000;
+  transition:transform .3s; white-space:nowrap; pointer-events:none;
+}
+.toast.show { transform:translateX(-50%) translateY(0) }
+
+.modal-actions { display:flex; gap:10px; margin-top:20px }
+.modal-actions .btn { flex:1; padding:12px }
+
+.empty-state { text-align:center; padding:60px 20px; color:var(--muted) }
+.empty-state .es-icon { font-size:3rem; margin-bottom:12px }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎰 Tipos de Bingo</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
+    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link active" href="/admin/bingo_types">🎰 Tipos</a>
+    <a class="nav-link" href="/admin/manual" target="_blank">📖 Manual</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--accent);letter-spacing:2px;margin:0">
+        Tipos de Bingo
+      </h2>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:2px">
+        Crea, edita y gestiona todos los tipos de bingo. Los cambios se aplican de inmediato.
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="openCreate()">＋ Nuevo Tipo</button>
+  </div>
+
+  <div id="types-grid" class="types-grid">
+    <div class="empty-state"><div class="es-icon">⏳</div>Cargando…</div>
+  </div>
+
+</div>
+
+<!-- ── Modal crear / editar ─────────────────────────────────────────── -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Nuevo Tipo de Bingo</h3>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Nombre del tipo</label>
+        <input id="f-nombre" type="text" placeholder="Ej: Bingo 20 Soles">
+      </div>
+      <div class="field">
+        <label>Precio por entrada (S/.)</label>
+        <input id="f-precio" type="number" min="0.50" step="0.50" placeholder="20.00">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Descripción (opcional)</label>
+      <input id="f-desc" type="text" placeholder="Ej: Bingo B-I-N-G-O · Edición Especial">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Máx. cartillas por jugador</label>
+        <input id="f-maxc" type="number" min="1" max="10" value="1">
+      </div>
+      <div class="field">
+        <label>Emoji</label>
+        <input id="f-emoji-inp" type="text" maxlength="4" placeholder="🎯" value="🎯"
+               style="font-size:1.4rem;text-align:center">
+        <div class="emoji-row">
+          <span class="emoji-opt sel" onclick="setEmoji('🎯')">🎯</span>
+          <span class="emoji-opt" onclick="setEmoji('⭐')">⭐</span>
+          <span class="emoji-opt" onclick="setEmoji('🌟')">🌟</span>
+          <span class="emoji-opt" onclick="setEmoji('🏆')">🏆</span>
+          <span class="emoji-opt" onclick="setEmoji('🎪')">🎪</span>
+          <span class="emoji-opt" onclick="setEmoji('🎉')">🎉</span>
+          <span class="emoji-opt" onclick="setEmoji('💎')">💎</span>
+          <span class="emoji-opt" onclick="setEmoji('🔥')">🔥</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Color del tipo</label>
+      <div class="color-swatches" id="color-swatches">
+        <div class="swatch sel" style="background:#f472b6" onclick="setColor('#f472b6')" data-c="#f472b6"></div>
+        <div class="swatch" style="background:#a855f7" onclick="setColor('#a855f7')" data-c="#a855f7"></div>
+        <div class="swatch" style="background:#818cf8" onclick="setColor('#818cf8')" data-c="#818cf8"></div>
+        <div class="swatch" style="background:#00e5b4" onclick="setColor('#00e5b4')" data-c="#00e5b4"></div>
+        <div class="swatch" style="background:#f59e0b" onclick="setColor('#f59e0b')" data-c="#f59e0b"></div>
+        <div class="swatch" style="background:#ef4444" onclick="setColor('#ef4444')" data-c="#ef4444"></div>
+        <div class="swatch" style="background:#3b82f6" onclick="setColor('#3b82f6')" data-c="#3b82f6"></div>
+        <div class="swatch" style="background:#10b981" onclick="setColor('#10b981')" data-c="#10b981"></div>
+        <input id="f-color" type="color" value="#f472b6"
+               style="width:28px;height:28px;padding:0;border:none;border-radius:50%;cursor:pointer;background:none"
+               oninput="setColor(this.value)">
+      </div>
+    </div>
+
+    <!-- Prize percentages -->
+    <div class="field" style="margin-top:4px">
+      <label>Distribución de premios</label>
+      <div class="pct-row">
+        <div class="pct-field">
+          <label style="color:#00e5b4">🎉 BINGO (cartilla completa)</label>
+          <div class="pct-input-wrap">
+            <input id="f-bingo" type="number" min="0" max="100" step="1" value="55" oninput="recalcHouse()">
+          </div>
+        </div>
+        <div class="pct-field">
+          <label style="color:#ec4899">⭕ O (borde exterior)</label>
+          <div class="pct-input-wrap">
+            <input id="f-o" type="number" min="0" max="100" step="1" value="15" oninput="recalcHouse()">
+          </div>
+        </div>
+        <div class="pct-field">
+          <label style="color:#3b82f6">🔷 U (columnas + fila inf.)</label>
+          <div class="pct-input-wrap">
+            <input id="f-u" type="number" min="0" max="100" step="1" value="13" oninput="recalcHouse()">
+          </div>
+        </div>
+        <div class="pct-field">
+          <label style="color:#f6c343">⭐ LÍNEA (una fila)</label>
+          <div class="pct-input-wrap">
+            <input id="f-linea" type="number" min="0" max="100" step="1" value="4" oninput="recalcHouse()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live house-cut calc -->
+    <div class="house-calc" id="house-calc">
+      <div class="hc-bar" id="hc-bar"></div>
+      <div class="hc-val" id="hc-val">13%</div>
+      <div class="hc-label">GANANCIA TUYA (CASA)</div>
+      <div class="hc-warn" id="hc-warn" style="display:none"></div>
+    </div>
+
+    <!-- Special event toggle -->
+    <div class="field" style="display:flex;align-items:center;gap:12px">
+      <input id="f-special" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent)">
+      <div>
+        <label style="cursor:pointer" for="f-special">✨ Marcar como evento especial</label>
+        <div style="font-size:.72rem;color:var(--muted)">Muestra una etiqueta especial en la pantalla del jugador</div>
+      </div>
+    </div>
+    <div class="field" id="special-label-wrap" style="display:none">
+      <label>Etiqueta del evento (ej: "Navidad 2025", "Aniversario")</label>
+      <input id="f-special-label" type="text" maxlength="80" placeholder="Edición Especial">
+    </div>
+
+    <!-- Active toggle -->
+    <div class="field" style="display:flex;align-items:center;gap:12px;margin-top:4px">
+      <input id="f-active" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--accent)">
+      <div>
+        <label style="cursor:pointer" for="f-active">Tipo activo (visible para jugadores y sesiones)</label>
+        <div style="font-size:.72rem;color:var(--muted)">Desactiva para ocultarlo sin eliminarlo</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" id="modal-save-btn" onclick="saveType()">✅ Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let _tj = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt2(n) { return Number(n||0).toFixed(2); }
+function logout() {
+  fetch('/api/admin/logout',{method:'POST'}).finally(()=>location.href='/admin/login');
+}
+
+// ── State ──────────────────────────────────────────────
+let _editId = null;
+let _selColor = '#f472b6';
+
+// ── Color & Emoji helpers ──────────────────────────────
+function setColor(c) {
+  _selColor = c;
+  document.getElementById('f-color').value = c;
+  document.querySelectorAll('.swatch').forEach(s => {
+    s.classList.toggle('sel', s.dataset.c === c);
+  });
+}
+function setEmoji(e) {
+  document.getElementById('f-emoji-inp').value = e;
+  document.querySelectorAll('.emoji-opt').forEach(o => {
+    o.classList.toggle('sel', o.textContent.trim() === e);
+  });
+}
+document.getElementById('f-special').addEventListener('change', function() {
+  document.getElementById('special-label-wrap').style.display = this.checked ? '' : 'none';
+});
+
+// ── House-cut calculator ───────────────────────────────
+function recalcHouse() {
+  const bingo = parseFloat(document.getElementById('f-bingo').value)||0;
+  const o     = parseFloat(document.getElementById('f-o').value)||0;
+  const u     = parseFloat(document.getElementById('f-u').value)||0;
+  const linea = parseFloat(document.getElementById('f-linea').value)||0;
+  const house = 100 - bingo - o - u - linea;
+
+  const hv   = document.getElementById('hc-val');
+  const hw   = document.getElementById('hc-warn');
+  const bar  = document.getElementById('hc-bar');
+  const calc = document.getElementById('house-calc');
+
+  hv.textContent = (house >= 0 ? house.toFixed(1) : '0') + '%';
+  hv.style.color = house < 0 ? 'var(--danger)' : house < 5 ? '#f6c343' : '#27ae60';
+
+  if (house < 0) {
+    hw.textContent = '⚠️ Los premios suman más del 100%. Ajusta los porcentajes.';
+    hw.style.display = '';
+    calc.style.borderColor = 'var(--danger)';
+  } else if (house < 5) {
+    hw.textContent = '⚠️ Ganancia muy baja. Considera al menos 10% para cubrir costos.';
+    hw.style.display = '';
+    calc.style.borderColor = '#f6c343';
+  } else {
+    hw.style.display = 'none';
+    calc.style.borderColor = '';
+  }
+
+  // Visual bar: colors match each prize
+  const total = bingo + o + u + linea + Math.max(0, house);
+  bar.innerHTML = [
+    {pct: bingo,          color:'#00e5b4', title:'BINGO'},
+    {pct: o,              color:'#ec4899', title:'O'},
+    {pct: u,              color:'#3b82f6', title:'U'},
+    {pct: linea,          color:'#f6c343', title:'LINEA'},
+    {pct: Math.max(0,house), color:'#555', title:'Casa'},
+  ].map(seg => `<div class="pb-seg" title="${seg.title}: ${seg.pct.toFixed(1)}%"
+    style="width:${(seg.pct/total*100).toFixed(1)}%;background:${seg.color}"></div>`).join('');
+}
+
+// ── Modal open/close ───────────────────────────────────
+function openCreate() {
+  _editId = null;
+  document.getElementById('modal-title').textContent = 'Nuevo Tipo de Bingo';
+  document.getElementById('modal-save-btn').textContent = '✅ Crear Tipo';
+  document.getElementById('f-nombre').value = '';
+  document.getElementById('f-precio').value = '';
+  document.getElementById('f-desc').value   = '';
+  document.getElementById('f-maxc').value   = '1';
+  document.getElementById('f-bingo').value  = '55';
+  document.getElementById('f-o').value      = '15';
+  document.getElementById('f-u').value      = '13';
+  document.getElementById('f-linea').value  = '4';
+  document.getElementById('f-active').checked  = true;
+  document.getElementById('f-special').checked = false;
+  document.getElementById('f-special-label').value = '';
+  document.getElementById('special-label-wrap').style.display = 'none';
+  setColor('#f472b6');
+  setEmoji('🎯');
+  recalcHouse();
+  document.getElementById('modal').classList.add('open');
+}
+
+function openEdit(bt) {
+  _editId = bt.id;
+  document.getElementById('modal-title').textContent = 'Editar Tipo';
+  document.getElementById('modal-save-btn').textContent = '✅ Guardar Cambios';
+  document.getElementById('f-nombre').value = bt.nombre;
+  document.getElementById('f-precio').value = bt.precio;
+  document.getElementById('f-desc').value   = bt.descripcion || '';
+  document.getElementById('f-maxc').value   = bt.max_cartillas || 1;
+  document.getElementById('f-bingo').value  = Math.round((bt.prize_pct||0)*100);
+  document.getElementById('f-o').value      = Math.round((bt.o_pct||0)*100);
+  document.getElementById('f-u').value      = Math.round((bt.u_pct||0)*100);
+  document.getElementById('f-linea').value  = Math.round((bt.linea_pct||0)*100);
+  document.getElementById('f-active').checked  = !!bt.is_active;
+  document.getElementById('f-special').checked = !!bt.is_special;
+  document.getElementById('f-special-label').value = bt.special_label || '';
+  document.getElementById('special-label-wrap').style.display = bt.is_special ? '' : 'none';
+  setColor(bt.color || '#f472b6');
+  setEmoji(bt.emoji || '🎯');
+  recalcHouse();
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  _editId = null;
+}
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// ── Save ───────────────────────────────────────────────
+async function saveType() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { showToast('⚠️ El nombre es obligatorio'); return; }
+
+  const precio = parseFloat(document.getElementById('f-precio').value);
+  if (!precio || precio <= 0) { showToast('⚠️ El precio debe ser mayor a 0'); return; }
+
+  const bingo = parseFloat(document.getElementById('f-bingo').value)||0;
+  const o     = parseFloat(document.getElementById('f-o').value)||0;
+  const u     = parseFloat(document.getElementById('f-u').value)||0;
+  const linea = parseFloat(document.getElementById('f-linea').value)||0;
+
+  if (bingo + o + u + linea > 100.01) {
+    showToast('⚠️ Los premios suman más del 100%'); return;
+  }
+
+  const payload = {
+    nombre,
+    precio,
+    color:         _selColor,
+    emoji:         document.getElementById('f-emoji-inp').value.trim() || '🎯',
+    descripcion:   document.getElementById('f-desc').value.trim(),
+    max_cartillas: parseInt(document.getElementById('f-maxc').value) || 1,
+    prize_pct:     bingo / 100,
+    o_pct:         o     / 100,
+    u_pct:         u     / 100,
+    linea_pct:     linea / 100,
+    is_active:     document.getElementById('f-active').checked,
+    is_special:    document.getElementById('f-special').checked,
+    special_label: document.getElementById('f-special-label').value.trim(),
+  };
+
+  const url    = _editId ? `/api/admin/bingo_types/${_editId}` : '/api/admin/bingo_types';
+  const method = _editId ? 'PUT' : 'POST';
+
+  try {
+    const res  = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
+    showToast(_editId ? '✅ Tipo actualizado' : '✅ Tipo creado');
+    closeModal();
+    load();
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+// ── Toggle active ──────────────────────────────────────
+async function toggleActive(bid, currentActive) {
+  try {
+    const res  = await fetch(`/api/admin/bingo_types/${bid}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({is_active: !currentActive}),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
+    showToast(currentActive ? '⏸ Tipo desactivado' : '▶️ Tipo activado');
+    load();
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+// ── Delete ─────────────────────────────────────────────
+async function deleteType(bid, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}"?\n\nEsto no se puede deshacer. Si hay sesiones que usaron este tipo, el sistema te impedirá eliminarlo — desactívalo en su lugar.`)) return;
+  try {
+    const res  = await fetch(`/api/admin/bingo_types/${bid}`, {method:'DELETE'});
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
+    showToast('🗑️ Tipo eliminado');
+    load();
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+// ── Render ─────────────────────────────────────────────
+function renderTypes(types) {
+  const grid = document.getElementById('types-grid');
+  if (!types.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="es-icon">🎰</div>
+      <div>No hay tipos de bingo creados aún.</div>
+      <button class="btn btn-accent" style="margin-top:16px" onclick="openCreate()">＋ Crear primer tipo</button>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = types.map(bt => {
+    const bingo = (bt.prize_pct||0)*100;
+    const o     = (bt.o_pct||0)*100;
+    const u     = (bt.u_pct||0)*100;
+    const linea = (bt.linea_pct||0)*100;
+    const house = Math.max(0, (bt.house_pct||0)*100);
+    const total = bingo + o + u + linea + house || 100;
+
+    const bar = [
+      {pct:bingo, color:'#00e5b4'},
+      {pct:o,     color:'#ec4899'},
+      {pct:u,     color:'#3b82f6'},
+      {pct:linea, color:'#f6c343'},
+      {pct:house, color:'#444'},
+    ].map(s => `<div class="pb-seg" style="width:${(s.pct/total*100).toFixed(1)}%;background:${s.color}"></div>`).join('');
+
+    const badges = [
+      bt.is_active  ? '' : '<span class="tc-badge inactive-b">Inactivo</span>',
+      bt.is_special ? `<span class="tc-badge special">✨ ${esc(bt.special_label||'Especial')}</span>` : '',
+    ].filter(Boolean).join('');
+
+    return `<div class="type-card${bt.is_active?'':' inactive'}" style="border-color:${bt.color}22">
+      ${badges || `<span class="tc-badge active">Activo</span>`}
+
+      <h3 style="color:${bt.color}">${esc(bt.emoji)} ${esc(bt.nombre)}</h3>
+      <div class="tc-price" style="color:${bt.color}">S/. ${fmt2(bt.precio)}</div>
+      <div class="tc-desc">${esc(bt.descripcion||'Bingo B-I-N-G-O')}</div>
+
+      <div class="prize-bar">${bar}</div>
+
+      <div class="prize-rows">
+        <div class="prize-row"><span class="pr-label">🎉 BINGO</span><span class="pr-val" style="color:#00e5b4">${bingo.toFixed(0)}%</span></div>
+        <div class="prize-row"><span class="pr-label">⭕ O</span><span class="pr-val" style="color:#ec4899">${o.toFixed(0)}%</span></div>
+        <div class="prize-row"><span class="pr-label">🔷 U</span><span class="pr-val" style="color:#3b82f6">${u.toFixed(0)}%</span></div>
+        <div class="prize-row"><span class="pr-label">⭐ LÍNEA</span><span class="pr-val" style="color:#f6c343">${linea.toFixed(0)}%</span></div>
+        <div class="prize-row house">
+          <span class="pr-label">💼 Tu ganancia</span>
+          <span class="pr-val" style="color:${house<5?'var(--danger)':house<10?'#f6c343':'#27ae60'}">${house.toFixed(0)}%</span>
+        </div>
+      </div>
+
+      <div class="tc-meta">Máx. ${bt.max_cartillas||1} cartilla${(bt.max_cartillas||1)>1?'s':''} por jugador</div>
+
+      <div class="tc-actions">
+        <button class="btn btn-ghost btn-sm" onclick='openEdit(${JSON.stringify(bt)})'>✏️ Editar</button>
+        <button class="btn btn-warn btn-sm" onclick="toggleActive('${esc(bt.id)}', ${bt.is_active})">
+          ${bt.is_active ? '⏸ Desactivar' : '▶️ Activar'}
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteType('${esc(bt.id)}','${esc(bt.nombre)}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Load ───────────────────────────────────────────────
+async function load() {
+  try {
+    const res  = await fetch('/api/admin/bingo_types');
+    const data = await res.json();
+    renderTypes(data.bingo_types || []);
+  } catch(e) {
+    document.getElementById('types-grid').innerHTML =
+      '<div class="empty-state"><div class="es-icon">❌</div>Error al cargar</div>';
+  }
+}
+
+recalcHouse();
+load();
+</script>
+</body>
+</html>

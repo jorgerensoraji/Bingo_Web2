@@ -185,3 +185,51 @@ class Config(Base):
 
     key   = Column(String(50), primary_key=True)
     value = Column(Text, default="{}")
+
+
+class BingoTypeDB(Base):
+    """Dynamic bingo types — created and managed from the admin panel."""
+    __tablename__ = "bingo_types"
+
+    id            = Column(String(30),  primary_key=True)
+    nombre        = Column(String(60),  default="")
+    precio        = Column(Float,       default=0.0)
+    color         = Column(String(10),  default="#f472b6")
+    emoji         = Column(String(10),  default="🎯")
+    descripcion   = Column(String(200), default="")
+    prize_pct     = Column(Float,       default=0.55)   # BINGO full card
+    linea_pct     = Column(Float,       default=0.04)   # LINEA any row
+    u_pct         = Column(Float,       default=0.13)   # U pattern
+    o_pct         = Column(Float,       default=0.15)   # O pattern
+    # house_pct = 1 - prize - linea - u - o  (auto-calculated, never stored)
+    max_cartillas = Column(Integer,     default=1)
+    is_active     = Column(Boolean,     default=True)
+    is_special    = Column(Boolean,     default=False)
+    special_label = Column(String(100), default="")
+    sort_order    = Column(Integer,     default=0)
+    created_at    = Column(String(30),  default="")
+
+    def to_dict(self) -> dict:
+        import json as _json
+        house = round(max(0.0, 1.0 - self.prize_pct - self.linea_pct - self.u_pct - self.o_pct), 4)
+        return {
+            "id":                        self.id,
+            "nombre":                    self.nombre,
+            "precio":                    self.precio,
+            "color":                     self.color,
+            "emoji":                     self.emoji,
+            "descripcion":               self.descripcion,
+            "prize_pct":                 self.prize_pct,
+            "linea_pct":                 self.linea_pct,
+            "u_pct":                     self.u_pct,
+            "o_pct":                     self.o_pct,
+            "house_pct":                 house,
+            "max_cartillas":             self.max_cartillas,
+            "max_cartillas_per_voucher": self.max_cartillas,   # backend compat alias
+            "is_active":                 bool(self.is_active),
+            "is_special":                bool(self.is_special),
+            "special_label":             self.special_label or "",
+            "sort_order":                self.sort_order,
+            "balls":                     75,
+            "grid_type":                 "75",
+        }
