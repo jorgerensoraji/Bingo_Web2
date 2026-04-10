@@ -518,9 +518,9 @@ function handleSessionFinished() {
     statusEl.innerHTML =
       '<div style="text-align:center;padding:20px 10px">' +
       '<div style="font-size:2rem;margin-bottom:8px">🏁</div>' +
-      '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.6rem;color:var(--accent);letter-spacing:2px">Sesión Finalizada</div>' +
+      '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.6rem;color:var(--accent);letter-spacing:2px">Bingo Finalizado</div>' +
       '<div style="color:var(--muted);font-size:.83rem;margin-top:8px;line-height:1.6">' +
-      'Esta sesión de bingo ha terminado.<br>Gracias por participar. ¡Hasta la próxima!</div>' +
+      'Este Bingo ha terminado.<br>Gracias por participar. ¡Hasta la próxima!</div>' +
       '</div>';
   }
 
@@ -529,9 +529,9 @@ function handleSessionFinished() {
   if (banner) { banner.style.display = ''; banner.style.opacity = '1'; }
 
   var syncEl = document.getElementById('sync-status');
-  if (syncEl) syncEl.innerHTML = '🏁 Sesión finalizada';
+  if (syncEl) syncEl.innerHTML = '🏁 Bingo finalizado';
 
-  showToast('🏁 La sesión ha finalizado. ¡Hasta la próxima!', 5000);
+  showToast('🏁 El Bingo ha finalizado. ¡Hasta la próxima!', 5000);
   hideGameOver();
 }
 
@@ -561,7 +561,7 @@ async function syncState() {
       cartillaStates = {};
       if (myCartillas.length < before) {
         var removed = before - myCartillas.length;
-        showToast('⚠️ ' + removed + ' cartilla(s) son de otra sesión y fueron desactivadas.', 5000);
+        showToast('⚠️ ' + removed + ' cartilla(s) son de otro Bingo y fueron desactivadas.', 5000);
         updateMyCartillaAutoMark(true);
       }
     }
@@ -1093,11 +1093,11 @@ async function loadAllCartillas() {
   cartillaStates = {};
 
   if (wrongSession > 0 && !myCartillas.length) {
-    showToast('❌ Tus cartillas son de otra sesión y no pueden usarse en el juego actual.', 5000);
+    showToast('❌ Tus cartillas son de otro Bingo y no pueden usarse en el juego actual.', 5000);
     return;
   }
   if (wrongSession > 0) {
-    showToast('⚠️ ' + wrongSession + ' cartilla(s) de otra sesión fueron ignoradas.', 4000);
+    showToast('⚠️ ' + wrongSession + ' cartilla(s) de otro Bingo fueron ignoradas.', 4000);
   }
   if (!myCartillas.length) { showToast("❌ No se encontraron cartillas válidas"); return; }
 
@@ -1345,8 +1345,8 @@ async function showPlayerSessionBanner() {
     const prepNote    = isPreparing ? '<span style="font-size:.72rem;color:#f6c343;margin-left:8px">A punto de iniciar</span>' : '';
     const sessionNote = s.id === activeSessionId ? '' :
       (activeSessionId
-        ? '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">Esta sesión no es la que está activa ahora mismo.</div>'
-        : '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">Aún no hay sesión activa. Tu cartilla estará lista cuando el admin inicie.</div>');
+        ? '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">Este Bingo no es el que está activo ahora mismo.</div>'
+        : '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">Aún no hay Bingo activo. Tu cartilla estará lista cuando el admin inicie.</div>');
     return `<div style="padding:10px 14px;background:${st.bg};border:1px solid ${st.border};border-radius:10px;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-size:.85rem;font-weight:700">${st.emoji} ${esc2(s.bingo_nombre||'Bingo')}</span>

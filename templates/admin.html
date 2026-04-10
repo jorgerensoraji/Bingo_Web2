@@ -183,9 +183,9 @@ tr:hover td{background:rgba(17,31,46,.5)}
       <div class="type-info" id="type-info"></div>
 
       <!-- Sesión -->
-      <label class="label">Sesión (opcional)</label>
+      <label class="label">Bingo (opcional)</label>
       <select id="sel-session" class="inp">
-        <option value="">Sin sesión específica</option>
+        <option value="">Sin Bingo específico</option>
       </select>
 
       <!-- ══ DATOS OBLIGATORIOS ══ -->
@@ -516,7 +516,7 @@ async function loadSessions() {
     ['sel-session','f-session'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML =
-        `<option value="">${id==='f-session'?'Todas las sesiones':'Sin sesión específica'}</option>`
+        `<option value="">${id==='f-session'?'Todas las sesiones':'Sin Bingo específico'}</option>`
         + opts;
     });
   } catch(e) {}

@@ -247,15 +247,15 @@
           </label>
           <select id="inp-session" onchange="onSessionChange()"
                   style="border-color:var(--border);transition:border-color .2s">
-            <option value="">— Elige la sesión en que quieres jugar —</option>
+            <option value="">— Elige el Bingo en que quieres jugar —</option>
           </select>
           <div id="session-hint" style="font-size:.72rem;margin-top:4px;display:none;
                color:var(--accent)">
-            ⚠️ Debes elegir una sesión para participar.
+            ⚠️ Debes elegir un Bingo para participar.
           </div>
           <div id="session-no-sessions" style="font-size:.75rem;margin-top:4px;
                color:var(--danger);display:none">
-            ❌ No hay sesiones disponibles. El administrador debe crear una sesión antes de poder comprar cartillas.
+            ❌ No hay Bingos disponibles. El administrador debe crear un Bingo antes de poder comprar cartillas.
           </div>
         </div>
 
@@ -578,7 +578,7 @@ function renderSessions() {
   const noSess = document.getElementById('session-no-sessions');
 
   // ── Selector de sesión (todas las sesiones) ──
-  sel.innerHTML = '<option value="">— Elige la sesión en que quieres jugar —</option>' +
+  sel.innerHTML = '<option value="">— Elige el Bingo en que quieres jugar —</option>' +
     ssAll.map(s => {
       const dt = new Date(s.datetime_iso);
       const dstr = isNaN(dt) ? s.datetime_iso :
@@ -668,7 +668,7 @@ async function enviarSolicitud() {
 
   // Validar sesión: siempre es obligatorio
   if (allSessions.length === 0) {
-    showToast('❌ No hay sesiones disponibles. El admin debe crear una sesión primero.');
+    showToast('❌ No hay Bingos disponibles. El admin debe crear un Bingo primero.');
     document.getElementById('session-group')?.scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
@@ -677,7 +677,7 @@ async function enviarSolicitud() {
     const sel  = document.getElementById('inp-session');
     if (hint) hint.style.display = 'block';
     if (sel)  sel.style.borderColor = 'var(--danger)';
-    showToast('⚠️ Debes elegir la sesión en que quieres jugar');
+    showToast('⚠️ Debes elegir el Bingo en que quieres jugar');
     document.getElementById('inp-session')?.scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
@@ -1115,7 +1115,7 @@ async function showSuccessPanel(cartillas) {
         const st = statusMap[s.status] || { label: s.status || '—', color:'var(--muted)' };
         sesionHtml = `
           <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0;text-align:left">
-            <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Tu sesión</div>
+            <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Tu Bingo</div>
             <div style="font-weight:900;margin-bottom:3px">${esc(s.bingo_nombre||'Bingo')}</div>
             <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">📅 ${esc(s.date||'—')} &nbsp;🕐 ${esc(s.time||'—')}</div>
             <div style="font-weight:700;color:${st.color}">${st.label}</div>

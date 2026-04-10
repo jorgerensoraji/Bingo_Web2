@@ -131,13 +131,13 @@
 
     <!-- ══ PANEL SESIÓN ACTIVA ══ -->
     <div class="panel" id="panel-sesion" style="border:1px solid rgba(231,76,60,.3);background:rgba(231,76,60,.04)">
-      <div class="panel-title" style="color:var(--danger)">⚠️ Control de Sesión</div>
+      <div class="panel-title" style="color:var(--danger)">⚠️ Control del Bingo</div>
 
       <!-- Info sesión activa -->
       <div id="sesion-info" style="font-size:.82rem;color:var(--muted);
            padding:8px 10px;background:var(--card);border-radius:8px;
            margin-bottom:10px;line-height:1.6">
-        Cargando sesión…
+        Cargando Bingo…
       </div>
 
       <!-- Finalizar sesión (limpio — registra ganadores) -->
@@ -145,7 +145,7 @@
         width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:9px;
         background:var(--warning);color:#041015;
         font-family:'Outfit',sans-serif;font-weight:900;font-size:.88rem;cursor:pointer;">
-        ⏹ Finalizar sesión (normal)
+        ⏹ Finalizar Bingo
       </button>
 
       <!-- Cancelar forzado -->
@@ -153,7 +153,7 @@
         width:100%;padding:10px;border:none;border-radius:9px;
         background:var(--danger);color:white;
         font-family:'Outfit',sans-serif;font-weight:900;font-size:.88rem;cursor:pointer;">
-        🛑 Cancelar sesión (forzado)
+        🛑 Cancelar Bingo (forzado)
       </button>
 
       <!-- Limpiar estado residual (sin sesión activa) -->
@@ -165,13 +165,13 @@
           🧹 Limpiar estado residual
         </button>
         <div style="font-size:.68rem;color:var(--muted);margin-top:4px">
-          Limpia bolillas sorteadas sin sesión activa.
+          Limpia bolillas sorteadas sin Bingo activo.
         </div>
       </div>
 
       <div style="font-size:.7rem;color:var(--muted);margin-top:8px;line-height:1.5">
         <strong>Finalizar</strong>: cierra el juego y registra ganadores.<br>
-        <strong>Cancelar forzado</strong>: anula la sesión completamente. Úsalo solo en emergencias.
+        <strong>Cancelar forzado</strong>: anula el Bingo completamente. Úsalo solo en emergencias.
       </div>
     </div>
 
@@ -208,12 +208,12 @@ async function setWinnersLimit(val) {
 // ── Finalizar sesión (normal — registra ganadores) ────
 async function finalizarSesion() {
   const sid = window._activeSesionId;
-  if (!sid) { alert('No hay sesión activa.'); return; }
-  if (!confirm('¿Finalizar la sesión?\nSe registrarán los ganadores y el juego quedará cerrado.')) return;
+  if (!sid) { alert('No hay Bingo activo.'); return; }
+  if (!confirm('¿Finalizar el Bingo?\nSe registrarán los ganadores y el juego quedará cerrado.')) return;
   try {
     const res = await fetch(`/api/admin/session/${sid}/finish`, { method: 'POST' });
     if (res.ok) {
-      showToast('✅ Sesión finalizada');
+      showToast('✅ Bingo finalizado');
       setTimeout(() => { location.href = '/admin/sessions'; }, 1500);
     } else {
       const d = await res.json();
@@ -225,21 +225,21 @@ async function finalizarSesion() {
 // ── Cancelar sesión forzado ───────────────────────────
 async function cancelarSesionForzado() {
   const sid = window._activeSesionId;
-  if (!sid) { alert('No hay sesión activa.'); return; }
+  if (!sid) { alert('No hay Bingo activo.'); return; }
   const motivo = prompt(
     '⚠️ CANCELAR SESIÓN FORZADO\n\n' +
-    'Esta acción anulará la sesión completamente.\n' +
+    'Esta acción anulará el Bingo completamente.\n' +
     'Úsala solo en caso de emergencia.\n\n' +
     'Escribe el motivo de la cancelación:',
     ''
   );
   if (motivo === null) return; // canceló el prompt
   if (!motivo.trim()) { alert('Debes ingresar un motivo.'); return; }
-  if (!confirm(`¿Confirmas cancelar FORZADO la sesión ${sid}?\nMotivo: "${motivo}"\n\nEsta acción no se puede deshacer.`)) return;
+  if (!confirm(`¿Confirmas cancelar FORZADO el Bingo ${sid}?\nMotivo: "${motivo}"\n\nEsta acción no se puede deshacer.`)) return;
   try {
     const res = await fetch(`/api/admin/session/${sid}/cancel`, { method: 'POST' });
     if (res.ok) {
-      showToast('🛑 Sesión cancelada forzadamente');
+      showToast('🛑 Bingo cancelado forzadamente');
       setTimeout(() => { location.href = '/admin/sessions'; }, 1500);
     } else {
       const d = await res.json();
@@ -304,7 +304,7 @@ setInterval(async function() {
       const uPool  = Number(data.u_pool || 0).toFixed(2);
       const oPool  = Number(data.o_pool || 0).toFixed(2);
       infoEl.innerHTML =
-        `Sesión: <strong style="color:var(--accent)">#${sid}</strong><br>` +
+        `Bingo: <strong style="color:var(--accent)">#${sid}</strong><br>` +
         `Tipo: <strong>${bt}</strong><br>` +
         `Bolillas sorteadas: <strong>${drawn}/75</strong><br>` +
         `🎉 Premio BINGO: <strong style="color:var(--accent)">S/. ${pool}</strong><br>` +
@@ -321,11 +321,11 @@ setInterval(async function() {
       if (infoEl) {
         if (drawn > 0) {
           // Hay bolillas sin sesión — mostrar aviso y botón limpiar
-          infoEl.innerHTML = `<span style="color:var(--warning)">⚠️ Hay <strong>${drawn} bolillas</strong> de una sesión anterior sin limpiar.</span>`;
+          infoEl.innerHTML = `<span style="color:var(--warning)">⚠️ Hay <strong>${drawn} bolillas</strong> de un Bingo anterior sin limpiar.</span>`;
           const btnLimpiar = document.getElementById('btn-limpiar-wrap');
           if (btnLimpiar) btnLimpiar.style.display = 'block';
         } else {
-          infoEl.textContent = 'Sin sesión activa en este momento.';
+          infoEl.textContent = 'Sin Bingo activo en este momento.';
           const btnLimpiar = document.getElementById('btn-limpiar-wrap');
           if (btnLimpiar) btnLimpiar.style.display = 'none';
         }

@@ -178,7 +178,7 @@
     <!-- Columna izquierda: crear sesión -->
     <div>
       <div class="card">
-        <h2>➕ Nueva Sesión</h2>
+        <h2>➕ Nuevo Bingo</h2>
 
         <label class="label">Tipo de Bingo</label>
         <div class="btype-grid" id="btype-grid"></div>
@@ -205,7 +205,7 @@
 
         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-accent" onclick="createSession()">
-            📅 Crear sesión
+            📅 Crear Bingo
           </button>
           <button class="btn btn-ghost" onclick="loadSessions()">
             🔄 Actualizar
@@ -630,8 +630,8 @@ async function startSession(sid) {
 
   const prize = data.prize_info;
   const msg   = prize
-    ? `🟢 Sesión iniciada! · 👥 ${prize.total_players} jug. · 💰 S/. ${prize.gross?.toFixed(2)}`
-    : '🟢 ¡Sesión iniciada!';
+    ? `🟢 Bingo iniciado! · 👥 ${prize.total_players} jug. · 💰 S/. ${prize.gross?.toFixed(2)}`
+    : '🟢 ¡Bingo iniciado!';
   showToast(msg);
   loadSessions();
   setTimeout(() => { location.href = '/admin/game'; }, 1500);
@@ -640,14 +640,14 @@ async function startSession(sid) {
 async function finishSession(sid) {
   if (!confirm('¿Finalizar esta sesión?')) return;
   const res = await fetch(`/api/admin/session/${sid}/finish`, { method: 'POST' });
-  if (res.ok) { showToast('✅ Sesión finalizada'); loadSessions(); }
+  if (res.ok) { showToast('✅ Bingo finalizado'); loadSessions(); }
   else showToast('❌ Error al finalizar');
 }
 
 async function cancelSession(sid) {
   if (!confirm('¿Cancelar esta sesión?')) return;
   const res = await fetch(`/api/admin/session/${sid}/cancel`, { method: 'POST' });
-  if (res.ok) { showToast('❌ Sesión cancelada'); loadSessions(); }
+  if (res.ok) { showToast('❌ Bingo cancelado'); loadSessions(); }
   else showToast('❌ Error');
 }
 
@@ -655,7 +655,7 @@ async function deleteSession(sid) {
   if (!confirm('¿Eliminar permanentemente esta sesión?')) return;
   const res  = await fetch(`/api/admin/session/${sid}/delete`, { method: 'DELETE' });
   const data = await res.json();
-  if (res.ok) { showToast('🗑 Sesión eliminada'); loadSessions(); }
+  if (res.ok) { showToast('🗑 Bingo eliminado'); loadSessions(); }
   else showToast('❌ ' + (data.message || 'Error al eliminar'));
 }
 
