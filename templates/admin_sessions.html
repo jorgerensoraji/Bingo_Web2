@@ -750,20 +750,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 <div id="broadcast-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
      z-index:500;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;
-              padding:28px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto">
-    <h2 style="margin:0 0 6px;font-size:1.1rem">📢 Anunciar Bingo por email</h2>
-    <p style="color:var(--muted);font-size:.82rem;margin:0 0 18px">
-      Se enviará un email a <strong id="bc-count" style="color:var(--accent)">…</strong>
-      jugadores registrados en la base de datos.
+              padding:28px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">
+    <h2 style="margin:0 0 6px;font-size:1.1rem">📢 Anunciar Bingo</h2>
+    <p style="color:var(--muted);font-size:.82rem;margin:0 0 16px">
+      📧 <strong id="bc-count" style="color:var(--accent)">…</strong> emails ·
+      📱 <strong id="bc-phones" style="color:#25d366">…</strong> WhatsApp en la base de datos.
     </p>
 
     <div id="bc-session-info" style="background:var(--card);border:1px solid var(--border);
-         border-radius:10px;padding:14px;margin-bottom:18px;font-size:.85rem"></div>
+         border-radius:10px;padding:14px;margin-bottom:16px;font-size:.85rem"></div>
 
     <div style="margin-bottom:16px">
       <label style="display:block;font-size:.75rem;color:var(--muted);letter-spacing:1px;
                     text-transform:uppercase;margin-bottom:6px">
-        🎨 Banner destacado <span style="color:var(--accent);font-size:.7rem">(opcional)</span>
+        🎨 Mensaje extra / banner <span style="color:var(--accent);font-size:.7rem">(opcional)</span>
       </label>
       <textarea id="bc-extra" rows="3" placeholder="Ej: ¡Gran premio esta semana! No te lo pierdas. Lugares limitados 🔥"
         style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
@@ -773,27 +773,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         onfocus="this.style.borderColor='var(--accent)'"
         onblur="this.style.borderColor='var(--border)'"></textarea>
       <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-        Si agregas un mensaje aparecerá como un banner llamativo dentro del email.
+        Aparece como banner en el email y como mensaje destacado en WhatsApp.
       </div>
     </div>
 
-    <div style="background:rgba(0,229,180,.06);border:1px solid rgba(0,229,180,.2);
-         border-radius:10px;padding:12px;margin-bottom:18px;font-size:.78rem;color:var(--muted)">
-      💡 El email incluye: fecha, tipo de bingo, precio, distribución de premios y botón para comprar cartilla.
+    <!-- WhatsApp not configured notice -->
+    <div id="bc-wa-warning" style="display:none;background:rgba(37,211,102,.06);
+         border:1px solid rgba(37,211,102,.25);border-radius:10px;padding:10px 14px;
+         margin-bottom:14px;font-size:.78rem;color:#25d366">
+      ⚠️ WhatsApp no configurado — agrega TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y
+      TWILIO_WHATSAPP_FROM en tu .env para activar envíos automáticos.
     </div>
 
-    <div style="display:flex;gap:10px;justify-content:flex-end">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
       <button onclick="closeBroadcast()"
               style="padding:10px 20px;border:1px solid var(--border);border-radius:10px;
                      background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
                      font-weight:700;font-size:.9rem;cursor:pointer">
         Cancelar
       </button>
+      <button id="bc-wa-btn" onclick="sendWhatsApp()"
+              style="padding:10px 20px;border:none;border-radius:10px;
+                     background:#25d366;color:#fff;font-family:'Outfit',sans-serif;
+                     font-weight:900;font-size:.9rem;cursor:pointer">
+        📱 WhatsApp
+      </button>
       <button id="bc-send-btn" onclick="sendBroadcast()"
               style="padding:10px 24px;border:none;border-radius:10px;
                      background:var(--accent);color:#041015;font-family:'Outfit',sans-serif;
                      font-weight:900;font-size:.9rem;cursor:pointer">
-        📨 Enviar a todos
+        📨 Email
       </button>
     </div>
   </div>
@@ -801,12 +810,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 <script>
 let _bcSid = null;
+let _waConfigured = false;
 
 async function openBroadcast(sid) {
   _bcSid = sid;
   document.getElementById('broadcast-modal').style.display = 'flex';
-  document.getElementById('bc-count').textContent = '…';
+  document.getElementById('bc-count').textContent   = '…';
+  document.getElementById('bc-phones').textContent  = '…';
   document.getElementById('bc-session-info').innerHTML = '<span style="color:var(--muted)">Cargando…</span>';
+  document.getElementById('bc-wa-warning').style.display = 'none';
 
   // Load email count
   try {
@@ -815,10 +827,28 @@ async function openBroadcast(sid) {
     document.getElementById('bc-count').textContent = d.total || 0;
   } catch(e) { document.getElementById('bc-count').textContent = '?'; }
 
+  // Load WhatsApp phone count + config status
+  try {
+    const [rPhones, rWa] = await Promise.all([
+      fetch('/api/admin/phones'),
+      fetch('/api/admin/whatsapp/status'),
+    ]);
+    const dPhones = await rPhones.json();
+    const dWa     = await rWa.json();
+    document.getElementById('bc-phones').textContent = dPhones.total || 0;
+    _waConfigured = dWa.configured;
+    if (!_waConfigured) {
+      document.getElementById('bc-wa-warning').style.display = 'block';
+      document.getElementById('bc-wa-btn').disabled = true;
+      document.getElementById('bc-wa-btn').style.opacity = '0.4';
+    } else {
+      document.getElementById('bc-wa-btn').disabled = false;
+      document.getElementById('bc-wa-btn').style.opacity = '1';
+    }
+  } catch(e) { document.getElementById('bc-phones').textContent = '?'; }
+
   // Load session info
   try {
-    const r  = await fetch(`/api/admin/session/${sid}/prize`);
-    const d  = await r.json();
     const s  = allSessions.find(x => x.id === sid) || {};
     const bt = BINGO_TYPES[s.bingo_type] || {};
     const dt = (s.datetime_iso||'').replace('T',' ').slice(0,16);
@@ -857,11 +887,35 @@ async function sendBroadcast() {
     });
     const data = await res.json();
     closeBroadcast();
-    showToast(`✅ Enviado a ${data.sent} emails${data.failed > 0 ? ` · ${data.failed} fallaron` : ''}`, 5000);
+    showToast(`✅ Email enviado a ${data.sent}${data.failed > 0 ? ` · ${data.failed} fallaron` : ''}`, 5000);
   } catch(e) {
-    showToast('❌ Error al enviar');
+    showToast('❌ Error al enviar email');
   }
-  btn.disabled = false; btn.textContent = '📨 Enviar a todos';
+  btn.disabled = false; btn.textContent = '📨 Email';
+}
+
+async function sendWhatsApp() {
+  if (!_bcSid || !_waConfigured) return;
+  const btn       = document.getElementById('bc-wa-btn');
+  const extraInfo = document.getElementById('bc-extra').value.trim();
+  btn.disabled = true; btn.textContent = '⏳ Enviando…';
+  try {
+    const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ extra_info: extraInfo }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      showToast(`❌ ${data.message || data.error}`, 5000);
+    } else {
+      closeBroadcast();
+      showToast(`✅ WhatsApp enviado a ${data.sent}${data.failed > 0 ? ` · ${data.failed} fallaron` : ''}`, 5000);
+    }
+  } catch(e) {
+    showToast('❌ Error al enviar WhatsApp');
+  }
+  btn.disabled = false; btn.textContent = '📱 WhatsApp';
 }
 
 // Close modal on backdrop click

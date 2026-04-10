@@ -92,6 +92,12 @@ AUTO_DRAW_VOICE    = os.environ.get("AUTO_DRAW_VOICE", "es-PE-CamilaNeural")
 ADMIN_USER = os.environ.get("ADMIN_USER", "").strip()
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "").strip()
 
+# Twilio WhatsApp
+TWILIO_SID        = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_TOKEN      = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_WA_FROM    = os.environ.get("TWILIO_WHATSAPP_FROM", "")  # e.g. whatsapp:+14155238886
+TWILIO_COUNTRY    = os.environ.get("TWILIO_DEFAULT_COUNTRY", "+51")  # default country code
+
 if not ADMIN_USER or not ADMIN_PASS:
     print("\nERROR: ADMIN_USER y ADMIN_PASS no configurados.\n")
 
@@ -3050,6 +3056,142 @@ def admin_emails_page():
     chk = admin_required()
     if chk: return chk
     return render_template("admin_emails.html")
+
+
+# ─── WhatsApp broadcast ───────────────────────────────────────────────────────
+
+def _normalize_phone(raw: str, default_country: str = "+51") -> str:
+    """Convert a local or international phone number to E.164 format."""
+    import re
+    digits = re.sub(r"[^\d+]", "", (raw or "").strip())
+    if not digits:
+        return ""
+    if digits.startswith("+"):
+        return digits          # already E.164
+    if digits.startswith("00"):
+        return "+" + digits[2:]
+    if digits.startswith("0"):
+        return default_country + digits[1:]
+    # Assume local number — prepend country code
+    return default_country + digits
+
+def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info: str = "") -> str:
+    nombre_bingo = btype.get("nombre", "Bingo Pro")
+    emoji        = btype.get("emoji", "🎯")
+    precio       = btype.get("precio", 0.0)
+    dt_raw       = session_dict.get("datetime_iso", "")
+    dt_str       = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
+    descripcion  = session_dict.get("descripcion", "")
+    prize_pct    = btype.get("prize_pct", 0.55)
+    linea_pct    = btype.get("linea_pct", 0.04)
+    u_pct        = btype.get("u_pct", 0.13)
+    o_pct        = btype.get("o_pct", 0.15)
+    url_cartillas = f"{url_base}/cartillas"
+
+    lines = [
+        f"🎱 *¡NUEVO BINGO DISPONIBLE!*",
+        f"",
+        f"{emoji} *{nombre_bingo}*",
+        f"📅 *Fecha:* {dt_str}",
+        f"🎫 *Precio cartilla:* S/. {precio:.2f}",
+    ]
+    if descripcion:
+        lines += [f"📝 {descripcion}"]
+    if extra_info:
+        lines += [f"", f"🔥 *{extra_info}*"]
+    lines += [
+        f"",
+        f"💰 *Distribución de premios:*",
+        f"  🎉 BINGO → {prize_pct*100:.0f}% mín.",
+        f"  ⭕ O-Pattern → {o_pct*100:.0f}%",
+        f"  🔷 U-Pattern → {u_pct*100:.0f}%",
+        f"  ⭐ LÍNEA → {linea_pct*100:.0f}%",
+        f"",
+        f"🎴 *Compra tu cartilla aquí:*",
+        f"{url_cartillas}",
+        f"",
+        f"_¡Asegura tu lugar antes de que se agoten!_ 🙌",
+    ]
+    return "\n".join(lines)
+
+def enviar_whatsapp(to_number: str, body: str):
+    """Send a WhatsApp message via Twilio. Returns (ok, error_str)."""
+    if not TWILIO_SID or not TWILIO_TOKEN or not TWILIO_WA_FROM:
+        return False, "Twilio no configurado"
+    try:
+        from twilio.rest import Client
+        client = Client(TWILIO_SID, TWILIO_TOKEN)
+        wa_to  = f"whatsapp:{to_number}" if not to_number.startswith("whatsapp:") else to_number
+        client.messages.create(from_=TWILIO_WA_FROM, to=wa_to, body=body)
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+@app.route("/api/admin/session/<sid>/whatsapp_broadcast", methods=["POST"])
+def api_whatsapp_broadcast_session(sid):
+    """Envía mensaje de WhatsApp masivo a todos los celulares registrados."""
+    chk = admin_required()
+    if chk: return chk
+
+    if not TWILIO_SID or not TWILIO_TOKEN or not TWILIO_WA_FROM:
+        return jsonify({"error": "twilio_not_configured",
+                        "message": "Configura TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y TWILIO_WHATSAPP_FROM en .env"}), 400
+
+    s = get_session(sid)
+    if not s:
+        return jsonify({"error": "not found"}), 404
+
+    data_req   = request.get_json() or {}
+    extra_info = (data_req.get("extra_info") or "").strip()
+    btype      = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
+    url_base   = request.host_url.rstrip("/")
+    body       = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info)
+
+    # Collect all unique phone numbers
+    with db_session() as db:
+        rows = db.query(Voucher.celular).filter(
+            Voucher.celular != "",
+            Voucher.celular.isnot(None),
+        ).distinct().all()
+
+    phones = set()
+    for r in rows:
+        normalized = _normalize_phone(r.celular or "", TWILIO_COUNTRY)
+        if normalized and len(normalized) >= 8:
+            phones.add(normalized)
+
+    sent = 0; failed = 0; errors = []
+    for phone in phones:
+        ok, err = enviar_whatsapp(phone, body)
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+            if len(errors) < 5:
+                errors.append(f"{phone}: {err}")
+
+    return jsonify({"sent": sent, "failed": failed, "total": len(phones), "errors": errors})
+
+@app.route("/api/admin/whatsapp/status")
+def api_whatsapp_status():
+    """Check if Twilio WhatsApp is configured."""
+    chk = admin_required()
+    if chk: return chk
+    configured = bool(TWILIO_SID and TWILIO_TOKEN and TWILIO_WA_FROM)
+    return jsonify({"configured": configured, "from": TWILIO_WA_FROM if configured else ""})
+
+@app.route("/api/admin/phones")
+def api_admin_phones():
+    """Count of unique phone numbers in the DB."""
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        rows = db.query(Voucher.celular).filter(
+            Voucher.celular != "", Voucher.celular.isnot(None)
+        ).distinct().all()
+    phones = {_normalize_phone(r.celular, TWILIO_COUNTRY) for r in rows
+              if r.celular and _normalize_phone(r.celular, TWILIO_COUNTRY)}
+    return jsonify({"total": len(phones)})
 
 
 # ─── Config API ───────────────────────────────────────────────────────────────
