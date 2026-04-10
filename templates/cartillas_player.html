@@ -213,11 +213,31 @@
           <input type="email" id="inp-email" placeholder="tu@email.com" maxlength="100">
         </div>
         <div class="form-group">
-          <label>Celular / Yape / Plin * <span style="color:var(--muted);font-weight:400">(para premio y acceso)</span></label>
-          <input type="tel" id="inp-yape-plin" placeholder="Ej: 987654321" maxlength="20"
-                 style="border-color:rgba(0,229,180,.4)">
+          <label>Celular / WhatsApp * <span style="color:var(--muted);font-weight:400">(para premio y anuncios)</span></label>
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <select id="inp-country-code"
+                    style="padding:10px 8px;border-radius:10px;border:1px solid rgba(0,229,180,.4);
+                           background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
+                           font-size:.88rem;outline:none;cursor:pointer;flex-shrink:0">
+              <option value="+51">🇵🇪 +51</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+52">🇲🇽 +52</option>
+              <option value="+54">🇦🇷 +54</option>
+              <option value="+56">🇨🇱 +56</option>
+              <option value="+57">🇨🇴 +57</option>
+              <option value="+58">🇻🇪 +58</option>
+              <option value="+593">🇪🇨 +593</option>
+              <option value="+595">🇵🇾 +595</option>
+              <option value="+598">🇺🇾 +598</option>
+              <option value="+591">🇧🇴 +591</option>
+              <option value="+34">🇪🇸 +34</option>
+            </select>
+            <input type="tel" id="inp-yape-plin" placeholder="987 654 321" maxlength="15"
+                   style="flex:1;border-color:rgba(0,229,180,.4)"
+                   oninput="this.value=this.value.replace(/[^\d\s]/g,'')">
+          </div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            Usaremos este número para enviarte el premio si ganas.
+            Incluye tu número local sin el 0 inicial. Ej: 987 654 321 → se guarda como +51 987 654 321
           </div>
         </div>
 
@@ -640,7 +660,9 @@ async function enviarSolicitud() {
   const nombres        = document.getElementById('inp-nombres').value.trim();
   const apellidos      = document.getElementById('inp-apellidos').value.trim();
   const email          = document.getElementById('inp-email').value.trim();
-  const yape_plin      = document.getElementById('inp-yape-plin').value.trim();
+  const countryCode    = document.getElementById('inp-country-code').value;
+  const rawPhone       = document.getElementById('inp-yape-plin').value.replace(/\D/g, '').replace(/^0+/, '');
+  const yape_plin      = rawPhone ? `${countryCode}${rawPhone}` : '';
   const celular        = yape_plin;
   const terms_accepted = document.getElementById('inp-terms').checked;
   const method         = document.getElementById('inp-method').value;
@@ -649,7 +671,7 @@ async function enviarSolicitud() {
 
   if (!nombres)                { showToast('⚠️ Ingresa tu nombre'); return; }
   if (!email || !email.includes('@')) { showToast('⚠️ Ingresa un email válido'); return; }
-  if (!yape_plin)              { showToast('⚠️ Ingresa tu número de celular/Yape/Plin'); return; }
+  if (!rawPhone)               { showToast('⚠️ Ingresa tu número de celular/WhatsApp'); return; }
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
   if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
 
