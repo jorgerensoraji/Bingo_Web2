@@ -204,12 +204,24 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
       <div style="font-family:'Courier New',monospace;font-size:2.4rem;font-weight:900;color:#00e5b4;letter-spacing:8px">{code}</div>
       <div style="font-size:.78rem;color:#4a6b85;margin-top:8px">{bt['emoji']} {bt['nombre']} — S/. {precio:.2f}</div>
     </div>
-    <div style="background:#0a1520;border-radius:10px;padding:14px;font-size:.85rem;color:#4a6b85;margin-bottom:20px">
+    <div style="background:#0a1520;border-radius:10px;padding:14px;font-size:.85rem;color:#4a6b85;margin-bottom:16px">
       <strong style="color:#ddeeff">¿Cómo participar?</strong><br><br>
       1. Ve a <a href="{url_cartillas}" style="color:#00e5b4">{url_cartillas}</a> e ingresa tu código <strong style="color:#00e5b4">{code}</strong> para generar tu cartilla<br><br>
       2. El día del juego entra a <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a><br><br>
       3. Si juegas desde otro dispositivo, usa tu código <strong style="color:#00e5b4">{code}</strong> para cargar tus cartillas<br><br>
       4. ¡Disfruta el juego y que ganes! 🎉
+    </div>
+    <div style="background:#0d1e14;border:1px solid rgba(0,229,180,.2);border-radius:10px;padding:14px;font-size:.82rem;margin-bottom:20px">
+      <strong style="color:#00e5b4;display:block;margin-bottom:8px">💰 Distribución de premios</strong>
+      <table style="width:100%;border-collapse:collapse;color:#4a6b85">
+        <tr><td style="padding:3px 0">⭐ LÍNEA</td><td style="text-align:right;color:#f6c343">{round(bt.get('linea_pct',0.04)*100,0):.0f}% del pozo</td></tr>
+        <tr><td style="padding:3px 0">🔷 U-Pattern</td><td style="text-align:right;color:#3b82f6">{round(bt.get('u_pct',0.13)*100,0):.0f}% del pozo</td></tr>
+        <tr><td style="padding:3px 0">⭕ O-Pattern</td><td style="text-align:right;color:#ec4899">{round(bt.get('o_pct',0.15)*100,0):.0f}% del pozo</td></tr>
+        <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 BINGO</td><td style="text-align:right;color:#00e5b4;font-weight:700">{round(bt.get('prize_pct',0.55)*100,0):.0f}% mínimo</td></tr>
+      </table>
+      <div style="margin-top:8px;font-size:.76rem;color:#3a5568;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">
+        💡 Si nadie gana U o O, esos premios se acumulan al BINGO. <strong style="color:#ddeeff">El 100% vuelve a los jugadores.</strong>
+      </div>
     </div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin:0">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
@@ -282,10 +294,26 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     drawn      = winner.get("drawn_count", 0)
     split      = winner.get("split", False)
     n_winners  = winner.get("n_winners", 1)
+    merged_o   = float(winner.get("merged_o", 0) or 0)
+    merged_u   = float(winner.get("merged_u", 0) or 0)
     split_note = (f"<div style='background:#2a1f00;border:1px solid #f6c343;border-radius:8px;"
                   f"padding:10px 14px;margin:0 0 14px;font-size:.87rem;color:#f6c343;text-align:center'>"
                   f"⚠️ Premio dividido: {n_winners} ganadores ganaron al mismo tiempo.<br>"
                   f"<strong>El pozo se dividio en partes iguales — S/. {prize:.2f} c/u.</strong></div>") if split else ""
+    merge_rows = ""
+    if pattern == "bingo" and (merged_o > 0 or merged_u > 0):
+        base = prize - merged_o - merged_u
+        rows = [f"<tr><td style='padding:4px 8px;color:#4a6b85'>Premio BINGO base</td><td style='padding:4px 8px;color:#ddeeff;text-align:right'>S/. {base:.2f}</td></tr>"]
+        if merged_u > 0:
+            rows.append(f"<tr><td style='padding:4px 8px;color:#3b82f6'>+ Premio U (nadie ganó)</td><td style='padding:4px 8px;color:#3b82f6;text-align:right'>S/. {merged_u:.2f}</td></tr>")
+        if merged_o > 0:
+            rows.append(f"<tr><td style='padding:4px 8px;color:#ec4899'>+ Premio O (nadie ganó)</td><td style='padding:4px 8px;color:#ec4899;text-align:right'>S/. {merged_o:.2f}</td></tr>")
+        merge_rows = (f"<div style='background:#0a1520;border:1px solid rgba(0,229,180,.2);border-radius:8px;padding:10px;margin:12px 0;font-size:.82rem'>"
+                      f"<div style='color:#00e5b4;font-weight:700;margin-bottom:6px'>🎁 Premio acumulado</div>"
+                      f"<table style='width:100%;border-collapse:collapse'>{''.join(rows)}"
+                      f"<tr style='border-top:1px solid rgba(255,255,255,.1)'><td style='padding:6px 8px;color:#ddeeff;font-weight:700'>Total recibido</td>"
+                      f"<td style='padding:6px 8px;color:#00e5b4;font-weight:900;text-align:right'>S/. {prize:.2f}</td></tr>"
+                      f"</table></div>")
     yape_note  = (f"<div style='background:#111f2e;border:2px solid #00e5b4;border-radius:10px;padding:14px;text-align:center;margin:16px 0'>"
                   f"<div style='font-size:.75rem;color:#4a6b85;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase'>Enviamos tu premio a</div>"
                   f"<div style='font-size:1.4rem;font-weight:900;color:#00e5b4;letter-spacing:2px'>{yape_plin}</div>"
@@ -308,6 +336,7 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
       <div style="font-size:.8rem;color:#4a6b85;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Tu premio</div>
       <div style="font-size:2.8rem;font-weight:900;color:#00e5b4">S/. {prize:.2f}</div>
     </div>
+    {merge_rows}
     {yape_note}
     <div style="background:#111f2e;border-radius:10px;padding:12px;font-size:.82rem;color:#4a6b85;margin-top:4px">
       <strong style="color:#ddeeff">Importante:</strong> Si no recibes el pago en los proximos 30 minutos,
@@ -2497,8 +2526,22 @@ def api_winner_claim():
             return jsonify({"ok": True, "already": True, "game_id": gid, "winner": entry})
 
         claimed.add(cid)
-        btype      = BINGO_TYPES.get(game.bingo_type, BINGO_TYPES["1sol"])
-        n_winners  = len(claimed)
+        btype     = BINGO_TYPES.get(game.bingo_type, BINGO_TYPES["1sol"])
+        n_winners = len(claimed)
+
+        # On the first BINGO claim: merge any unclaimed O/U pools into BINGO prize
+        merged_o = 0.0
+        merged_u = 0.0
+        if n_winners == 1:
+            if not game.o_claimed and game.o_pool > 0:
+                merged_o = game.o_pool
+                game.prize_pool += game.o_pool
+                game.o_pool = 0.0
+            if not game.u_claimed and game.u_pool > 0:
+                merged_u = game.u_pool
+                game.prize_pool += game.u_pool
+                game.u_pool = 0.0
+
         prize_each = round(game.prize_pool / n_winners, 2)
 
         for prev in game.winners_log:
@@ -2522,6 +2565,8 @@ def api_winner_claim():
             "split":        n_winners > 1,
             "bingo_type":   btype["id"],
             "bingo_nombre": btype["nombre"],
+            "merged_o":     merged_o,
+            "merged_u":     merged_u,
         }
         game.winners_log.append(winner)
         if n_winners >= game.winners_limit:

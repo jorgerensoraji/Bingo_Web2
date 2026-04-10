@@ -384,11 +384,19 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
     var splitNote = winners.length > 1
       ? ' (Empate — S/. ' + bp + ' c/u)'
       : ' — Premio: S/. ' + bp;
+    var mo = Number(bw.merged_o || 0), mu = Number(bw.merged_u || 0);
+    var mergeTag = '';
+    if (mo > 0 || mu > 0) {
+      var parts = [];
+      if (mu > 0) parts.push('U S/.' + mu.toFixed(2));
+      if (mo > 0) parts.push('O S/.' + mo.toFixed(2));
+      mergeTag = ' <span style="font-size:.75rem;color:#a7f3d0;font-weight:400">(incluye ' + parts.join(' + ') + ' no ganados)</span>';
+    }
     html += '<div style="background:linear-gradient(90deg,#004d3a,#007a5a,#004d3a);' +
       'color:#d0fff5;padding:14px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
       'font-size:1rem;font-weight:700;animation:glowBanner 1.5s ease-in-out infinite;">' +
       '🎉 ¡BINGO! <strong style="color:#00e5b4;font-size:1.15rem">' + esc(bnames) + '</strong>' +
-      esc(splitNote) +
+      esc(splitNote) + mergeTag +
       ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">Juego detenido ⏸</span>' +
       '</div>';
 

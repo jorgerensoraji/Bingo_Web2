@@ -626,6 +626,25 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
     return lines.join('');
   }
 
+  // Build merge note once (from first winner)
+  var mergeNote = '';
+  if (winners && winners.length > 0) {
+    var fw = winners[0];
+    var mo = Number(fw.merged_o || 0), mu = Number(fw.merged_u || 0);
+    if (mo > 0 || mu > 0) {
+      var base = Number(fw.prize || 0) - mo - mu;
+      var rows = '<tr><td style="padding:3px 6px;color:rgba(255,255,255,.5)">BINGO base</td><td style="padding:3px 6px;color:var(--text);text-align:right">S/. ' + base.toFixed(2) + '</td></tr>';
+      if (mu > 0) rows += '<tr><td style="padding:3px 6px;color:#3b82f6">+ U (nadie ganó)</td><td style="padding:3px 6px;color:#3b82f6;text-align:right">S/. ' + mu.toFixed(2) + '</td></tr>';
+      if (mo > 0) rows += '<tr><td style="padding:3px 6px;color:#ec4899">+ O (nadie ganó)</td><td style="padding:3px 6px;color:#ec4899;text-align:right">S/. ' + mo.toFixed(2) + '</td></tr>';
+      mergeNote = '<div style="background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.25);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.78rem">' +
+        '<div style="color:var(--accent);font-weight:700;margin-bottom:6px">🎁 Premios acumulados al BINGO</div>' +
+        '<table style="width:100%;border-collapse:collapse">' + rows +
+        '<tr style="border-top:1px solid rgba(255,255,255,.1)"><td style="padding:4px 6px;color:var(--text);font-weight:700">Total por ganador</td>' +
+        '<td style="padding:4px 6px;color:var(--accent);font-weight:900;text-align:right">S/. ' + Number(fw.prize || 0).toFixed(2) + '</td></tr>' +
+        '</table></div>';
+    }
+  }
+
   const bingoCards = (winners || []).map(function(w) {
     const prize = w.prize ? '<span style="color:var(--accent);font-weight:900"> · S/. ' + Number(w.prize).toFixed(2) + '</span>' : '';
     const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
@@ -677,6 +696,7 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
                  letter-spacing:4px;text-shadow:0 0 30px rgba(0,229,180,.5);margin-bottom:12px;">
         ¡GANADOR!
       </h1>
+      ${mergeNote}
       <div style="margin-bottom:12px;">${bingoCards || '<div style="color:var(--muted);">Verificando ganador…</div>'}</div>
       ${oCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(236,72,153,.2);padding-top:10px;">
         <div style="font-size:.72rem;color:#ec4899;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭕ Premio O-Pattern</div>
