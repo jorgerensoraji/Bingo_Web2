@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📧 Emails — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+.stats-top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:700px){.stats-top{grid-template-columns:repeat(2,1fr)}}
+.stat-mini{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-mini .v{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--accent)}
+.stat-mini .l{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.card h2{margin:0 0 14px;font-size:1.05rem}
+.search-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.inp{padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+     color:var(--text);outline:none;font-family:'Outfit',sans-serif;font-size:.88rem;
+     transition:border-color .2s}
+.inp:focus{border-color:var(--accent)}
+.btn{padding:9px 18px;border:none;border-radius:10px;font-family:'Outfit',sans-serif;
+     font-weight:700;font-size:.85rem;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-accent{background:var(--accent);color:#041015}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);
+   color:var(--muted);font-size:.72rem;letter-spacing:1px;text-transform:uppercase}
+td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700}
+.badge-approved{background:rgba(39,174,96,.15);color:#27ae60;border:1px solid rgba(39,174,96,.3)}
+.badge-pending{background:rgba(246,195,67,.1);color:#f6c343;border:1px solid rgba(246,195,67,.3)}
+.badge-rejected{background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
+.badge-other{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:12px 24px;font-size:.9rem;z-index:1000;transition:transform .3s;
+  pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📧 Emails</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="stats-top">
+    <div class="stat-mini">
+      <div class="v" id="st-total">—</div>
+      <div class="l">Emails únicos</div>
+    </div>
+    <div class="stat-mini">
+      <div class="v" id="st-approved" style="color:#27ae60">—</div>
+      <div class="l">Aprobados</div>
+    </div>
+    <div class="stat-mini">
+      <div class="v" id="st-pending" style="color:var(--warning)">—</div>
+      <div class="l">Pendientes</div>
+    </div>
+    <div class="stat-mini">
+      <div class="v" id="st-other" style="color:var(--muted)">—</div>
+      <div class="l">Otros</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Lista de emails registrados</h2>
+
+    <div class="search-bar">
+      <input class="inp" id="search" placeholder="🔍 Buscar por email o nombre…"
+             oninput="filterTable()" style="flex:1;min-width:200px">
+      <button class="btn btn-ghost" onclick="exportCSV()">⬇️ Exportar CSV</button>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table id="emails-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Email</th>
+            <th>Nombre</th>
+            <th>Último estado</th>
+            <th>Registros</th>
+            <th>Desde</th>
+          </tr>
+        </thead>
+        <tbody id="emails-body">
+          <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="table-count" style="font-size:.75rem;color:var(--muted);margin-top:10px"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allEmails = [];
+
+function showToast(msg, ms=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function statusBadge(s) {
+  if (['approved','manual_approved'].includes(s))
+    return '<span class="badge badge-approved">✅ Aprobado</span>';
+  if (s === 'pending_review')
+    return '<span class="badge badge-pending">⏳ Pendiente</span>';
+  if (s === 'rejected')
+    return '<span class="badge badge-rejected">❌ Rechazado</span>';
+  return '<span class="badge badge-other">' + (s||'—') + '</span>';
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('emails-body');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Sin resultados</td></tr>';
+    document.getElementById('table-count').textContent = '';
+    return;
+  }
+  tbody.innerHTML = data.map((r, i) => `
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><strong>${esc(r.email)}</strong></td>
+      <td>${esc(r.nombre) || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="text-align:center">${r.total}</td>
+      <td style="color:var(--muted)">${(r.created||'').slice(0,10)}</td>
+    </tr>`).join('');
+  document.getElementById('table-count').textContent =
+    `Mostrando ${data.length} de ${allEmails.length} emails`;
+}
+
+function filterTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = q
+    ? allEmails.filter(r => (r.email||'').toLowerCase().includes(q) || (r.nombre||'').toLowerCase().includes(q))
+    : allEmails;
+  renderTable(filtered);
+}
+
+async function loadEmails() {
+  try {
+    const res  = await fetch('/api/admin/emails');
+    const data = await res.json();
+    allEmails  = data.emails || [];
+
+    // Stats
+    document.getElementById('st-total').textContent    = allEmails.length;
+    const approved = allEmails.filter(r => ['approved','manual_approved'].includes(r.status)).length;
+    const pending  = allEmails.filter(r => r.status === 'pending_review').length;
+    document.getElementById('st-approved').textContent = approved;
+    document.getElementById('st-pending').textContent  = pending;
+    document.getElementById('st-other').textContent    = allEmails.length - approved - pending;
+
+    renderTable(allEmails);
+  } catch(e) {
+    document.getElementById('emails-body').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger)">Error al cargar</td></tr>';
+  }
+}
+
+function exportCSV() {
+  if (!allEmails.length) { showToast('No hay datos'); return; }
+  const header = ['Email','Nombre','Estado','Registros','Desde'];
+  const rows   = allEmails.map(r => [
+    r.email, r.nombre, r.status, r.total, (r.created||'').slice(0,10)
+  ].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv  = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url;
+  a.download = 'emails_bingo_pro.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ CSV exportado');
+}
+
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.href = '/admin/login';
+}
+
+loadEmails();
+</script>
+</body>
+</html>

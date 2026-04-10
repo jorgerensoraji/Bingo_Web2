@@ -146,6 +146,7 @@
     <a class="nav-link" href="/admin/caja">💼 Caja</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
     <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
+    <a class="nav-link" href="/admin/emails">📧 Emails</a>
     <a class="nav-link" href="/admin/manual" target="_blank">📖 Manual</a>
     <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
   </div>
@@ -529,11 +530,17 @@ function buildActions(s) {
     </button>`;
   }
 
+  const broadcastBtn = ['scheduled','preparing'].includes(s.status)
+    ? `<button class="btn btn-ghost btn-sm" onclick="openBroadcast('${s.id}')"
+         style="border-color:rgba(0,229,180,.4);color:var(--accent)">📢 Anunciar</button>`
+    : '';
+
   return `<div class="s-actions">
     ${btns}
     <button class="btn btn-ghost btn-sm" onclick="goVouchers('${s.id}')">
       🎫 Vouchers
     </button>
+    ${broadcastBtn}
     ${waBtn}
     ${delBtn}
   </div>`;
@@ -736,6 +743,107 @@ document.addEventListener('DOMContentLoaded', async () => {
   await buildBtypes();   // cargar tipos ANTES de renderizar sesiones
   loadSessions();
   setInterval(loadSessions, 8000);
+});
+</script>
+
+<!-- ══ Modal broadcast ══ -->
+<div id="broadcast-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+     z-index:500;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;
+              padding:28px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto">
+    <h2 style="margin:0 0 6px;font-size:1.1rem">📢 Anunciar Bingo por email</h2>
+    <p style="color:var(--muted);font-size:.82rem;margin:0 0 18px">
+      Se enviará un email a <strong id="bc-count" style="color:var(--accent)">…</strong>
+      jugadores registrados en la base de datos.
+    </p>
+
+    <div id="bc-session-info" style="background:var(--card);border:1px solid var(--border);
+         border-radius:10px;padding:14px;margin-bottom:18px;font-size:.85rem"></div>
+
+    <div style="background:rgba(0,229,180,.06);border:1px solid rgba(0,229,180,.2);
+         border-radius:10px;padding:12px;margin-bottom:18px;font-size:.78rem;color:var(--muted)">
+      💡 El email incluye: fecha, tipo de bingo, precio, distribución de premios y botón para comprar cartilla.
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeBroadcast()"
+              style="padding:10px 20px;border:1px solid var(--border);border-radius:10px;
+                     background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
+                     font-weight:700;font-size:.9rem;cursor:pointer">
+        Cancelar
+      </button>
+      <button id="bc-send-btn" onclick="sendBroadcast()"
+              style="padding:10px 24px;border:none;border-radius:10px;
+                     background:var(--accent);color:#041015;font-family:'Outfit',sans-serif;
+                     font-weight:900;font-size:.9rem;cursor:pointer">
+        📨 Enviar a todos
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _bcSid = null;
+
+async function openBroadcast(sid) {
+  _bcSid = sid;
+  document.getElementById('broadcast-modal').style.display = 'flex';
+  document.getElementById('bc-count').textContent = '…';
+  document.getElementById('bc-session-info').innerHTML = '<span style="color:var(--muted)">Cargando…</span>';
+
+  // Load email count
+  try {
+    const r = await fetch('/api/admin/emails');
+    const d = await r.json();
+    document.getElementById('bc-count').textContent = d.total || 0;
+  } catch(e) { document.getElementById('bc-count').textContent = '?'; }
+
+  // Load session info
+  try {
+    const r  = await fetch(`/api/admin/session/${sid}/prize`);
+    const d  = await r.json();
+    const s  = allSessions.find(x => x.id === sid) || {};
+    const bt = BINGO_TYPES[s.bingo_type] || {};
+    const dt = (s.datetime_iso||'').replace('T',' ').slice(0,16);
+    document.getElementById('bc-session-info').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;color:var(--text)">${bt.emoji||'🎯'} ${bt.nombre||s.bingo_type}</div>
+          <div style="color:var(--muted);font-size:.78rem;margin-top:3px">📅 ${dt||'Fecha no definida'}</div>
+          ${s.descripcion ? `<div style="color:var(--muted);font-size:.78rem;margin-top:2px">📝 ${s.descripcion}</div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--accent)">S/. ${(bt.precio||0).toFixed(2)}</div>
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('bc-session-info').innerHTML = '<span style="color:var(--muted)">Error al cargar info</span>';
+  }
+}
+
+function closeBroadcast() {
+  document.getElementById('broadcast-modal').style.display = 'none';
+  _bcSid = null;
+}
+
+async function sendBroadcast() {
+  if (!_bcSid) return;
+  const btn = document.getElementById('bc-send-btn');
+  btn.disabled = true; btn.textContent = '⏳ Enviando…';
+  try {
+    const res  = await fetch(`/api/admin/session/${_bcSid}/broadcast`, { method: 'POST' });
+    const data = await res.json();
+    closeBroadcast();
+    showToast(`✅ Enviado a ${data.sent} emails${data.failed > 0 ? ` · ${data.failed} fallaron` : ''}`, 5000);
+  } catch(e) {
+    showToast('❌ Error al enviar');
+  }
+  btn.disabled = false; btn.textContent = '📨 Enviar a todos';
+}
+
+// Close modal on backdrop click
+document.getElementById('broadcast-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeBroadcast();
 });
 </script>
 </body>

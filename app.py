@@ -2827,6 +2827,177 @@ def api_winner_claim_o():
     })
 
 
+# ─── Email broadcast ──────────────────────────────────────────────────────────
+
+def _email_broadcast(session_dict: dict, btype: dict, url_base: str) -> str:
+    nombre_bingo = btype.get("nombre", "Bingo Pro")
+    emoji        = btype.get("emoji", "🎯")
+    precio       = btype.get("precio", 0.0)
+    color        = btype.get("color", "#00e5b4")
+    dt_raw       = session_dict.get("datetime_iso", "")
+    dt_str       = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
+    descripcion  = session_dict.get("descripcion", "")
+    sid          = session_dict.get("id", "")
+    url_cartillas = f"{url_base}/cartillas"
+
+    prize_pct  = btype.get("prize_pct", 0.55)
+    linea_pct  = btype.get("linea_pct", 0.04)
+    u_pct      = btype.get("u_pct", 0.13)
+    o_pct      = btype.get("o_pct", 0.15)
+
+    desc_block = (f"<div style='background:#111f2e;border-radius:8px;padding:10px 14px;"
+                  f"margin:12px 0;font-size:.85rem;color:#ddeeff'>"
+                  f"📝 {descripcion}</div>") if descripcion else ""
+
+    return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<style>@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.6}}}}</style>
+</head>
+<body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px">
+
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:3rem;margin-bottom:8px">{emoji}</div>
+    <h1 style="font-family:Arial,sans-serif;font-size:2rem;color:{color};letter-spacing:3px;margin:0">
+      ¡NUEVO BINGO!
+    </h1>
+    <p style="color:#4a6b85;margin:6px 0 0;font-size:.9rem">{nombre_bingo}</p>
+  </div>
+
+  <div style="background:#0d1825;border:2px solid {color};border-radius:16px;padding:24px;margin-bottom:20px">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                background:#111f2e;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div>
+        <div style="font-size:.68rem;color:#4a6b85;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">📅 Fecha y hora</div>
+        <div style="font-size:1.2rem;font-weight:900;color:#ddeeff">{dt_str}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.68rem;color:#4a6b85;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">🎫 Precio</div>
+        <div style="font-size:1.4rem;font-weight:900;color:{color}">S/. {precio:.2f}</div>
+      </div>
+    </div>
+
+    {desc_block}
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:.72rem;color:#4a6b85;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">💰 Distribución de premios</div>
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+        <tr style="background:rgba(0,229,180,.06)">
+          <td style="padding:7px 10px">🎉 BINGO</td>
+          <td style="padding:7px 10px;text-align:right;color:#00e5b4;font-weight:900">{prize_pct*100:.0f}% mínimo</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px">⭕ O-Pattern</td>
+          <td style="padding:7px 10px;text-align:right;color:#ec4899">{o_pct*100:.0f}%</td>
+        </tr>
+        <tr style="background:rgba(0,229,180,.03)">
+          <td style="padding:7px 10px">🔷 U-Pattern</td>
+          <td style="padding:7px 10px;text-align:right;color:#3b82f6">{u_pct*100:.0f}%</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px">⭐ LÍNEA</td>
+          <td style="padding:7px 10px;text-align:right;color:#f6c343">{linea_pct*100:.0f}%</td>
+        </tr>
+      </table>
+      <div style="font-size:.73rem;color:#3a5568;margin-top:6px;padding:0 4px">
+        * Si nadie gana O o U, esos premios se acumulan al BINGO. El 100% vuelve a los jugadores.
+      </div>
+    </div>
+
+    <div style="text-align:center">
+      <a href="{url_cartillas}" style="display:inline-block;background:{color};color:#041015;
+         padding:14px 36px;border-radius:12px;font-weight:900;font-size:1.1rem;
+         text-decoration:none;letter-spacing:1px">
+        🎴 COMPRAR CARTILLA
+      </a>
+      <div style="font-size:.72rem;color:#4a6b85;margin-top:10px">
+        Asegura tu lugar antes de que se agoten los cupos
+      </div>
+    </div>
+
+  </div>
+
+  <p style="text-align:center;color:#1a3148;font-size:.72rem;margin:0">
+    Bingo Pro Web v9.0 · {EMAIL_NOMBRE}<br>
+    <span style="color:#0f2030">Recibiste este email porque participaste en un Bingo anterior.</span>
+  </p>
+
+</div></body></html>"""
+
+
+@app.route("/api/admin/emails")
+def api_admin_emails():
+    """Lista de todos los emails únicos registrados en la base de datos."""
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        rows = db.query(
+            Voucher.email,
+            Voucher.nombres,
+            Voucher.apellidos,
+            Voucher.payment_status,
+            Voucher.created,
+        ).filter(Voucher.email != "").order_by(Voucher.created.desc()).all()
+
+    seen = {}
+    for r in rows:
+        e = (r.email or "").strip().lower()
+        if not e:
+            continue
+        if e not in seen:
+            seen[e] = {
+                "email":   e,
+                "nombre":  f"{r.nombres or ''} {r.apellidos or ''}".strip(),
+                "status":  r.payment_status,
+                "created": r.created,
+                "total":   1,
+            }
+        else:
+            seen[e]["total"] += 1
+
+    records = sorted(seen.values(), key=lambda x: x["created"] or "", reverse=True)
+    return jsonify({"emails": records, "total": len(records)})
+
+
+@app.route("/api/admin/session/<sid>/broadcast", methods=["POST"])
+def api_broadcast_session(sid):
+    """Envía email masivo a todos los emails registrados anunciando la sesión."""
+    chk = admin_required()
+    if chk: return chk
+    s = get_session(sid)
+    if not s:
+        return jsonify({"error": "not found"}), 404
+
+    btype    = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
+    url_base = request.host_url.rstrip("/")
+    asunto   = f"🎱 ¡Nuevo Bingo! {btype['nombre']} — {s.get('datetime_iso','')[:10]} | Bingo Pro"
+    html     = _email_broadcast(s, btype, url_base)
+
+    # Collect all unique emails
+    with db_session() as db:
+        rows = db.query(Voucher.email).filter(Voucher.email != "").distinct().all()
+    emails = list({(r.email or "").strip().lower() for r in rows if r.email and r.email.strip()})
+
+    sent = 0; failed = 0; errors = []
+    for email in emails:
+        ok, err = enviar_email(email, asunto, html)
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+            if len(errors) < 5:
+                errors.append(f"{email}: {err}")
+
+    return jsonify({"sent": sent, "failed": failed, "total": len(emails), "errors": errors})
+
+
+@app.route("/admin/emails")
+def admin_emails_page():
+    chk = admin_required()
+    if chk: return chk
+    return render_template("admin_emails.html")
+
+
 # ─── Config API ───────────────────────────────────────────────────────────────
 @app.route("/api/config")
 def api_get_config():
