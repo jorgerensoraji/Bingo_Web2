@@ -287,14 +287,29 @@ def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, se
   <p style="text-align:center;color:#1a3148;font-size:.72rem;margin-top:20px">Bingo Pro Web v8.0 · {EMAIL_NOMBRE}</p>
 </div></body></html>"""
 
-def _email_ganador(winner: dict, btype: dict) -> str:
+def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     nombre     = winner.get("nombre", "Jugador")
-    prize      = winner.get("prize", 0)
+    # Resolve prize amount by pattern
+    if pattern == "u":
+        prize = winner.get("u_prize", winner.get("prize", 0))
+        pattern_label = "🔷 U-Pattern"
+    elif pattern == "o":
+        prize = winner.get("o_prize", winner.get("prize", 0))
+        pattern_label = "⭕ O-Pattern"
+    elif pattern == "linea":
+        prize = winner.get("linea_prize", winner.get("prize", 0))
+        pattern_label = "⭐ LÍNEA"
+    else:
+        prize = winner.get("prize", 0)
+        pattern_label = "🎉 BINGO"
     yape_plin  = winner.get("yape_plin", "")
     drawn      = winner.get("drawn_count", 0)
     split      = winner.get("split", False)
     n_winners  = winner.get("n_winners", 1)
-    split_note = f"<p style='color:#f6c343;font-size:.88rem;margin:0 0 12px'>Empate entre {n_winners} ganadores — el pozo se dividio en partes iguales.</p>" if split else ""
+    split_note = (f"<div style='background:#2a1f00;border:1px solid #f6c343;border-radius:8px;"
+                  f"padding:10px 14px;margin:0 0 14px;font-size:.87rem;color:#f6c343;text-align:center'>"
+                  f"⚠️ Premio dividido: {n_winners} ganadores ganaron al mismo tiempo.<br>"
+                  f"<strong>El pozo se dividio en partes iguales — S/. {prize:.2f} c/u.</strong></div>") if split else ""
     yape_note  = (f"<div style='background:#111f2e;border:2px solid #00e5b4;border-radius:10px;padding:14px;text-align:center;margin:16px 0'>"
                   f"<div style='font-size:.75rem;color:#4a6b85;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase'>Enviamos tu premio a</div>"
                   f"<div style='font-size:1.4rem;font-weight:900;color:#00e5b4;letter-spacing:2px'>{yape_plin}</div>"
@@ -307,7 +322,8 @@ def _email_ganador(winner: dict, btype: dict) -> str:
   <div style="text-align:center;margin-bottom:24px">
     <div style="font-size:3rem;margin-bottom:8px">🏆</div>
     <h1 style="font-size:2.2rem;color:#00e5b4;letter-spacing:3px;margin:0">GANASTE</h1>
-    <p style="color:#4a6b85;margin:6px 0 0">{btype.get('nombre','Bingo Pro')}</p>
+    <p style="color:#00e5b4;font-weight:700;font-size:1rem;margin:4px 0 0">{pattern_label}</p>
+    <p style="color:#4a6b85;margin:4px 0 0">{btype.get('nombre','Bingo Pro')}</p>
   </div>
   <div style="background:#0d1825;border:2px solid #00e5b4;border-radius:14px;padding:24px">
     <p style="margin:0 0 12px">Felicidades <strong style="color:#ddeeff">{nombre}</strong>!</p>
@@ -2046,10 +2062,14 @@ def api_finish_session(sid):
         # Tag each entry with tipo so the payments page can distinguish them
         bingo_wf = [{**w, "tipo": "bingo"} for w in game.winners_log]
         linea_wf = [{**w, "tipo": "linea"} for w in game.linea_winners_log]
-        wf = bingo_wf + linea_wf
+        u_wf     = [{**w, "tipo": "u"}     for w in game.u_winners_log]
+        o_wf     = [{**w, "tipo": "o"}     for w in game.o_winners_log]
+        wf = bingo_wf + linea_wf + u_wf + o_wf
         # Clear in-memory logs now that they're persisted
         game.winners_log        = []
         game.linea_winners_log  = []
+        game.u_winners_log      = []
+        game.o_winners_log      = []
     with db_session() as db:
         sx = db.query(BingoSession).filter_by(id=sid).first()
         if not sx:
@@ -2710,7 +2730,15 @@ def api_winner_claim_u():
             "puede_reclamar_bingo": True,
         }
         game.u_winners_log.append(u_winner)
+        btype = BINGO_TYPES.get(game.bingo_type, BINGO_TYPES["1sol"])
         game.save_to_db()
+
+    # Send winner email (outside lock)
+    if winner_email:
+        asunto = f"Felicidades! Ganaste la U — S/. {u_each:.2f} — {btype['nombre']}"
+        ok, err = enviar_email(winner_email, asunto, _email_ganador(u_winner, btype, pattern="u"))
+        if not ok:
+            print(f"[WARN] Email U-winner no enviado a {winner_email}: {err}")
 
     return jsonify({
         "ok": True, "already": False, "game_id": gid, "winner": u_winner,
@@ -2777,7 +2805,15 @@ def api_winner_claim_o():
             "puede_reclamar_bingo": True,
         }
         game.o_winners_log.append(o_winner)
+        btype = BINGO_TYPES.get(game.bingo_type, BINGO_TYPES["1sol"])
         game.save_to_db()
+
+    # Send winner email (outside lock)
+    if winner_email:
+        asunto = f"Felicidades! Ganaste la O — S/. {o_each:.2f} — {btype['nombre']}"
+        ok, err = enviar_email(winner_email, asunto, _email_ganador(o_winner, btype, pattern="o"))
+        if not ok:
+            print(f"[WARN] Email O-winner no enviado a {winner_email}: {err}")
 
     return jsonify({
         "ok": True, "already": False, "game_id": gid, "winner": o_winner,

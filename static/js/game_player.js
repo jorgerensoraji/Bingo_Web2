@@ -584,6 +584,10 @@ async function syncState() {
       handleSessionFinished();
       return;
     }
+    // New session started after a finish — allow future finish events to be handled
+    if (!data.session_finished && sessionFinishedShown) {
+      sessionFinishedShown = false;
+    }
 
     // New game ID = admin reset
     if (gameId && serverGameId && gameId !== serverGameId && drawnLocal.length > 0) {
