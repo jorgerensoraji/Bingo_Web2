@@ -185,7 +185,8 @@ async function verifyCode() {
   if (data.valid) {
     document.getElementById('status-ok').style.display  = 'block';
     document.getElementById('status-err').style.display = 'none';
-    showToast('✅ 2FA verificado y activo');
+    showToast('✅ 2FA activado — redirigiendo…');
+    setTimeout(() => { location.href = '/admin'; }, 1800);
   } else {
     document.getElementById('status-err').style.display = 'block';
     document.getElementById('status-ok').style.display  = 'none';

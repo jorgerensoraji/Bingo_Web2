@@ -102,10 +102,34 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 def is_admin() -> bool:
     return bool(session.get("is_admin"))
 
+def is_setup_pending() -> bool:
+    """True when user passed password check but hasn't enrolled 2FA yet."""
+    return bool(session.get("totp_setup_pending"))
+
 def admin_required():
     if not is_admin():
         return jsonify({"error": "unauthorized"}), 401
     return None
+
+def get_totp_enrolled() -> bool:
+    try:
+        with db_session() as db:
+            row = db.query(Config).filter_by(key="totp_enrolled").first()
+            return bool(row and row.value == "true")
+    except Exception:
+        return False
+
+def set_totp_enrolled(val: bool):
+    try:
+        with db_session() as db:
+            row = db.query(Config).filter_by(key="totp_enrolled").first()
+            if row:
+                row.value = "true" if val else "false"
+            else:
+                db.add(Config(key="totp_enrolled", value="true" if val else "false"))
+            db.commit()
+    except Exception:
+        pass
 
 # ─── DB session helper ────────────────────────────────────────────────────────
 @contextmanager
@@ -1219,6 +1243,14 @@ def api_admin_login():
         return jsonify({"error": "invalid_credentials", "message": msg}), 401
 
     if TOTP_SECRET:
+        if not get_totp_enrolled():
+            # Secret set but QR not yet scanned — let them reach setup page
+            record_success_login(ip)
+            session["totp_setup_pending"] = True
+            session["admin_user"] = username
+            session["login_ip"]   = ip
+            session["login_at"]   = datetime.now().isoformat()
+            return jsonify({"status": "ok", "setup_2fa": True})
         if not totp_code:
             return jsonify({
                 "error": "totp_required",
@@ -2829,7 +2861,7 @@ def api_winner_claim_o():
 
 # ─── Email broadcast ──────────────────────────────────────────────────────────
 
-def _email_broadcast(session_dict: dict, btype: dict, url_base: str) -> str:
+def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info: str = "") -> str:
     nombre_bingo = btype.get("nombre", "Bingo Pro")
     emoji        = btype.get("emoji", "🎯")
     precio       = btype.get("precio", 0.0)
@@ -2849,6 +2881,24 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str) -> str:
                   f"margin:12px 0;font-size:.85rem;color:#ddeeff'>"
                   f"📝 {descripcion}</div>") if descripcion else ""
 
+    # Eye-catching extra banner
+    import html as _html
+    extra_block = ""
+    if extra_info:
+        safe_extra = _html.escape(extra_info).replace("\n", "<br>")
+        extra_block = f"""
+  <div style="margin-bottom:20px;border-radius:14px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,{color}22 0%,{color}44 50%,{color}22 100%);
+                border:2px solid {color};border-radius:14px;padding:20px 24px;text-align:center;
+                position:relative">
+      <div style="font-size:2rem;margin-bottom:8px">🔥</div>
+      <div style="font-size:1.05rem;font-weight:900;color:{color};line-height:1.5;
+                  letter-spacing:.5px;text-shadow:0 0 20px {color}66">
+        {safe_extra}
+      </div>
+    </div>
+  </div>"""
+
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <style>@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.6}}}}</style>
 </head>
@@ -2862,6 +2912,8 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str) -> str:
     </h1>
     <p style="color:#4a6b85;margin:6px 0 0;font-size:.9rem">{nombre_bingo}</p>
   </div>
+
+  {extra_block}
 
   <div style="background:#0d1825;border:2px solid {color};border-radius:16px;padding:24px;margin-bottom:20px">
 
@@ -2968,10 +3020,12 @@ def api_broadcast_session(sid):
     if not s:
         return jsonify({"error": "not found"}), 404
 
+    data_req = request.get_json() or {}
+    extra_info = (data_req.get("extra_info") or "").strip()
     btype    = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     url_base = request.host_url.rstrip("/")
     asunto   = f"🎱 ¡Nuevo Bingo! {btype['nombre']} — {s.get('datetime_iso','')[:10]} | Bingo Pro"
-    html     = _email_broadcast(s, btype, url_base)
+    html     = _email_broadcast(s, btype, url_base, extra_info=extra_info)
 
     # Collect all unique emails
     with db_session() as db:
@@ -3205,13 +3259,14 @@ def api_csrf_token():
 # ─── 2FA Setup ────────────────────────────────────────────────────────────────
 @app.route("/admin/setup_2fa")
 def admin_setup_2fa():
-    if not is_admin(): return redirect("/admin/login")
+    if not is_admin() and not is_setup_pending():
+        return redirect("/admin/login")
     return render_template("admin_setup_2fa.html")
 
 @app.route("/api/admin/2fa/qr")
 def api_admin_2fa_qr():
-    chk = admin_required()
-    if chk: return chk
+    if not is_admin() and not is_setup_pending():
+        return jsonify({"error": "unauthorized"}), 401
     if not TOTP_SECRET:
         return jsonify({"error": "2fa_not_configured"}), 400
     uri = totp_provisioning_uri(TOTP_SECRET, ADMIN_USER, "Bingo Pro")
@@ -3219,10 +3274,15 @@ def api_admin_2fa_qr():
 
 @app.route("/api/admin/2fa/verify", methods=["POST"])
 def api_admin_2fa_verify():
-    chk = admin_required()
-    if chk: return chk
+    if not is_admin() and not is_setup_pending():
+        return jsonify({"error": "unauthorized"}), 401
     data = request.get_json() or {}
     ok   = totp_verify(TOTP_SECRET, data.get("code", "")) if TOTP_SECRET else False
+    if ok and is_setup_pending():
+        # First-time enrollment: mark enrolled and upgrade to full admin session
+        set_totp_enrolled(True)
+        session.pop("totp_setup_pending", None)
+        session["is_admin"] = True
     return jsonify({"valid": ok})
 
 # ─── Security stats ───────────────────────────────────────────────────────────

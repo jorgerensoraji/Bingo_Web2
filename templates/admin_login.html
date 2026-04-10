@@ -74,8 +74,11 @@
       });
       const data = await res.json();
 
+      if (data.setup_2fa) {
+        location.href = '/admin/setup_2fa';
+        return;
+      }
       if (data.requires_totp) {
-    // Show TOTP field
         document.getElementById('totp-group').style.display = 'block';
         document.getElementById('totp').focus();
         document.getElementById('err').textContent = '🔐 Ingresa el código de tu autenticador.';
