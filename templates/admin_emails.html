@@ -35,6 +35,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .badge-pending{background:rgba(246,195,67,.1);color:#f6c343;border:1px solid rgba(246,195,67,.3)}
 .badge-rejected{background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
 .badge-other{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.badge-contact{background:rgba(0,229,180,.1);color:var(--accent);border:1px solid rgba(0,229,180,.3)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
   background:var(--panel);border:1px solid var(--border);border-radius:12px;
   padding:12px 24px;font-size:.9rem;z-index:1000;transition:transform .3s;
@@ -48,12 +49,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div class="logo">📧 Emails</div>
   <div class="nav-links">
     <a class="nav-link" href="/admin">🛠 Admin</a>
-    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
-    <a class="nav-link" href="/admin/game">🎮 Juego</a>
+    <a class="nav-link" href="/admin/sessions">📅 Bingos</a>
+    <a class="nav-link" href="/admin/contacts">👥 Contactos</a>
     <a class="nav-link" href="/admin/payments">💰 Pagos</a>
-    <a class="nav-link" href="/admin/caja">💼 Caja</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
-    <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
     <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
   </div>
 </header>
@@ -128,6 +127,8 @@ function statusBadge(s) {
     return '<span class="badge badge-pending">⏳ Pendiente</span>';
   if (s === 'rejected')
     return '<span class="badge badge-rejected">❌ Rechazado</span>';
+  if (s === 'contact')
+    return '<span class="badge badge-contact">👥 Contacto</span>';
   return '<span class="badge badge-other">' + (s||'—') + '</span>';
 }
 

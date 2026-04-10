@@ -4,7 +4,7 @@ SQLAlchemy ORM models replacing the JSON file system.
 """
 
 from sqlalchemy import (
-    Column, String, Float, Integer, Boolean, Text, Index
+    Column, String, Float, Integer, Boolean, Text, Index, BigInteger
 )
 from database import Base
 
@@ -232,4 +232,24 @@ class BingoTypeDB(Base):
             "sort_order":                self.sort_order,
             "balls":                     75,
             "grid_type":                 "75",
+        }
+
+
+class Contact(Base):
+    """Manual contacts for broadcast — people not yet in the Voucher table."""
+    __tablename__ = "contacts"
+
+    id      = Column(Integer, primary_key=True, autoincrement=True)
+    nombre  = Column(String(120), default="")
+    email   = Column(String(100), default="")
+    phone   = Column(String(25),  default="")   # E.164 format e.g. +51987654321
+    created = Column(String(30),  default="")
+
+    def to_dict(self) -> dict:
+        return {
+            "id":      self.id,
+            "nombre":  self.nombre  or "",
+            "email":   self.email   or "",
+            "phone":   self.phone   or "",
+            "created": self.created or "",
         }

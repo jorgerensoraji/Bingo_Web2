@@ -66,7 +66,7 @@ import qrcode
 
 
 from database import init_db, SessionLocal
-from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB
+from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact
 
 # ── Cargar .env ───────────────────────────────────────────────────────────────
 try:
@@ -2985,23 +2985,20 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
 
 @app.route("/api/admin/emails")
 def api_admin_emails():
-    """Lista de todos los emails únicos registrados en la base de datos."""
+    """Lista de todos los emails únicos (jugadores + contactos manuales)."""
     chk = admin_required()
     if chk: return chk
     with db_session() as db:
-        rows = db.query(
-            Voucher.email,
-            Voucher.nombres,
-            Voucher.apellidos,
-            Voucher.payment_status,
-            Voucher.created,
+        v_rows = db.query(
+            Voucher.email, Voucher.nombres, Voucher.apellidos,
+            Voucher.payment_status, Voucher.created,
         ).filter(Voucher.email != "").order_by(Voucher.created.desc()).all()
+        c_rows = db.query(Contact).filter(Contact.email != "").all()
 
     seen = {}
-    for r in rows:
+    for r in v_rows:
         e = (r.email or "").strip().lower()
-        if not e:
-            continue
+        if not e: continue
         if e not in seen:
             seen[e] = {
                 "email":   e,
@@ -3009,9 +3006,22 @@ def api_admin_emails():
                 "status":  r.payment_status,
                 "created": r.created,
                 "total":   1,
+                "source":  "player",
             }
         else:
             seen[e]["total"] += 1
+    for c in c_rows:
+        e = (c.email or "").strip().lower()
+        if not e: continue
+        if e not in seen:
+            seen[e] = {
+                "email":   e,
+                "nombre":  c.nombre or "",
+                "status":  "contact",
+                "created": c.created,
+                "total":   1,
+                "source":  "contact",
+            }
 
     records = sorted(seen.values(), key=lambda x: x["created"] or "", reverse=True)
     return jsonify({"emails": records, "total": len(records)})
@@ -3033,10 +3043,13 @@ def api_broadcast_session(sid):
     asunto   = f"🎱 ¡Nuevo Bingo! {btype['nombre']} — {s.get('datetime_iso','')[:10]} | Bingo Pro"
     html     = _email_broadcast(s, btype, url_base, extra_info=extra_info)
 
-    # Collect all unique emails
+    # Collect all unique emails (players + manual contacts)
     with db_session() as db:
-        rows = db.query(Voucher.email).filter(Voucher.email != "").distinct().all()
-    emails = list({(r.email or "").strip().lower() for r in rows if r.email and r.email.strip()})
+        v_rows = db.query(Voucher.email).filter(Voucher.email != "").distinct().all()
+        c_rows = db.query(Contact.email).filter(Contact.email != "").all()
+    emails = list({(r.email or "").strip().lower()
+                   for r in list(v_rows) + list(c_rows)
+                   if r.email and r.email.strip()})
 
     sent = 0; failed = 0; errors = []
     for email in emails:
@@ -3056,6 +3069,95 @@ def admin_emails_page():
     chk = admin_required()
     if chk: return chk
     return render_template("admin_emails.html")
+
+
+# ─── Contacts (manual broadcast list) ────────────────────────────────────────
+
+@app.route("/admin/contacts")
+def admin_contacts_page():
+    chk = admin_required()
+    if chk: return chk
+    return render_template("admin_contacts.html")
+
+@app.route("/api/admin/contacts", methods=["GET"])
+def api_contacts_list():
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        contacts = db.query(Contact).order_by(Contact.id.desc()).all()
+        return jsonify({"contacts": [c.to_dict() for c in contacts], "total": len(contacts)})
+
+@app.route("/api/admin/contacts", methods=["POST"])
+def api_contact_create():
+    chk = admin_required()
+    if chk: return chk
+    data    = request.get_json() or {}
+    nombre  = (data.get("nombre") or "").strip()
+    email   = (data.get("email")  or "").strip().lower()
+    phone   = (data.get("phone")  or "").strip()
+    if not email and not phone:
+        return jsonify({"error": "Ingresa al menos un email o teléfono"}), 400
+    if phone:
+        phone = _normalize_phone(phone, TWILIO_COUNTRY)
+    with db_session() as db:
+        c = Contact(
+            nombre=nombre, email=email, phone=phone,
+            created=datetime.now().isoformat(timespec="seconds"),
+        )
+        db.add(c)
+        db.commit()
+        db.refresh(c)
+        return jsonify({"contact": c.to_dict()})
+
+@app.route("/api/admin/contacts/<int:cid>", methods=["DELETE"])
+def api_contact_delete(cid):
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        c = db.query(Contact).filter_by(id=cid).first()
+        if not c:
+            return jsonify({"error": "not found"}), 404
+        db.delete(c)
+        db.commit()
+    return jsonify({"status": "ok"})
+
+@app.route("/api/admin/contacts/import", methods=["POST"])
+def api_contacts_import():
+    """Bulk import contacts from CSV text. Columns: nombre, email, phone (header optional)."""
+    chk = admin_required()
+    if chk: return chk
+    data    = request.get_json() or {}
+    csv_raw = (data.get("csv") or "").strip()
+    if not csv_raw:
+        return jsonify({"error": "No data"}), 400
+
+    import csv, io
+    reader  = csv.reader(io.StringIO(csv_raw))
+    rows    = list(reader)
+    # Auto-detect header
+    if rows and any(h.lower() in ("nombre","email","phone","telefono","name")
+                    for h in rows[0]):
+        rows = rows[1:]
+
+    added = 0; skipped = 0
+    with db_session() as db:
+        for row in rows:
+            if not row: continue
+            cols   = [c.strip() for c in row]
+            nombre = cols[0] if len(cols) > 0 else ""
+            email  = cols[1].lower() if len(cols) > 1 else ""
+            phone  = cols[2] if len(cols) > 2 else ""
+            if not email and not phone:
+                skipped += 1; continue
+            if phone:
+                phone = _normalize_phone(phone, TWILIO_COUNTRY)
+            db.add(Contact(
+                nombre=nombre, email=email, phone=phone,
+                created=datetime.now().isoformat(timespec="seconds"),
+            ))
+            added += 1
+        db.commit()
+    return jsonify({"added": added, "skipped": skipped})
 
 
 # ─── WhatsApp broadcast ───────────────────────────────────────────────────────
@@ -3147,16 +3249,18 @@ def api_whatsapp_broadcast_session(sid):
     url_base   = request.host_url.rstrip("/")
     body       = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info)
 
-    # Collect all unique phone numbers
+    # Collect all unique phone numbers (players + manual contacts)
     with db_session() as db:
-        rows = db.query(Voucher.celular).filter(
-            Voucher.celular != "",
-            Voucher.celular.isnot(None),
+        v_rows = db.query(Voucher.celular).filter(
+            Voucher.celular != "", Voucher.celular.isnot(None)
         ).distinct().all()
+        c_rows = db.query(Contact.phone).filter(
+            Contact.phone != "", Contact.phone.isnot(None)
+        ).all()
 
     phones = set()
-    for r in rows:
-        normalized = _normalize_phone(r.celular or "", TWILIO_COUNTRY)
+    for raw in [r.celular for r in v_rows] + [r.phone for r in c_rows]:
+        normalized = _normalize_phone(raw or "", TWILIO_COUNTRY)
         if normalized and len(normalized) >= 8:
             phones.add(normalized)
 
@@ -3182,15 +3286,19 @@ def api_whatsapp_status():
 
 @app.route("/api/admin/phones")
 def api_admin_phones():
-    """Count of unique phone numbers in the DB."""
+    """Count of unique phone numbers (players + contacts)."""
     chk = admin_required()
     if chk: return chk
     with db_session() as db:
-        rows = db.query(Voucher.celular).filter(
+        v_rows = db.query(Voucher.celular).filter(
             Voucher.celular != "", Voucher.celular.isnot(None)
         ).distinct().all()
-    phones = {_normalize_phone(r.celular, TWILIO_COUNTRY) for r in rows
-              if r.celular and _normalize_phone(r.celular, TWILIO_COUNTRY)}
+        c_rows = db.query(Contact.phone).filter(
+            Contact.phone != "", Contact.phone.isnot(None)
+        ).all()
+    phones = {_normalize_phone(raw, TWILIO_COUNTRY)
+              for raw in [r.celular for r in v_rows] + [r.phone for r in c_rows]
+              if raw and _normalize_phone(raw, TWILIO_COUNTRY)}
     return jsonify({"total": len(phones)})
 
 
