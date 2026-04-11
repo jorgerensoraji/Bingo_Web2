@@ -561,6 +561,15 @@ async function syncState() {
     // Re-filter loaded cartillas if active session changed
     const prevSid = activeSessionId;
     if (data.session_id) activeSessionId = data.session_id;
+
+    // Session was cancelled/deleted while player was watching
+    if (prevSid && !data.session_id && myCartillas.length) {
+      myCartillas = [];
+      cartillaStates = {};
+      updateMyCartillaAutoMark(true);
+      showToast('⚠️ La sesión fue cancelada. Tus cartillas han sido retiradas.', 6000);
+    }
+
     if (activeSessionId && activeSessionId !== prevSid && myCartillas.length) {
       var before = myCartillas.length;
       myCartillas = myCartillas.filter(function(c) {
