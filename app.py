@@ -1353,11 +1353,13 @@ def api_player_solicitar():
             return jsonify({"error": "bingo_type_mismatch",
                             "message": f"Esta sesión es de {s.get('bingo_nombre')}. "
                                        f"Selecciona el tipo correcto."}), 400
-    if method != "efectivo" and not ref:
-        return jsonify({"error": "missing_ref", "message": "Ingresa el número de operación."}), 400
-    if method != "efectivo" and ref and _is_duplicate_payment_ref(ref, method, session_id):
-        return jsonify({"error": "duplicate_reference",
-                        "message": "Este número de operación ya fue registrado."}), 400
+    is_free = BINGO_TYPES.get(bingo_type, {}).get("precio", 1) == 0
+    if not is_free:
+        if method != "efectivo" and not ref:
+            return jsonify({"error": "missing_ref", "message": "Ingresa el número de operación."}), 400
+        if method != "efectivo" and ref and _is_duplicate_payment_ref(ref, method, session_id):
+            return jsonify({"error": "duplicate_reference",
+                            "message": "Este número de operación ya fue registrado."}), 400
     # Check if same email already has a voucher for this session
     if email and session_id:
         with db_session() as db:
@@ -1372,6 +1374,7 @@ def api_player_solicitar():
 
     btype = BINGO_TYPES[bingo_type]
     v_dict = {}
+    now = datetime.now().isoformat()
     with db_session() as db:
         code = _unique_code(db)
         v = Voucher(
@@ -1380,10 +1383,11 @@ def api_player_solicitar():
             yape_plin=yape_plin, terms_accepted=terms_accepted,
             bingo_type=bingo_type, bingo_nombre=btype["nombre"],
             precio=btype["precio"], session_id=session_id,
-            payment_method=method, payment_ref=ref,
-            payment_status="pending_review",
-            payment_submitted_at=datetime.now().isoformat(),
-            created=datetime.now().isoformat(),
+            payment_method=method or "gratis", payment_ref=ref,
+            payment_status="manual_approved" if is_free else "pending_review",
+            payment_submitted_at=now,
+            approved_at=now if is_free else None,
+            created=now,
             creado_por="jugador",
         )
         db.add(v)
@@ -1391,14 +1395,25 @@ def api_player_solicitar():
         v_dict = v.to_dict()
 
     if email:
-        asunto  = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
-        ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
+        url_base = request.host_url.rstrip("/")
+        if is_free:
+            asunto = f"🎱 Tu código para {btype['nombre']} — Bingo Pro"
+            ok, err = enviar_email(email, asunto, _email_codigo_voucher(v_dict, url_base))
+            if ok:
+                with db_session() as db:
+                    v2 = db.query(Voucher).filter_by(code=code).first()
+                    if v2:
+                        v2.email_codigo_enviado = True
+                        v2.email_enviado_at = datetime.now().isoformat()
+        else:
+            asunto = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
+            ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
         if not ok:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
-    return jsonify({"status": "ok",
-                    "message": "Solicitud registrada. Recibirás tu código cuando el admin confirme el pago.",
-                    "email": email})
+    msg = "¡Registro exitoso! Revisa tu email — te enviamos tu código de cartilla." if is_free \
+          else "Solicitud registrada. Recibirás tu código cuando el admin confirme el pago."
+    return jsonify({"status": "ok", "message": msg, "email": email})
 
 # ─── Vouchers admin ───────────────────────────────────────────────────────────
 @app.route("/api/admin/voucher", methods=["POST"])

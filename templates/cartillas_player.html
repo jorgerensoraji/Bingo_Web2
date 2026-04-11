@@ -271,7 +271,8 @@
 
         <hr class="section-sep">
 
-        <!-- Método de pago -->
+        <!-- Método de pago (oculto para bingo gratis) -->
+        <div id="payment-section">
         <div class="form-group">
           <label>Método de pago *</label>
           <div class="method-grid" id="method-grid"></div>
@@ -299,6 +300,7 @@
           💵 Para pago en efectivo, el organizador aprobará tu solicitud
           cuando reciba el dinero presencialmente.
         </div>
+        </div><!-- end payment-section -->
 
         <!-- Terminos y condiciones -->
         <div style="background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);
@@ -541,6 +543,7 @@ async function loadBingoTypes() {
   try {
     const res  = await fetch('/api/bingo_types');
     const data = await res.json();
+    window._btypesCache = data.bingo_types || [];
     const cont = document.getElementById('btype-selector');
     if (!cont) return;
     cont.innerHTML = (data.bingo_types || []).map(bt => `
@@ -553,16 +556,33 @@ async function loadBingoTypes() {
                     color:${bt.color}">${bt.precio.toFixed(0)} Sol${bt.precio>1?'es':''}</div>
         <div style="font-size:.7rem;color:var(--muted)">${esc(bt.nombre)}</div>
       </div>`).join('');
+    updatePaymentVisibility();
   } catch(e) {}
 }
 
 function selectBtype(id) {
   selBtype = id;
   loadBingoTypes();
-  renderSessions(); // filtrar sesiones al cambiar tipo
-  // Tab manual disponible para Bingo 75
+  renderSessions();
   const manualBtn = document.getElementById('tab-manual-btn');
   if (manualBtn) manualBtn.style.display = '';
+  // Show/hide payment section for free bingo
+  updatePaymentVisibility();
+}
+
+function updatePaymentVisibility() {
+  const btypes = window._btypesCache || [];
+  const bt = btypes.find(b => b.id === selBtype);
+  const isFree = bt && bt.precio === 0;
+  const paymentSection = document.getElementById('payment-section');
+  if (paymentSection) paymentSection.style.display = isFree ? 'none' : '';
+  const yapePlinGroup = document.getElementById('yape-plin-group');
+  if (yapePlinGroup) {
+    const label = yapePlinGroup.querySelector('label');
+    if (label) label.innerHTML = isFree
+      ? 'Celular / WhatsApp <span style="color:var(--muted);font-size:.75rem">(opcional)</span>'
+      : 'Celular / WhatsApp (Yape/Plin) *';
+  }
 }
 
 // ── Cargar sesiones ─────────────────────────────────────
@@ -670,11 +690,15 @@ async function enviarSolicitud() {
   const ref            = document.getElementById('inp-ref').value.trim();
   const session_id     = document.getElementById('inp-session').value;
 
+  const btypes = window._btypesCache || [];
+  const selBtypeData = btypes.find(b => b.id === selBtype);
+  const isFree = selBtypeData && selBtypeData.precio === 0;
+
   if (!nombres)                { showToast('⚠️ Ingresa tu nombre'); return; }
   if (!email || !email.includes('@')) { showToast('⚠️ Ingresa un email válido'); return; }
-  if (!rawPhone)               { showToast('⚠️ Ingresa tu número de celular/WhatsApp'); return; }
+  if (!rawPhone && !isFree)    { showToast('⚠️ Ingresa tu número de celular/WhatsApp'); return; }
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
-  if (!method)                 { showToast('⚠️ Elige un método de pago'); return; }
+  if (!method && !isFree)      { showToast('⚠️ Elige un método de pago'); return; }
 
   // Validar sesión: siempre es obligatorio
   if (allSessions.length === 0) {
