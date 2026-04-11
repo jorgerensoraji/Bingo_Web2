@@ -715,7 +715,7 @@ async function enviarSolicitud() {
     document.getElementById('inp-session')?.scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
-  if (method !== 'efectivo' && !ref) {
+  if (!isFree && method !== 'efectivo' && !ref) {
     showToast('⚠️ Ingresa el número de operación de tu pago');
     return;
   }
