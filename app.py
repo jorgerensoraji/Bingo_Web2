@@ -3303,7 +3303,7 @@ def api_whatsapp_broadcast_session(sid):
             if len(errors) < 5:
                 errors.append(f"{phone}: {err}")
 
-    return jsonify({"sent": sent, "failed": failed, "total": len(phones), "errors": errors})
+    return jsonify({"sent": sent, "failed": failed, "total": len(phone_names), "errors": errors})
 
 @app.route("/api/admin/whatsapp/status")
 def api_whatsapp_status():
