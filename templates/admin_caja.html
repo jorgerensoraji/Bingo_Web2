@@ -9,8 +9,28 @@
 <style>
 .wrap{max-width:1300px;margin:0 auto;padding:20px}
 
-/* KPIs principales */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap;
+      border-bottom:2px solid var(--border);padding-bottom:0}
+.tab-btn{
+  padding:10px 20px;border:none;background:none;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;
+  color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;
+  transition:color .15s,border-color .15s;position:relative;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--danger);color:#fff;border-radius:10px;
+  font-size:.6rem;font-weight:900;padding:1px 6px;margin-left:5px;
+  min-width:16px;
+}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 @media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 .kpi{
   background:var(--panel);border:1px solid var(--border);
@@ -21,75 +41,143 @@
   background:radial-gradient(ellipse at 70% 0%,var(--kpi-color,rgba(0,229,180,.06)),transparent 70%);
   pointer-events:none;
 }
-.kpi .v{
-  font-family:'Bebas Neue',sans-serif;font-size:2.6rem;
-  color:var(--kpi-color,var(--accent));line-height:1;margin-bottom:4px;
-}
-.kpi .l{font-size:.62rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
-.kpi .sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+.kpi .v{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;
+        color:var(--kpi-color,var(--accent));line-height:1;margin-bottom:4px}
+.kpi .l{font-size:.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.kpi .sub{font-size:.72rem;color:var(--muted);margin-top:4px}
 
-/* Tarjeta */
+/* Stats row (pagos) */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:800px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-box .v{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--accent);line-height:1}
+.stat-box .l{font-size:.6rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+
+/* Period filter */
+.period-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.period-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);
+            background:var(--card);color:var(--muted);cursor:pointer;
+            font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:700;transition:all .15s}
+.period-btn.active,.period-btn:hover{background:var(--accent);color:#041015;border-color:var(--accent)}
+
+/* Card */
 .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;
       padding:20px;margin-bottom:16px}
-.card-title{
-  font-size:.62rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;
-  border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:16px;
-}
+.card-title{font-size:.6rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;
+            border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:16px}
 
-/* Tabla */
+/* Toolbar */
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.inp{background:var(--card);color:var(--text);border:1px solid var(--border);
+     border-radius:8px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none}
+.inp:focus{border-color:var(--accent)}
+
+/* Table */
 table{width:100%;border-collapse:collapse;font-size:.83rem}
-thead th{
-  padding:10px 12px;text-align:left;background:var(--card);color:var(--muted);
-  font-size:.62rem;letter-spacing:2px;text-transform:uppercase;
-  border-bottom:1px solid var(--border);white-space:nowrap;
-}
-tbody tr{border-bottom:1px solid rgba(26,49,72,.4);transition:background .15s}
+thead th{padding:10px 12px;text-align:left;background:var(--card);color:var(--muted);
+         font-size:.6rem;letter-spacing:2px;text-transform:uppercase;
+         border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(26,49,72,.5);transition:background .15s}
 tbody tr:hover{background:rgba(17,31,46,.8)}
+tbody tr.row-review{border-left:3px solid var(--warning)}
+tbody tr.row-rejected{opacity:.6}
 td{padding:10px 12px;vertical-align:middle}
 
-/* Barra de margen */
-.bar-wrap{width:100%;height:6px;background:var(--sub);border-radius:3px;
-          margin-top:5px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;
-          background:linear-gradient(90deg,var(--accent),#2f80ed);
-          transition:width .6s ease}
-
-/* Pills de estado */
+/* Badges / Pills */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.b-ok{background:rgba(39,174,96,.2);color:#27ae60}
+.b-manual{background:rgba(0,229,180,.15);color:var(--accent)}
+.b-pend{background:rgba(246,195,67,.15);color:var(--warning)}
+.b-rej{background:rgba(231,76,60,.15);color:var(--danger)}
+.b-wait{background:rgba(100,130,160,.12);color:var(--muted)}
 .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700}
 .pill-green{background:rgba(39,174,96,.2);color:#27ae60}
 .pill-blue{background:rgba(0,229,180,.15);color:var(--accent)}
 .pill-yellow{background:rgba(246,195,67,.15);color:var(--warning)}
 .pill-red{background:rgba(231,76,60,.15);color:var(--danger)}
-.pill-gray{background:rgba(100,130,160,.12);color:var(--muted)}
 
-/* Resumen por tipo */
-.by-type-row{
-  display:flex;align-items:center;gap:20px;padding:12px 14px;
-  background:var(--card);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;
-}
-
-/* Ganadores inline */
-.winner-inline{font-size:.78rem;color:var(--muted);line-height:1.7}
-
-/* Botones */
-.btn{padding:9px 18px;border-radius:9px;border:none;font-weight:900;cursor:pointer;
+/* Buttons */
+.btn{padding:8px 16px;border-radius:9px;border:none;font-weight:900;cursor:pointer;
      font-family:'Outfit',sans-serif;font-size:.85rem;transition:filter .15s}
-.btn:hover{filter:brightness(1.1)}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-accent{background:var(--accent);color:#041015}
+.btn-ok{background:#27ae60;color:white}
+.btn-no{background:var(--danger);color:white}
 .btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-blue{background:#2980b9;color:white}
+.btn-sm{padding:5px 10px;font-size:.75rem;border-radius:7px}
+
+/* Email badges */
+.email-sent{display:inline-flex;align-items:center;gap:3px;font-size:.68rem;color:#27ae60;
+            background:rgba(39,174,96,.1);border-radius:4px;padding:2px 6px}
+.email-not-sent{display:inline-flex;align-items:center;gap:3px;font-size:.68rem;color:var(--muted);
+                background:rgba(100,130,160,.1);border-radius:4px;padding:2px 6px}
+.code-mono{font-family:'Courier New',monospace;font-weight:900;
+           color:var(--accent);font-size:.88rem;letter-spacing:1px}
+.ref-dup{background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);
+         border-radius:6px;padding:2px 7px;color:var(--danger);font-size:.72rem;font-weight:700}
+.auto-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);
+          animation:blink 2s ease-in-out infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* Email status bar */
+.email-status-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;
+                  border-radius:10px;margin-bottom:16px;font-size:.85rem}
+.email-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.25);color:#27ae60}
+.email-no{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25);color:var(--danger)}
+
+/* Bar */
+.bar-wrap{width:100%;height:6px;background:var(--sub);border-radius:3px;margin-top:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#2f80ed);transition:width .6s ease}
+.by-type-row{display:flex;align-items:center;gap:20px;padding:12px 14px;
+             background:var(--card);border-radius:10px;margin-bottom:8px;flex-wrap:wrap}
+
+/* Winner rows */
+.pay-row{background:var(--card);border:1px solid var(--border);
+         border-radius:12px;padding:14px 16px;margin-bottom:10px;
+         display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.pay-row.is-paid{opacity:.6;border-color:rgba(39,174,96,.3)}
+.pay-info{flex:1;min-width:200px}
+.pay-name{font-weight:900;font-size:.95rem;color:var(--text)}
+.pay-meta{font-size:.75rem;color:var(--muted);margin-top:3px;line-height:1.6}
+.pay-prize{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--accent);white-space:nowrap;text-align:right}
+.pay-prize.linea{color:var(--warning)}
+.proof-box{background:rgba(39,174,96,.06);border:1px solid rgba(39,174,96,.2);
+           border-radius:8px;padding:8px 12px;margin-top:8px;font-size:.78rem}
+.proof-box strong{color:#27ae60}
+
+/* Modal */
+.modal-back{display:none;position:fixed;inset:0;background:rgba(7,13,20,.85);
+            z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-back.show,.modal-back.open{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--border);
+           border-radius:18px;padding:26px;max-width:480px;width:100%}
+.modal-box h3{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;
+              color:var(--accent);letter-spacing:2px;margin:0 0 16px}
+.detail-row{display:flex;justify-content:space-between;
+            padding:6px 0;border-bottom:1px solid rgba(26,49,72,.4);font-size:.85rem}
+.detail-row:last-child{border:none;font-weight:700}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.72rem;color:var(--muted);letter-spacing:1px;
+             text-transform:uppercase;margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;background:var(--sub);
+  border:1px solid var(--border);border-radius:9px;
+  color:var(--text);font-family:'Outfit',sans-serif;font-size:.88rem;
+  outline:none;box-sizing:border-box}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:70px}
 
 /* Toast */
-.toast{
-  position:fixed;bottom:24px;left:50%;
-  transform:translateX(-50%) translateY(100px);
-  background:var(--panel);border:1px solid var(--border);
-  border-radius:12px;padding:12px 22px;z-index:1000;
-  transition:transform .3s;white-space:nowrap;pointer-events:none;
-}
+.toast{position:fixed;bottom:24px;left:50%;
+       transform:translateX(-50%) translateY(100px);
+       background:var(--panel);border:1px solid var(--border);
+       border-radius:12px;padding:12px 24px;font-size:.9rem;
+       z-index:1000;transition:transform .3s;pointer-events:none;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0)}
-
-/* Empty state */
 .empty{text-align:center;color:var(--muted);padding:30px;font-size:.9rem}
+.winner-inline{font-size:.78rem;color:var(--muted);line-height:1.7}
 </style>
 </head>
 <body>
@@ -98,11 +186,10 @@ td{padding:10px 12px;vertical-align:middle}
   <div class="logo">💼 Caja</div>
   <div class="nav-links">
     <a class="nav-link" href="/admin">🛠 Admin</a>
-    <a class="nav-link" href="/admin/pagos_ganadores">💸 Pagar Ganadores</a>
-    <a class="nav-link" href="/admin/payments">💰 Pagos</a>
     <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
     <a class="nav-link" href="/admin/game">🎮 Juego</a>
     <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
     <a class="nav-link" href="/admin/manual" target="_blank">📖 Manual</a>
     <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
   </div>
@@ -110,161 +197,517 @@ td{padding:10px 12px;vertical-align:middle}
 
 <div class="wrap">
 
-  <!-- Encabezado -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;
               margin-bottom:20px;flex-wrap:wrap;gap:12px">
     <div>
       <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;
                  color:var(--accent);letter-spacing:2px;margin:0">
-        Reporte de Caja
+        Caja
       </h2>
       <div style="color:var(--muted);font-size:.82rem;margin-top:2px">
-        Ingresos, premios pagados y ganancia neta por Bingo
+        Ingresos · Aprobaciones · Reembolsos · Ganadores
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-accent" onclick="load()">🔄 Actualizar</button>
-      <button class="btn btn-ghost" onclick="exportCSV()">📥 Exportar CSV</button>
-    </div>
   </div>
 
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi" style="--kpi-color:var(--accent)">
-      <div class="v" id="k-total">S/.0</div>
-      <div class="l">Total Recaudado</div>
-      <div class="sub" id="k-total-sub">0 sesiones</div>
-    </div>
-    <div class="kpi" style="--kpi-color:var(--warning)">
-      <div class="v" id="k-premios">S/.0</div>
-      <div class="l">Premios Pagados</div>
-      <div class="sub" id="k-premios-sub">bingo + línea</div>
-    </div>
-    <div class="kpi" style="--kpi-color:#27ae60">
-      <div class="v" id="k-ganancia">S/.0</div>
-      <div class="l">Ganancia Neta</div>
-      <div class="sub" id="k-margen-sub">0% margen</div>
-    </div>
-    <div class="kpi" style="--kpi-color:#5dade2">
-      <div class="v" id="k-jugadores">0</div>
-      <div class="l">Jugadores pagados</div>
-      <div class="sub" id="k-jugadores-sub">total histórico</div>
-    </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('resumen',this)">
+      📊 Resumen
+    </button>
+    <button class="tab-btn" onclick="switchTab('aprobaciones',this)" id="tab-aprobaciones-btn">
+      💰 Aprobaciones
+    </button>
+    <button class="tab-btn" onclick="switchTab('reembolsos',this)" id="tab-reembolsos-btn">
+      ↩️ Reembolsos
+    </button>
+    <button class="tab-btn" onclick="switchTab('ganadores',this)" id="tab-ganadores-btn">
+      🏆 Ganadores
+    </button>
   </div>
 
-  <!-- Resumen por tipo de bingo -->
-  <div class="card" id="card-by-type" style="display:none">
-    <div class="card-title">Resumen por Tipo de Bingo</div>
-    <div id="by-type-content"></div>
-  </div>
+  <!-- ══════════════ TAB: RESUMEN ══════════════ -->
+  <div class="tab-pane active" id="tab-resumen">
 
-  <!-- Tabla detallada por sesión -->
-  <div class="card">
-    <div class="card-title">Detalle por Bingo</div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Sesión</th>
-            <th>Fecha · Hora</th>
-            <th>Tipo</th>
-            <th>Jugadores</th>
-            <th>Recaudado</th>
-            <th>Premios</th>
-            <th>Ganancia</th>
-            <th>Margen</th>
-            <th>Estado</th>
-            <th>Ganadores</th>
-          </tr>
-        </thead>
-        <tbody id="tb-sessions">
-          <tr><td colspan="10" class="empty">Cargando…</td></tr>
-        </tbody>
-      </table>
+    <!-- Period filter -->
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <div class="period-btns">
+        <button class="period-btn" onclick="setPeriod('today',this)">Hoy</button>
+        <button class="period-btn" onclick="setPeriod('week',this)">Esta semana</button>
+        <button class="period-btn" onclick="setPeriod('month',this)">Este mes</button>
+        <button class="period-btn active" onclick="setPeriod('all',this)">Todo</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="loadResumen()">🔄 Actualizar</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 CSV</button>
+      </div>
+    </div>
+
+    <!-- KPIs resumen -->
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:var(--accent)">
+        <div class="v" id="k-total">S/.0</div>
+        <div class="l">Total Recaudado</div>
+        <div class="sub" id="k-total-sub">0 sesiones</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--warning)">
+        <div class="v" id="k-premios">S/.0</div>
+        <div class="l">Premios Pagados</div>
+        <div class="sub" id="k-premios-sub">bingo + línea</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--danger)">
+        <div class="v" id="k-reimb-total">S/.0</div>
+        <div class="l">Reembolsos</div>
+        <div class="sub" id="k-reimb-sub">cancelaciones</div>
+      </div>
+      <div class="kpi" style="--kpi-color:#27ae60">
+        <div class="v" id="k-ganancia">S/.0</div>
+        <div class="l">Ganancia Neta</div>
+        <div class="sub" id="k-margen-sub">0% margen</div>
+      </div>
+    </div>
+
+    <!-- Segunda fila KPIs -->
+    <div class="stats-row" style="margin-bottom:20px">
+      <div class="stat-box">
+        <div class="v" id="k-jugadores">0</div>
+        <div class="l">Jugadores</div>
+      </div>
+      <div class="stat-box">
+        <div class="v" style="color:#27ae60" id="k-aprobados">0</div>
+        <div class="l">Aprobados</div>
+      </div>
+      <div class="stat-box">
+        <div class="v" style="color:var(--warning)" id="k-pendientes">0</div>
+        <div class="l">En revisión</div>
+      </div>
+      <div class="stat-box">
+        <div class="v" style="color:var(--danger)" id="k-rechazados">0</div>
+        <div class="l">Rechazados</div>
+      </div>
+      <div class="stat-box">
+        <div class="v" style="color:var(--accent)" id="k-sesiones">0</div>
+        <div class="l">Sesiones</div>
+      </div>
+    </div>
+
+    <!-- Por tipo -->
+    <div class="card" id="card-by-type" style="display:none">
+      <div class="card-title">Por Tipo de Bingo</div>
+      <div id="by-type-content"></div>
+    </div>
+
+    <!-- Tabla por sesión -->
+    <div class="card">
+      <div class="card-title">Detalle por Sesión</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Sesión</th>
+              <th>Fecha · Hora</th>
+              <th>Tipo</th>
+              <th>Jugadores</th>
+              <th>Recaudado</th>
+              <th>Premios</th>
+              <th>Reembolsos</th>
+              <th>Ganancia</th>
+              <th>Margen</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tb-sessions">
+            <tr><td colspan="10" class="empty">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /tab-resumen -->
+
+  <!-- ══════════════ TAB: APROBACIONES ══════════════ -->
+  <div class="tab-pane" id="tab-aprobaciones">
+
+    <div id="email-status-bar" class="email-status-bar" style="display:none"></div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box"><div class="v" id="st-total">0</div><div class="l">Total</div></div>
+      <div class="stat-box"><div class="v" style="color:#27ae60" id="st-paid">0</div><div class="l">Aprobados</div></div>
+      <div class="stat-box"><div class="v" style="color:var(--warning)" id="st-pend">0</div><div class="l">En revisión</div></div>
+      <div class="stat-box"><div class="v" style="color:var(--danger)" id="st-rej">0</div><div class="l">Rechazados</div></div>
+      <div class="stat-box"><div class="v" style="color:var(--accent)" id="st-rev">S/.0</div><div class="l">Ingresos</div></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <h2 style="margin:0;font-size:1.1rem">📋 Vouchers y Pagos</h2>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.72rem;color:var(--muted)">
+            <span class="auto-dot"></span> Auto cada 6s
+          </span>
+          <button class="btn btn-ghost btn-sm" onclick="testEmail()">📧 Probar email</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="inp" type="text" id="search"
+               placeholder="🔍 Nombre, código, email, referencia…"
+               oninput="filterTable()" style="flex:1;min-width:180px">
+        <select class="inp" id="f-status" onchange="filterTable()">
+          <option value="all">Todos los estados</option>
+          <option value="pending_review">⏳ En revisión</option>
+          <option value="manual_approved">✅ Aprobado</option>
+          <option value="rejected">❌ Rechazado</option>
+          <option value="pending">🔘 Sin comprobante</option>
+        </select>
+        <button class="btn btn-ghost" onclick="refreshVouchers()">🔄</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th><th>Cliente</th><th>Email</th><th>Tipo</th>
+              <th>Precio</th><th>Método / Ref.</th><th>Estado</th>
+              <th>Email</th><th>Cartillas</th><th>Fecha</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tb">
+            <tr><td colspan="11" class="empty">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /tab-aprobaciones -->
+
+  <!-- ══════════════ TAB: REEMBOLSOS ══════════════ -->
+  <div class="tab-pane" id="tab-reembolsos">
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <h2 style="margin:0;font-size:1.1rem">↩️ Reembolsos</h2>
+        <button class="btn btn-ghost btn-sm" onclick="loadReimbursements()">🔄 Actualizar</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Sesión</th><th>Jugador</th><th>Email</th>
+              <th>Yape/Plin</th><th>Monto</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tb-reimb">
+            <tr><td colspan="7" class="empty">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /tab-reembolsos -->
+
+  <!-- ══════════════ TAB: GANADORES ══════════════ -->
+  <div class="tab-pane" id="tab-ganadores">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div style="color:var(--muted);font-size:.82rem">
+        Registra los premios entregados y deja constancia del comprobante
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadGanadores()">🔄 Actualizar</button>
+    </div>
+
+    <!-- KPIs ganadores -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+      <div class="kpi" style="--kpi-color:var(--danger)">
+        <div class="v" id="k-pendiente">S/.0</div><div class="l">Por Pagar</div>
+      </div>
+      <div class="kpi" style="--kpi-color:#27ae60">
+        <div class="v" id="k-pagado">S/.0</div><div class="l">Ya Pagado</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--accent)">
+        <div class="v" id="k-total-w">0</div><div class="l">Total Ganadores</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚠️ Pagos Pendientes</div>
+      <div id="list-pending"><div class="empty">Cargando…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">✅ Pagos Realizados</div>
+      <div id="list-paid"><div class="empty">Cargando…</div></div>
+    </div>
+
+  </div><!-- /tab-ganadores -->
+
+</div><!-- /wrap -->
+
+<!-- Modal aprobación -->
+<div class="modal-back" id="modal-aprobar">
+  <div class="modal-box">
+    <h3>✅ Aprobar Pago</h3>
+    <div id="modal-detalle" style="margin-bottom:16px"></div>
+    <div style="background:rgba(0,229,180,.07);border:1px solid rgba(0,229,180,.2);
+                border-radius:10px;padding:12px;font-size:.83rem;margin-bottom:16px">
+      <strong style="color:var(--accent)">📧 Se enviará email automáticamente</strong><br>
+      El jugador recibirá su código en el email registrado.
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="color:var(--muted);font-size:.78rem;display:block;margin-bottom:5px">
+        Nota opcional
+      </label>
+      <input type="text" id="modal-nota" class="inp"
+             style="width:100%;background:var(--card)"
+             placeholder="Ej: Verificado Yape ✓">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ok" style="flex:1" onclick="confirmarAprobacion()">
+        ✅ Confirmar + enviar email
+      </button>
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
+</div>
 
+<!-- Modal reembolso -->
+<div class="modal-back" id="modal-reimb">
+  <div class="modal-box">
+    <h3>💸 Registrar Reembolso</h3>
+    <div id="reimb-detail" style="margin-bottom:14px;font-size:.9rem"></div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Referencia (opcional)</label>
+      <input class="inp" id="reimb-ref" placeholder="Nro. operación Yape/Plin" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Nota (opcional)</label>
+      <input class="inp" id="reimb-note" placeholder="Ej: Enviado por Yape" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeReimbModal()">Cancelar</button>
+      <button class="btn btn-ok" onclick="confirmReimb()">✅ Confirmar reembolso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pago ganador -->
+<div class="modal-back" id="modal-pay">
+  <div class="modal-box">
+    <h3>Confirmar Pago Ganador</h3>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:20px" id="modal-pay-sub">—</div>
+    <div class="field">
+      <label>Método de Pago</label>
+      <select id="pay-method">
+        <option value="yape">📱 Yape</option>
+        <option value="plin">📱 Plin</option>
+        <option value="transferencia">🏦 Transferencia</option>
+        <option value="efectivo">💵 Efectivo</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Código / N° de Operación</label>
+      <input id="pay-ref" type="text" placeholder="Ej: YAP-12345678">
+    </div>
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="pay-note" placeholder="Ej: Enviado a Yape 987654321…"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closePayModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="confirmPay()">✅ Registrar Pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Email error alert -->
+<div id="email-error-alert" style="display:none;position:fixed;top:16px;left:50%;
+     transform:translateX(-50%);z-index:2000;max-width:500px;width:90%;
+     background:#1a0a0a;border:2px solid var(--danger);border-radius:14px;
+     padding:18px 20px;box-shadow:0 8px 32px rgba(231,76,60,.4)">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div>
+      <div style="font-weight:700;color:var(--danger);margin-bottom:6px;font-size:1rem">
+        ⚠️ Pago aprobado pero el email NO se envió
+      </div>
+      <div id="email-error-msg" style="font-size:.83rem;color:var(--muted);line-height:1.5"></div>
+      <div style="margin-top:10px;font-size:.8rem;color:var(--warning)">
+        💡 Puedes reenviar el código desde el botón "Reenviar email" en la tabla.
+      </div>
+    </div>
+    <button onclick="document.getElementById('email-error-alert').style.display='none'"
+            style="background:none;border:none;color:var(--muted);cursor:pointer;
+                   font-size:1.2rem;flex-shrink:0;padding:0">✕</button>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-const BT = {
-  "1sol":    { emoji:"🎯", color:"#f472b6", nombre:"Bingo 1 Sol" },
-  "5soles":  { emoji:"🎯", color:"#a855f7", nombre:"Bingo 5 Soles" },
-  "10soles": { emoji:"🎯", color:"#818cf8", nombre:"Bingo 10 Soles" },
-};
+// ═══════════════════════════════════════════════════
+//  SHARED UTILITIES
+// ═══════════════════════════════════════════════════
+let _btypes = {};  // id -> {nombre, color, emoji}
 
-let _tj = null;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3000);
-}
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function fmt(n) {
-  return 'S/.' + Number(n || 0).toFixed(2);
-}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function fmt(n){ return 'S/. '+Number(n||0).toFixed(2) }
 
-// ── Datos cacheados para exportar ─────────────────────
-let _lastData = null;
-
-// ── Cargar datos ──────────────────────────────────────
-async function load() {
-  try {
-    const res = await fetch('/api/admin/caja');
-    if (!res.ok) { showToast('❌ Error al cargar caja'); return; }
-    const data = await res.json();
-    _lastData  = data;
-    renderKPIs(data.resumen, data.sesiones);
-    renderByType(data.sesiones);
-    renderTable(data.sesiones);
-  } catch(e) {
-    showToast('❌ Error de conexión');
-  }
+let _tj=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_tj); _tj=setTimeout(()=>t.classList.remove('show'),3500);
+}
+function showEmailError(errMsg,destEmail){
+  const alert=document.getElementById('email-error-alert');
+  const msg=document.getElementById('email-error-msg');
+  if(!alert||!msg)return;
+  const dest=destEmail?` (destinatario: ${esc(destEmail)})`:'';
+  msg.innerHTML=`<strong>Error:</strong> ${esc(errMsg)}${dest}`;
+  alert.style.display='block';
+}
+async function logout(){
+  await fetch('/api/admin/logout',{method:'POST'});
+  location.href='/admin/login';
 }
 
-// ── KPIs ──────────────────────────────────────────────
-function renderKPIs(r, ss) {
-  if (!r) return;
-  const margen = r.total_recaudado > 0
-    ? Math.round((r.ganancia_bruta / r.total_recaudado) * 100)
-    : 0;
-  const totalJugadores = ss.reduce((a, s) => a + (s.jugadores || 0), 0);
-
-  document.getElementById('k-total').textContent    = fmt(r.total_recaudado);
-  document.getElementById('k-premios').textContent  = fmt(r.total_premios);
-  document.getElementById('k-ganancia').textContent = fmt(r.ganancia_bruta);
-  document.getElementById('k-jugadores').textContent = totalJugadores;
-
-  document.getElementById('k-total-sub').textContent    = `${r.total_sesiones} sesión(es)`;
-  document.getElementById('k-margen-sub').textContent   = `${margen}% margen promedio`;
-  document.getElementById('k-jugadores-sub').textContent = `${r.total_vouchers} vouchers emitidos`;
+// Load bingo types from API
+async function loadBingoTypes(){
+  try{
+    const r=await fetch('/api/admin/bingo_types');
+    const d=await r.json();
+    (d.bingo_types||[]).forEach(bt=>{
+      _btypes[bt.id]={nombre:bt.nombre,color:bt.color||'#00e5b4',emoji:bt.emoji||'🎯',max_cartillas:bt.max_cartillas||1};
+    });
+  }catch(e){}
+}
+function getBT(id){
+  return _btypes[id]||{nombre:id||'Bingo',color:'#00e5b4',emoji:'🎯',max_cartillas:1};
 }
 
-// ── Resumen por tipo ──────────────────────────────────
-function renderByType(ss) {
-  if (!ss || !ss.length) return;
-  const byType = {};
-  ss.forEach(s => {
-    const k = s.bingo_type || '1sol';
-    if (!byType[k]) byType[k] = { count:0, jugadores:0, recaudado:0, premios:0, ganancia:0 };
-    byType[k].count++;
-    byType[k].jugadores  += s.jugadores  || 0;
-    byType[k].recaudado  += s.recaudado  || 0;
-    byType[k].premios    += s.premios_paid || 0;
-    byType[k].ganancia   += s.ganancia   || 0;
+// ═══════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='aprobaciones') refreshVouchers();
+  if(name==='reembolsos')   loadReimbursements();
+  if(name==='ganadores')    loadGanadores();
+}
+
+// ═══════════════════════════════════════════════════
+//  TAB RESUMEN
+// ═══════════════════════════════════════════════════
+let _periodFilter='all';
+let _resumenData=null;
+let _vouchersAll=[];
+let _reimbAll=[];
+
+function setPeriod(p,btn){
+  _periodFilter=p;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadResumen();
+}
+
+function filterByPeriod(sesiones){
+  if(_periodFilter==='all') return sesiones;
+  const now=new Date();
+  return sesiones.filter(s=>{
+    if(!s.fecha) return true;
+    const d=new Date(s.fecha);
+    if(_periodFilter==='today'){
+      return d.toDateString()===now.toDateString();
+    }
+    if(_periodFilter==='week'){
+      const start=new Date(now); start.setDate(now.getDate()-now.getDay());
+      start.setHours(0,0,0,0);
+      return d>=start;
+    }
+    if(_periodFilter==='month'){
+      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    }
+    return true;
   });
+}
 
-  const el = document.getElementById('by-type-content');
-  el.innerHTML = Object.entries(byType).map(([k, v]) => {
-    const bt     = BT[k] || BT['1sol'];
-    const margen = v.recaudado > 0 ? Math.round((v.ganancia / v.recaudado) * 100) : 0;
+async function loadResumen(){
+  try{
+    const [cajaRes,vRes,rRes]=await Promise.all([
+      fetch('/api/admin/caja'),
+      fetch('/api/admin/vouchers'),
+      fetch('/api/admin/reimbursements'),
+    ]);
+    const caja=await cajaRes.json();
+    const vData=await vRes.json();
+    const rData=await rRes.json();
+
+    _resumenData=caja;
+    _vouchersAll=vData.vouchers||[];
+    _reimbAll=rData.reimbursements||[];
+
+    const sesiones=filterByPeriod(caja.sesiones||[]);
+    renderResumenKPIs(sesiones, _vouchersAll, _reimbAll);
+    renderByType(sesiones);
+    renderResumenTable(sesiones);
+    updateTabBadges();
+  }catch(e){ showToast('❌ Error al cargar resumen') }
+}
+
+function renderResumenKPIs(sesiones, vouchers, reimbs){
+  const recaudado=sesiones.reduce((a,s)=>a+(s.recaudado||0),0);
+  const premios=sesiones.reduce((a,s)=>a+(s.premios_paid||0),0);
+  const reimbTotal=reimbs.filter(r=>r.status==='paid').reduce((a,r)=>a+(r.amount||0),0);
+  const ganancia=recaudado-premios-reimbTotal;
+  const margen=recaudado>0?Math.round((ganancia/recaudado)*100):0;
+  const jugadores=sesiones.reduce((a,s)=>a+(s.jugadores||0),0);
+
+  // Filter vouchers by period sessions
+  const sIds=new Set(sesiones.map(s=>s.id));
+  const vFiltered=_periodFilter==='all'?vouchers:vouchers.filter(v=>sIds.has(v.session_id));
+  const aprobados=vFiltered.filter(v=>['approved','manual_approved'].includes(v.payment_status)).length;
+  const pendientes=vFiltered.filter(v=>v.payment_status==='pending_review').length;
+  const rechazados=vFiltered.filter(v=>v.payment_status==='rejected').length;
+
+  document.getElementById('k-total').textContent=fmt(recaudado);
+  document.getElementById('k-premios').textContent=fmt(premios);
+  document.getElementById('k-reimb-total').textContent=fmt(reimbTotal);
+  document.getElementById('k-ganancia').textContent=fmt(ganancia);
+  document.getElementById('k-total-sub').textContent=`${sesiones.length} sesión(es)`;
+  document.getElementById('k-margen-sub').textContent=`${margen}% margen promedio`;
+  document.getElementById('k-premios-sub').textContent='bingo + línea';
+  document.getElementById('k-reimb-sub').textContent=`${reimbs.filter(r=>r.status==='pending').length} pendiente(s)`;
+  document.getElementById('k-jugadores').textContent=jugadores;
+  document.getElementById('k-aprobados').textContent=aprobados;
+  document.getElementById('k-pendientes').textContent=pendientes;
+  document.getElementById('k-rechazados').textContent=rechazados;
+  document.getElementById('k-sesiones').textContent=sesiones.length;
+}
+
+function renderByType(sesiones){
+  if(!sesiones||!sesiones.length){ document.getElementById('card-by-type').style.display='none'; return; }
+  const byType={};
+  sesiones.forEach(s=>{
+    const k=s.bingo_type||'?';
+    if(!byType[k]) byType[k]={count:0,jugadores:0,recaudado:0,premios:0,ganancia:0};
+    byType[k].count++;
+    byType[k].jugadores+=s.jugadores||0;
+    byType[k].recaudado+=s.recaudado||0;
+    byType[k].premios+=s.premios_paid||0;
+    byType[k].ganancia+=s.ganancia||0;
+  });
+  const el=document.getElementById('by-type-content');
+  el.innerHTML=Object.entries(byType).map(([k,v])=>{
+    const bt=getBT(k);
+    const margen=v.recaudado>0?Math.round((v.ganancia/v.recaudado)*100):0;
     return `<div class="by-type-row">
       <span style="color:${bt.color};font-weight:700;font-size:.95rem;min-width:130px">
-        ${bt.emoji} ${bt.nombre}
+        ${bt.emoji} ${esc(bt.nombre)}
       </span>
       <span style="color:var(--muted);font-size:.8rem">${v.count} sesión(es) · ${v.jugadores} jugadores</span>
       <span style="color:var(--accent)"><strong>${fmt(v.recaudado)}</strong> recaudado</span>
@@ -273,104 +716,502 @@ function renderByType(ss) {
       <span style="color:var(--muted);font-size:.78rem">${margen}% margen</span>
     </div>`;
   }).join('');
-
-  document.getElementById('card-by-type').style.display = 'block';
+  document.getElementById('card-by-type').style.display='block';
 }
 
-// ── Tabla por sesión ──────────────────────────────────
-function renderTable(ss) {
-  const tb = document.getElementById('tb-sessions');
-  if (!ss || !ss.length) {
-    tb.innerHTML = '<tr><td colspan="10" class="empty">Sin sesiones registradas</td></tr>';
-    return;
+function renderResumenTable(sesiones){
+  const tb=document.getElementById('tb-sessions');
+  if(!sesiones||!sesiones.length){
+    tb.innerHTML='<tr><td colspan="10" class="empty">Sin sesiones en este período</td></tr>'; return;
   }
-
-  const statusPill = {
-    finished:  '<span class="pill pill-green">✅ Finalizada</span>',
-    active:    '<span class="pill pill-blue">▶ Activa</span>',
-    scheduled: '<span class="pill pill-yellow">⏳ Programada</span>',
-    cancelled: '<span class="pill pill-red">❌ Cancelada</span>',
+  const statusPill={
+    finished:'<span class="pill pill-green">✅ Finalizada</span>',
+    active:  '<span class="pill pill-blue">▶ Activa</span>',
+    scheduled:'<span class="pill pill-yellow">⏳ Programada</span>',
+    cancelled:'<span class="pill pill-red">❌ Cancelada</span>',
   };
-
-  tb.innerHTML = ss.map(s => {
-    const bt       = BT[s.bingo_type] || BT['1sol'];
-    const margen   = s.recaudado > 0 ? Math.round((s.ganancia / s.recaudado) * 100) : 0;
-    const ganColor = s.ganancia >= 0 ? '#27ae60' : 'var(--danger)';
-    const ganadores = (s.ganadores || []).map(w => {
-      const esBingo = w.tipo !== 'linea';
-      const premio  = esBingo ? w.prize : w.linea_prize;
-      const icono   = esBingo ? '🏆' : '⭐';
-      const tipo    = esBingo ? 'Bingo' : 'Línea';
-      return `${icono} ${esc(w.nombre || w.id)} · <strong>${fmt(premio)}</strong> <span style="color:var(--muted);font-size:.72rem">(${tipo})</span> · ${w.drawn_count} bolillas`;
-    }).join('<br>') || '<span style="color:var(--muted)">—</span>';
-
+  tb.innerHTML=sesiones.map(s=>{
+    const bt=getBT(s.bingo_type);
+    const margen=s.recaudado>0?Math.round((s.ganancia/s.recaudado)*100):0;
+    const ganColor=s.ganancia>=0?'#27ae60':'var(--danger)';
+    const reimb=_reimbAll.filter(r=>r.session_id===s.id&&r.status==='paid').reduce((a,r)=>a+(r.amount||0),0);
     return `<tr>
-      <td>
-        <span style="font-family:'Courier New',monospace;color:var(--accent);
-                     font-weight:700;font-size:.82rem">${s.id}</span>
-      </td>
-      <td style="font-size:.83rem;white-space:nowrap">${s.fecha} · ${s.hora}</td>
-      <td>
-        <span style="color:${bt.color};font-weight:700;font-size:.83rem">
-          ${bt.emoji} ${esc(s.bingo_nombre)}
-        </span>
-      </td>
-      <td style="text-align:center;font-weight:700;color:var(--text)">${s.jugadores}</td>
+      <td><span style="font-family:'Courier New',monospace;color:var(--accent);
+                       font-weight:700;font-size:.82rem">${esc(s.id)}</span></td>
+      <td style="font-size:.83rem;white-space:nowrap">${esc(s.fecha||'')} · ${esc(s.hora||'')}</td>
+      <td><span style="color:${bt.color};font-weight:700;font-size:.83rem">
+        ${bt.emoji} ${esc(s.bingo_nombre||bt.nombre)}</span></td>
+      <td style="text-align:center;font-weight:700">${s.jugadores||0}</td>
       <td style="color:var(--accent);font-weight:700">${fmt(s.recaudado)}</td>
       <td style="color:var(--warning);font-weight:700">${fmt(s.premios_paid)}</td>
+      <td style="color:var(--danger)">${reimb>0?fmt(reimb):'—'}</td>
       <td style="font-weight:700;color:${ganColor}">${fmt(s.ganancia)}</td>
-      <td style="min-width:100px">
+      <td style="min-width:90px">
         <div style="font-size:.8rem;color:var(--muted);margin-bottom:3px">${margen}%</div>
-        <div class="bar-wrap">
-          <div class="bar-fill" style="width:${Math.max(0,Math.min(100,margen))}%"></div>
-        </div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.max(0,Math.min(100,margen))}%"></div></div>
       </td>
-      <td>${statusPill[s.status] || s.status}</td>
-      <td>
-        <div class="winner-inline">${ganadores}</div>
-      </td>
+      <td>${statusPill[s.status]||esc(s.status)}</td>
     </tr>`;
   }).join('');
 }
 
-// ── Exportar a CSV ────────────────────────────────────
-function exportCSV() {
-  if (!_lastData || !_lastData.sesiones.length) {
-    showToast('⚠️ No hay datos para exportar');
-    return;
-  }
-  const rows = [
+function exportCSV(){
+  if(!_resumenData){ showToast('⚠️ No hay datos'); return; }
+  const sesiones=filterByPeriod(_resumenData.sesiones||[]);
+  if(!sesiones.length){ showToast('⚠️ Sin sesiones en este período'); return; }
+  const rows=[
     ['ID','Fecha','Hora','Tipo','Jugadores','Recaudado','Premios','Ganancia','Margen%','Estado'],
-    ..._lastData.sesiones.map(s => {
-      const margen = s.recaudado > 0 ? Math.round((s.ganancia/s.recaudado)*100) : 0;
-      return [s.id, s.fecha, s.hora, s.bingo_nombre, s.jugadores,
-              s.recaudado.toFixed(2), s.premios_paid.toFixed(2),
-              s.ganancia.toFixed(2), margen + '%', s.status];
+    ...sesiones.map(s=>{
+      const margen=s.recaudado>0?Math.round((s.ganancia/s.recaudado)*100):0;
+      return [s.id,s.fecha,s.hora,s.bingo_nombre,s.jugadores,
+              (s.recaudado||0).toFixed(2),(s.premios_paid||0).toFixed(2),
+              (s.ganancia||0).toFixed(2),margen+'%',s.status];
     }),
-    [],
-    ['RESUMEN'],
-    ['Total recaudado', _lastData.resumen.total_recaudado.toFixed(2)],
-    ['Total premios',   _lastData.resumen.total_premios.toFixed(2)],
-    ['Ganancia bruta',  _lastData.resumen.ganancia_bruta.toFixed(2)],
+    [],['RESUMEN'],
+    ['Total recaudado',sesiones.reduce((a,s)=>a+(s.recaudado||0),0).toFixed(2)],
+    ['Total premios',sesiones.reduce((a,s)=>a+(s.premios_paid||0),0).toFixed(2)],
+    ['Ganancia',sesiones.reduce((a,s)=>a+(s.ganancia||0),0).toFixed(2)],
   ];
-  const csv     = rows.map(r => r.join(',')).join('\n');
-  const blob    = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url     = URL.createObjectURL(blob);
-  const a       = document.createElement('a');
-  a.href        = url;
-  a.download    = `caja_bingo_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`caja_bingo_${new Date().toISOString().slice(0,10)}.csv`; a.click();
   URL.revokeObjectURL(url);
   showToast('📥 CSV exportado');
 }
 
-async function logout() {
-  await fetch('/api/admin/logout', { method:'POST' });
-  location.href = '/admin/login';
+// ═══════════════════════════════════════════════════
+//  TAB APROBACIONES
+// ═══════════════════════════════════════════════════
+let allVouchers=[];
+let dupRefs=new Set();
+let pendingApprove=null;
+const METHOD_ICON={yape:'💜',plin:'💙',transferencia:'🏦',interbank:'🏦',efectivo:'💵',manual:'✍️'};
+
+async function checkEmailStatus(){
+  try{
+    const res=await fetch('/api/admin/config');
+    const data=await res.json();
+    const bar=document.getElementById('email-status-bar');
+    if(data.email_configurado){
+      bar.className='email-status-bar email-ok';
+      bar.innerHTML=`📧 Email configurado: <strong>${esc(data.email_from)}</strong>
+        &nbsp;·&nbsp; Los códigos se envían automáticamente al aprobar.`;
+      bar.style.display='flex';
+    }else{
+      bar.className='email-status-bar email-no';
+      bar.innerHTML=`⚠️ Email NO configurado — configura EMAIL_FROM y EMAIL_PASS en .env.`;
+      bar.style.display='flex';
+    }
+  }catch(e){}
 }
 
-load();
-setInterval(load, 30000);
+function detectDuplicates(vouchers){
+  const refMap={},emailMap={};
+  dupRefs=new Set();
+  vouchers.forEach(v=>{
+    const ref=(v.payment_ref||'').trim().toUpperCase();
+    const met=v.payment_method||'';
+    if(!ref||ref.length<4) return;
+    const key=`${met}:${ref}`;
+    if(!refMap[key]) refMap[key]=[];
+    refMap[key].push(v.code);
+  });
+  Object.entries(refMap).forEach(([,codes])=>{ if(codes.length>1) codes.forEach(c=>dupRefs.add(c)) });
+  vouchers.forEach(v=>{
+    const em=(v.email||'').trim().toLowerCase();
+    if(!em) return;
+    const key=`${em}:${v.session_id||''}`;
+    if(!emailMap[key]) emailMap[key]=[];
+    emailMap[key].push(v.code);
+  });
+  Object.entries(emailMap).forEach(([,codes])=>{ if(codes.length>1) codes.forEach(c=>dupRefs.add(c)) });
+}
+
+async function refreshVouchers(){
+  try{
+    const [vRes]=await Promise.all([fetch('/api/admin/vouchers')]);
+    allVouchers=(await vRes.json()).vouchers||[];
+    const paid=allVouchers.filter(v=>['approved','manual_approved'].includes(v.payment_status)).length;
+    const pend=allVouchers.filter(v=>v.payment_status==='pending_review').length;
+    const rej=allVouchers.filter(v=>v.payment_status==='rejected').length;
+    const revenue=allVouchers.filter(v=>['approved','manual_approved'].includes(v.payment_status)).reduce((s,v)=>s+(v.precio||0),0);
+    document.getElementById('st-total').textContent=allVouchers.length;
+    document.getElementById('st-paid').textContent=paid;
+    document.getElementById('st-pend').textContent=pend;
+    document.getElementById('st-rej').textContent=rej;
+    document.getElementById('st-rev').textContent=`S/.${revenue.toFixed(2)}`;
+    detectDuplicates(allVouchers);
+    filterTable();
+    updateTabBadges();
+  }catch(e){ showToast('❌ Error al cargar vouchers') }
+}
+
+function filterTable(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const fst=document.getElementById('f-status').value;
+  let list=allVouchers;
+  if(fst!=='all') list=list.filter(v=>v.payment_status===fst);
+  if(q) list=list.filter(v=>
+    v.code?.toLowerCase().includes(q)||
+    v.nombres?.toLowerCase().includes(q)||
+    v.apellidos?.toLowerCase().includes(q)||
+    v.email?.toLowerCase().includes(q)||
+    v.payment_ref?.toLowerCase().includes(q));
+  list=[...list].sort((a,b)=>{
+    const o={pending_review:0,pending:1,approved:2,manual_approved:2,rejected:3};
+    return (o[a.payment_status]??9)-(o[b.payment_status]??9);
+  });
+  const tb=document.getElementById('tb');
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="11" class="empty">Sin resultados</td></tr>`; return;
+  }
+  tb.innerHTML=list.map(v=>{
+    const who=[v.nombres,v.apellidos].filter(Boolean).join(' ');
+    const bt=getBT(v.bingo_type);
+    const dt=(v.payment_submitted_at||v.created||'').replace('T',' ').slice(0,16);
+    const pst=v.payment_status||'pending';
+    const isDup=dupRefs.has(v.code);
+    const mIcon=METHOD_ICON[v.payment_method||'']||'💳';
+    const badgeMap={
+      manual_approved:`<span class="badge b-manual">✅ Aprobado</span>`,
+      approved:`<span class="badge b-ok">✅ Aprobado</span>`,
+      pending_review:`<span class="badge b-pend">⏳ En revisión</span>`,
+      pending:`<span class="badge b-wait">🔘 Sin comprobante</span>`,
+      rejected:`<span class="badge b-rej">❌ Rechazado</span>`,
+    };
+    const badge=badgeMap[pst]||`<span class="badge">${pst}</span>`;
+    const ref=v.payment_ref||'';
+    const refHtml=ref
+      ?(isDup
+        ?`<div class="ref-dup">⚠️ DUP</div><div style="font-size:.72rem;color:var(--danger)">${esc(ref.slice(0,25))}</div>`
+        :`<div style="font-size:.75rem;color:var(--muted)">${mIcon} ${esc(ref.slice(0,25))}</div>`)
+      :`<span style="color:var(--muted);font-size:.75rem">—</span>`;
+    const emailSent=v.email_codigo_enviado
+      ?`<span class="email-sent">✅ Enviado</span>`
+      :(['approved','manual_approved'].includes(pst)
+        ?`<span class="email-not-sent">⚠️ No enviado</span>`
+        :`<span class="email-not-sent">—</span>`);
+    const cAct=(v.cartillas||[]).length;
+    const cMax=getBT(v.bingo_type).max_cartillas||1;
+    const cHtml=`<span style="color:${cAct>0?'var(--accent)':'var(--muted)'}">${cAct}/${cMax}</span>`;
+    const origen=v.creado_por==='jugador'
+      ?'<span style="font-size:.65rem;color:var(--accent)">🙋 Jugador</span>'
+      :'<span style="font-size:.65rem;color:var(--muted)">✍️ Admin</span>';
+    const isApproved=['approved','manual_approved'].includes(pst);
+    const btnAprobar=!isApproved?`<button class="btn btn-ok btn-sm" onclick="abrirModalAprobacion('${v.code}')">✅ Aprobar</button>`:'';
+    const btnRechazar=pst!=='rejected'?`<button class="btn btn-no btn-sm" onclick="rechazarVoucher('${v.code}')">❌</button>`:'';
+    const btnReenviar=isApproved&&v.email?`<button class="btn btn-blue btn-sm" onclick="reenviarEmail('${v.code}')">📧</button>`:'';
+    const btnDel=`<button class="btn btn-ghost btn-sm" onclick="eliminarVoucher('${v.code}')">🗑</button>`;
+    const rowClass=pst==='pending_review'?'row-review':pst==='rejected'?'row-rejected':'';
+    return `<tr class="${rowClass}">
+      <td><span class="code-mono">${v.code}</span><div>${origen}</div>${isDup?'<div style="font-size:.65rem;color:var(--danger)">⚠️ Ref. duplicada</div>':''}</td>
+      <td style="font-size:.82rem">${esc(who)||'—'}</td>
+      <td style="font-size:.78rem;color:var(--muted);max-width:140px;word-break:break-all">
+        ${v.email?`<a href="mailto:${esc(v.email)}" style="color:var(--accent)">${esc(v.email)}</a>`:'—'}
+        ${v.celular?`<div style="font-size:.7rem;margin-top:2px">${esc(v.celular)}</div>`:''}
+      </td>
+      <td><span style="color:${bt.color};font-weight:700;font-size:.82rem">${bt.emoji} ${esc(bt.nombre)}</span></td>
+      <td style="color:var(--accent);font-weight:700">S/. ${(v.precio||0).toFixed(2)}</td>
+      <td><div style="font-size:.8rem;color:var(--muted)">${mIcon} ${esc(v.payment_method||'—')}</div>${refHtml}</td>
+      <td>${badge}</td>
+      <td>${emailSent}</td>
+      <td style="text-align:center">${cHtml}</td>
+      <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${dt||'—'}</td>
+      <td><div style="display:flex;gap:5px;flex-wrap:wrap">${btnAprobar}${btnRechazar}${btnReenviar}${btnDel}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalAprobacion(code){
+  const v=allVouchers.find(x=>x.code===code);
+  if(!v) return;
+  pendingApprove=code;
+  const bt=getBT(v.bingo_type);
+  const who=[v.nombres,v.apellidos].filter(Boolean).join(' ')||'—';
+  document.getElementById('modal-detalle').innerHTML=`
+    <div class="detail-row"><span>Código</span><span class="code-mono">${v.code}</span></div>
+    <div class="detail-row"><span>Jugador</span><span style="font-weight:600">${esc(who)}</span></div>
+    ${v.email?`<div class="detail-row"><span>Email</span><span style="color:var(--accent)">${esc(v.email)}</span></div>`:''}
+    <div class="detail-row"><span>Tipo</span><span style="color:${bt.color};font-weight:700">${bt.emoji} ${esc(bt.nombre)}</span></div>
+    <div class="detail-row"><span>Monto</span><span style="font-weight:700;color:var(--accent)">S/. ${(v.precio||0).toFixed(2)}</span></div>
+    <div class="detail-row"><span>N° operación</span><span style="color:var(--muted)">${esc(v.payment_ref||'—')}</span></div>`;
+  document.getElementById('modal-nota').value='';
+  document.getElementById('modal-aprobar').classList.add('show');
+}
+function cerrarModal(){ document.getElementById('modal-aprobar').classList.remove('show'); pendingApprove=null; }
+document.getElementById('modal-aprobar').addEventListener('click',function(e){ if(e.target===this) cerrarModal(); });
+
+async function confirmarAprobacion(){
+  if(!pendingApprove) return;
+  const nota=document.getElementById('modal-nota').value.trim();
+  const btn=document.querySelector('#modal-aprobar .btn-ok');
+  btn.disabled=true; btn.textContent='⏳ Aprobando…';
+  try{
+    const res=await fetch(`/api/admin/voucher/${pendingApprove}/approve`,{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:nota})});
+    const data=await res.json();
+    if(!res.ok){ showToast('❌ Error al aprobar'); btn.disabled=false; btn.textContent='✅ Confirmar + enviar email'; return; }
+    cerrarModal();
+    const er=data.email_result||{};
+    if(er.sent) showToast('✅ Pago aprobado · 📧 Email enviado');
+    else if(er.error) showEmailError(er.error,data.voucher?.email||'');
+    else showToast('✅ Pago aprobado');
+    refreshVouchers();
+  }catch(e){ showToast('❌ Error de conexión'); btn.disabled=false; btn.textContent='✅ Confirmar + enviar email'; }
+}
+
+async function rechazarVoucher(code){
+  const reason=prompt(`Rechazar pago de ${code}\nMotivo:`,'')?? null;
+  if(reason===null) return;
+  const res=await fetch(`/api/admin/voucher/${code}/reject`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+  if(res.ok){ showToast(`❌ ${code} rechazado`); refreshVouchers(); }
+  else showToast('❌ Error al rechazar');
+}
+
+async function reenviarEmail(code){
+  if(!confirm('¿Reenviar el email con el código?')) return;
+  const btn=document.querySelector(`button[onclick="reenviarEmail('${code}')"]`);
+  if(btn){btn.disabled=true;btn.textContent='⏳';}
+  try{
+    const res=await fetch(`/api/admin/voucher/${code}/resend_email`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const data=await res.json();
+    if(res.ok){ showToast(`📧 Email reenviado`); refreshVouchers(); }
+    else showToast(`❌ ${data.message||'Error'}`);
+  }catch(e){ showToast('❌ Error'); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='📧';} }
+}
+
+async function eliminarVoucher(code){
+  if(!confirm(`¿Eliminar voucher ${code}?`)) return;
+  const res=await fetch(`/api/admin/voucher/${code}/delete`,{method:'DELETE'});
+  if(res.ok){ showToast('🗑 Eliminado'); refreshVouchers(); }
+  else showToast('❌ Error al eliminar');
+}
+
+async function testEmail(){
+  const dest=prompt('¿A qué email enviar el test?','')?? null;
+  if(!dest) return;
+  showToast('⏳ Enviando…');
+  try{
+    const res=await fetch('/api/admin/email/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:dest})});
+    const data=await res.json();
+    if(res.ok) showToast(`✅ ${data.message}`);
+    else showToast(`❌ ${data.message}`);
+  }catch(e){ showToast('❌ Error') }
+}
+
+// ═══════════════════════════════════════════════════
+//  TAB REEMBOLSOS
+// ═══════════════════════════════════════════════════
+let reimbData=[];
+let currentReimbId=null;
+
+async function loadReimbursements(){
+  try{
+    const res=await fetch('/api/admin/reimbursements');
+    const data=await res.json();
+    reimbData=data.reimbursements||[];
+    _reimbAll=reimbData;
+    renderReimbursements();
+    updateTabBadges();
+  }catch(e){ console.error(e) }
+}
+
+function renderReimbursements(){
+  const tb=document.getElementById('tb-reimb');
+  if(!reimbData.length){
+    tb.innerHTML=`<tr><td colspan="7" class="empty">Sin reembolsos registrados</td></tr>`; return;
+  }
+  tb.innerHTML=reimbData.map(r=>{
+    const isPaid=r.status==='paid';
+    return `<tr style="${isPaid?'opacity:.55':''}">
+      <td><span style="font-size:.78rem;color:var(--muted)">${esc(r.session_nombre)}</span></td>
+      <td><strong>${esc(r.nombre)} ${esc(r.apellidos)}</strong></td>
+      <td style="font-size:.78rem">${esc(r.email)}</td>
+      <td style="color:var(--accent)">${esc(r.yape_plin)}</td>
+      <td><strong style="color:var(--accent)">S/. ${(r.amount||0).toFixed(2)}</strong></td>
+      <td>${isPaid
+        ?`<span style="color:#27ae60;font-weight:700">✅ Pagado</span><br><span style="font-size:.72rem;color:var(--muted)">${esc(r.paid_at||'')}</span>`
+        :`<span style="color:var(--warning);font-weight:700">⏳ Pendiente</span>`
+      }</td>
+      <td>${isPaid?'':
+        `<button class="btn btn-ok btn-sm" onclick="openReimbModal(${r.id})">💸 Marcar pagado</button>`
+      }</td>
+    </tr>`;
+  }).join('');
+}
+
+function openReimbModal(id){
+  currentReimbId=id;
+  const r=reimbData.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('reimb-detail').innerHTML=
+    `<strong>${esc(r.nombre)} ${esc(r.apellidos)}</strong> — S/. ${(r.amount||0).toFixed(2)}<br>
+     Yape/Plin: <strong style="color:var(--accent)">${esc(r.yape_plin)}</strong>`;
+  document.getElementById('reimb-ref').value='';
+  document.getElementById('reimb-note').value='';
+  document.getElementById('modal-reimb').classList.add('show');
+}
+function closeReimbModal(){ document.getElementById('modal-reimb').classList.remove('show') }
+document.getElementById('modal-reimb').addEventListener('click',function(e){ if(e.target===this) closeReimbModal(); });
+
+async function confirmReimb(){
+  const ref=document.getElementById('reimb-ref').value.trim();
+  const note=document.getElementById('reimb-note').value.trim();
+  const res=await fetch(`/api/admin/reimbursements/${currentReimbId}/pay`,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref,note})});
+  if(res.ok){ closeReimbModal(); loadReimbursements(); showToast('✅ Reembolso registrado'); }
+  else showToast('❌ Error al registrar reembolso');
+}
+
+// ═══════════════════════════════════════════════════
+//  TAB GANADORES
+// ═══════════════════════════════════════════════════
+let _pendingTarget=null;
+let _ganadoresData=[];
+
+async function loadGanadores(){
+  try{
+    const res=await fetch('/api/admin/winner_payments');
+    if(!res.ok){ showToast('❌ Error al cargar'); return; }
+    const data=await res.json();
+    _ganadoresData=data.payments||[];
+    renderGanadores(_ganadoresData);
+    updateTabBadges();
+  }catch(e){ showToast('❌ Error de conexión') }
+}
+
+function renderGanadores(payments){
+  const pending=payments.filter(p=>!p.paid);
+  const paid=payments.filter(p=>p.paid);
+  const entryPrize=p=>(p.tipo||'bingo')==='bingo'?(p.prize||0):(p.linea_prize||0);
+  document.getElementById('k-pendiente').textContent=fmt(pending.reduce((s,p)=>s+entryPrize(p),0));
+  document.getElementById('k-pagado').textContent=fmt(paid.reduce((s,p)=>s+entryPrize(p),0));
+  document.getElementById('k-total-w').textContent=payments.length;
+  const lp=document.getElementById('list-pending');
+  lp.innerHTML=pending.length?pending.map(p=>payRowHTML(p,false)).join(''):'<div class="empty">🎉 Sin pagos pendientes</div>';
+  const lpa=document.getElementById('list-paid');
+  lpa.innerHTML=paid.length?paid.map(p=>payRowHTML(p,true)).join(''):'<div class="empty">Aún no hay pagos registrados</div>';
+}
+
+function payRowHTML(p,isPaid){
+  const isBingo=(p.tipo||'bingo')==='bingo';
+  const prize=isBingo?(p.prize||0):(p.linea_prize||0);
+  const tipoBadge=isBingo
+    ?'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(0,229,180,.15);color:var(--accent);margin-left:6px">🏆 BINGO</span>'
+    :'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px">⭐ LÍNEA</span>';
+  const contactLine=[
+    p.celular  ?`📞 ${esc(p.celular)}`:'',
+    p.yape_plin?`💰 Yape/Plin: ${esc(p.yape_plin)}`:'',
+    p.email    ?`✉️ ${esc(p.email)}`:'',
+  ].filter(Boolean).join(' · ');
+  const proofHTML=isPaid?`
+    <div class="proof-box">
+      <strong>✅ Pagado</strong> · ${esc(p.paid_at?p.paid_at.replace('T',' ').slice(0,16):'')}
+      ${p.paid_method?`<br><strong>Método:</strong> ${esc(p.paid_method)}`:''}
+      ${p.paid_ref?`<br><strong>Ref:</strong> ${esc(p.paid_ref)}`:''}
+      ${p.paid_note?`<br><strong>Nota:</strong> ${esc(p.paid_note)}`:''}
+    </div>`:'';
+  const sessInfo=p.session_fecha?`${esc(p.session_fecha)} ${esc(p.session_hora||'')} · `:'';
+  const actionBtn=isPaid
+    ?`<button class="btn btn-ghost btn-sm" onclick='openPayModal(${JSON.stringify(p)})'>✏️ Editar</button>`
+    :`<button class="btn btn-accent btn-sm" onclick='openPayModal(${JSON.stringify(p)})'>💸 Registrar Pago</button>`;
+  return `<div class="pay-row${isPaid?' is-paid':''}">
+    <div class="pay-info">
+      <div class="pay-name">${esc(p.nombre)} ${esc(p.apellidos||'')}${tipoBadge}</div>
+      <div class="pay-meta">
+        ${sessInfo}${esc(p.bingo_nombre||'')} · Cartilla <strong>${esc(p.cartilla_id)}</strong> · ${p.drawn_count} bolillas
+        ${contactLine?`<br>${contactLine}`:''}
+      </div>
+      ${proofHTML}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div class="pay-prize${!isBingo?' linea':''}">${fmt(prize)}</div>
+      <span class="badge ${isPaid?'b-ok':'b-rej'}">${isPaid?'✅ Pagado':'⏳ Pendiente'}</span>
+      ${actionBtn}
+    </div>
+  </div>`;
+}
+
+function openPayModal(p){
+  _pendingTarget=p;
+  const isBingo=(p.tipo||'bingo')==='bingo';
+  const prizeShow=isBingo?(p.prize||0):(p.linea_prize||0);
+  const tipoLabel=isBingo?'🏆 BINGO':'⭐ LÍNEA';
+  document.getElementById('modal-pay-sub').innerHTML=
+    `<strong>${esc(p.nombre)} ${esc(p.apellidos||'')}</strong> · Cartilla <strong>${esc(p.cartilla_id)}</strong><br>`+
+    `${tipoLabel} · Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeShow)}</span>`+
+    (p.yape_plin?` · Yape/Plin: <strong>${esc(p.yape_plin)}</strong>`:'')+
+    (p.celular?` · Tel: <strong>${esc(p.celular)}</strong>`:'');
+  document.getElementById('pay-method').value=p.paid_method||'yape';
+  document.getElementById('pay-ref').value=p.paid_ref||'';
+  document.getElementById('pay-note').value=p.paid_note||'';
+  document.getElementById('modal-pay').classList.add('open');
+}
+function closePayModal(){ document.getElementById('modal-pay').classList.remove('open'); _pendingTarget=null; }
+document.getElementById('modal-pay').addEventListener('click',function(e){ if(e.target===this) closePayModal(); });
+
+async function confirmPay(){
+  if(!_pendingTarget) return;
+  const paid_method=document.getElementById('pay-method').value;
+  const paid_ref=document.getElementById('pay-ref').value.trim();
+  const paid_note=document.getElementById('pay-note').value.trim();
+  try{
+    const res=await fetch('/api/admin/winner_payments/pay',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({session_id:_pendingTarget.session_id,cartilla_id:_pendingTarget.cartilla_id,paid_method,paid_ref,paid_note})});
+    const data=await res.json();
+    if(!res.ok){ showToast('❌ '+(data.error||'Error')); return; }
+    showToast('✅ Pago registrado');
+    closePayModal();
+    loadGanadores();
+  }catch(e){ showToast('❌ Error de conexión') }
+}
+
+// ═══════════════════════════════════════════════════
+//  TAB BADGES
+// ═══════════════════════════════════════════════════
+function updateTabBadges(){
+  const pendVouchers=allVouchers.filter(v=>v.payment_status==='pending_review').length;
+  const pendReimbs=_reimbAll.filter(r=>r.status==='pending').length;
+  const pendGanadores=_ganadoresData.filter(p=>!p.paid).length;
+
+  const btnApr=document.getElementById('tab-aprobaciones-btn');
+  const btnReim=document.getElementById('tab-reembolsos-btn');
+  const btnGan=document.getElementById('tab-ganadores-btn');
+
+  btnApr.innerHTML=`💰 Aprobaciones${pendVouchers>0?` <span class="tab-badge">${pendVouchers}</span>`:''}`;
+  btnReim.innerHTML=`↩️ Reembolsos${pendReimbs>0?` <span class="tab-badge">${pendReimbs}</span>`:''}`;
+  btnGan.innerHTML=`🏆 Ganadores${pendGanadores>0?` <span class="tab-badge">${pendGanadores}</span>`:''}`;
+
+  // Update page title
+  const total=pendVouchers+pendReimbs+pendGanadores;
+  document.title=total>0?`(${total}) 💼 Caja — Bingo Pro`:'💼 Caja — Bingo Pro';
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+async function init(){
+  await loadBingoTypes();
+  checkEmailStatus();
+  loadResumen();
+  // Pre-load counts for badges
+  refreshVouchers();
+  loadReimbursements();
+  loadGanadores();
+}
+
+init();
+setInterval(()=>{
+  const activeTab=document.querySelector('.tab-pane.active').id;
+  if(activeTab==='tab-resumen') loadResumen();
+  else if(activeTab==='tab-aprobaciones') refreshVouchers();
+  else if(activeTab==='tab-reembolsos') loadReimbursements();
+  else if(activeTab==='tab-ganadores') loadGanadores();
+},15000);
 </script>
 </body>
 </html>

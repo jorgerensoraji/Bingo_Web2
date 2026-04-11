@@ -1224,8 +1224,7 @@ def admin_sessions_page():
 
 @app.route("/admin/payments")
 def admin_payments_page():
-    if not is_admin(): return redirect("/admin/login")
-    return render_template("admin_payments.html")
+    return redirect("/admin/caja")
 
 @app.route("/admin/config")
 def admin_config_page():
@@ -1239,8 +1238,7 @@ def admin_caja_page():
 
 @app.route("/admin/pagos_ganadores")
 def admin_pagos_ganadores_page():
-    if not is_admin(): return redirect("/admin/login")
-    return render_template("admin_pagos_ganadores.html")
+    return redirect("/admin/caja")
 
 @app.route("/admin/manual")
 def admin_manual_page():

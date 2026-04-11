@@ -132,13 +132,13 @@ tr:hover td{background:rgba(17,31,46,.5)}
   <div class="nav-links">
     <a class="nav-link" href="/admin/game">🎮 Juego</a>
     <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
-    <a class="nav-link" href="/admin/payments">💰 Pagos
+    <a class="nav-link" href="/admin/caja">💰 Pagos
       <span id="pending-badge" style="display:none;background:var(--warning);
         color:#041015;border-radius:20px;padding:1px 7px;
         font-size:.7rem;font-weight:900;margin-left:4px"></span>
     </a>
     <a class="nav-link" href="/admin/caja">💼 Caja</a>
-    <a class="nav-link" href="/admin/pagos_ganadores">💸 Pagar Ganadores</a>
+    <a class="nav-link" href="/admin/caja">💸 Pagar Ganadores</a>
     <a class="nav-link" href="/admin/cartillas">🎴 Cartillas</a>
     <a class="nav-link" href="/admin/emails">📧 Emails</a>
     <a class="nav-link" href="/admin/contacts">👥 Contactos</a>
@@ -155,7 +155,7 @@ tr:hover td{background:rgba(17,31,46,.5)}
   <div class="alert-bar alert-pending" id="alert-pending">
     <span style="font-size:1.2rem">⚠️</span>
     <span id="alert-pending-text"></span>
-    <a href="/admin/payments"
+    <a href="/admin/caja"
        style="color:var(--warning);margin-left:auto;font-size:.82rem;text-decoration:underline">
       Revisar pagos →
     </a>
@@ -269,7 +269,7 @@ tr:hover td{background:rgba(17,31,46,.5)}
       <div style="margin-top:8px;font-size:.75rem;color:var(--muted)">
         ⚠️ El código se genera en estado <strong>pendiente</strong>.
         Debes ir a
-        <a href="/admin/payments" style="color:var(--accent)">Pagos</a>
+        <a href="/admin/caja" style="color:var(--accent)">Pagos</a>
         y aprobarlo para que el jugador reciba su código por email.
       </div>
 
@@ -284,7 +284,7 @@ tr:hover td{background:rgba(17,31,46,.5)}
           <div id="lastInfo" style="font-size:.78rem;color:var(--muted);margin-top:4px"></div>
         </div>
         <button class="btn btn-ghost" onclick="copyCode()">📋 Copiar</button>
-        <a href="/admin/payments" class="btn btn-ok btn-sm"
+        <a href="/admin/caja" class="btn btn-ok btn-sm"
            style="text-decoration:none">
           💰 Ir a aprobar →
         </a>
@@ -318,7 +318,7 @@ tr:hover td{background:rgba(17,31,46,.5)}
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
           <a href="/admin/game" class="btn btn-ghost btn-sm"
              style="text-decoration:none">🎮 Control juego</a>
-          <a href="/admin/payments" class="btn btn-ghost btn-sm"
+          <a href="/admin/caja" class="btn btn-ghost btn-sm"
              style="text-decoration:none">💰 Ver pagos</a>
           <a href="/admin/caja" class="btn btn-ghost btn-sm"
              style="text-decoration:none">💼 Caja</a>

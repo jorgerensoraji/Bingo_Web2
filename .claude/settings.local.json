@@ -11,7 +11,24 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(wc:*)",
       "Bash(python -c \"import ast, sys; ast.parse\\(open\\('app.py',encoding='utf-8'\\).read\\(\\)\\); print\\('app.py OK'\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py',encoding='utf-8'\\).read\\(\\)\\); print\\('app.py OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py',encoding='utf-8'\\).read\\(\\)\\); print\\('app.py OK'\\)\")",
+      "Bash(curl -s \"https://bingo-web2.onrender.com/api/bingo_types\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s \"https://bingo-web2.onrender.com/api/sessions/upcoming\")",
+      "Bash(curl -sv \"https://bingo-web2.onrender.com/api/bingo_types\")",
+      "Bash(curl -s \"https://bingo-web2.onrender.com/cartillas\")",
+      "Bash(curl -s \"https://bingo-web2.onrender.com/api/config\")",
+      "Bash(curl -s \"https://bingo-web2.onrender.com/api/state\")",
+      "Bash(python -m json.tool)",
+      "Bash(grep -n \"mc-badge\\\\|mc-claim\\\\|glowBingo\\\\|glowLinea\" static/css/*.css templates/index.html)",
+      "Bash(python -c ':*)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\); print\\('app.py syntax OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('app.py syntax OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('models.py', encoding='utf-8'\\).read\\(\\)\\); print\\('models.py syntax OK'\\)\")",
+      "Bash(grep -v \"^\\\\s*//\")",
+      "Bash(ls templates/admin_*)",
+      "Bash(python -c \"from security import totp_new_secret; print\\(totp_new_secret\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
     ]
   }
 }
