@@ -3221,7 +3221,7 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     ]
     return "\n".join(lines)
 
-TWILIO_WA_TEMPLATE_SID = "HXf59461c2ee985716307f77e316fdc692"
+TWILIO_WA_TEMPLATE_SID = "HX57b3e729f20e7c5212f722d1890a1246"
 
 def enviar_whatsapp(to_number: str, body: str, content_sid: str = None, content_variables: dict = None):
     """Send a WhatsApp message via Twilio. Returns (ok, error_str).
