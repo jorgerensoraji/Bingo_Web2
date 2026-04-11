@@ -3394,13 +3394,18 @@ def api_whatsapp_broadcast_session(sid):
     dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
     url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
 
+    is_sandbox = "14155238886" in TWILIO_WA_FROM
+
     sent = 0; failed = 0; errors = []
     for phone, nombre in phone_names.items():
-        ok, err = enviar_whatsapp(
-            phone, "",
-            content_sid=TWILIO_WA_TEMPLATE_SID,
-            content_variables={"1": nombre, "2": dt_str, "3": url_cartillas}
-        )
+        if is_sandbox:
+            ok, err = enviar_whatsapp(phone, body)
+        else:
+            ok, err = enviar_whatsapp(
+                phone, "",
+                content_sid=TWILIO_WA_TEMPLATE_SID,
+                content_variables={"1": nombre, "2": dt_str, "3": url_cartillas}
+            )
         if ok:
             sent += 1
         else:
