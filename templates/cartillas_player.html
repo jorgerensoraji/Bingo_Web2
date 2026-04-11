@@ -1185,11 +1185,31 @@ function saveMyCartilla(cid, sid) {
   } catch(e) {}
 }
 
-function loadMyCartillas() {
+async function loadMyCartillas() {
   const listEl=document.getElementById('mylist');
   if(!listEl) return;
   let arr=[];
   try{arr=JSON.parse(localStorage.getItem('my_cartillas')||'[]');}catch(e){}
+  if(!arr.length){
+    listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+    return;
+  }
+  // Verify each cartilla still exists in DB, remove deleted ones from localStorage
+  const checks = await Promise.all(
+    arr.map(entry => {
+      const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
+      return fetch(`/api/cartilla/${cid}`).then(r=>({id:cid,ok:r.ok})).catch(()=>({id:cid,ok:false}));
+    })
+  );
+  const validIds = new Set(checks.filter(x=>x.ok).map(x=>x.id));
+  const validArr = arr.filter(e => {
+    const cid = (typeof e === 'object' && e !== null) ? e.id : e;
+    return validIds.has(cid);
+  });
+  if(validArr.length !== arr.length){
+    localStorage.setItem('my_cartillas', JSON.stringify(validArr));
+    arr = validArr;
+  }
   if(!arr.length){
     listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
     return;
