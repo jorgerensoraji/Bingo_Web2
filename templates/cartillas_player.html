@@ -741,7 +741,7 @@ async function enviarSolicitud() {
     localStorage.setItem('bingo_last_email', email);
     localStorage.setItem('bingo_yape_plin', yape_plin);
 
-    showEstadoEsperando(email, method);
+    showEstadoEsperando(email, method, nombres, celular);
     showToast('✅ Solicitud enviada. Revisa tu email.');
 
     // Iniciar polling para detectar cuando el admin aprueba
@@ -754,9 +754,12 @@ async function enviarSolicitud() {
   }
 }
 
-function showEstadoEsperando(email, method) {
+function showEstadoEsperando(email, method, nombres, celular) {
   const el = document.getElementById('status-display');
   const esEfectivo = method === 'efectivo';
+  const waNumber = '15559237702';
+  const waMsg = encodeURIComponent(`Hola, me registré al Bingo Gana Peru. Mi nombre es ${nombres || ''}.`);
+  const waLink = `https://wa.me/${waNumber}?text=${waMsg}`;
   el.innerHTML = `
     <div class="status-card pst-pending_review">
       <div class="status-icon pulse">⏳</div>
@@ -772,6 +775,20 @@ function showEstadoEsperando(email, method) {
           <strong style="color:var(--warning)">¿Ya te llegó el código?</strong>
           Ingrésalo abajo para continuar.
         </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:12px;text-align:center">
+      <div style="font-weight:700;margin-bottom:8px">📲 Recibe notificaciones por WhatsApp</div>
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:12px">
+        Toca el botón para enviarnos un mensaje y activar las notificaciones de la sesión.
+      </div>
+      <a href="${waLink}" target="_blank"
+         style="display:inline-block;background:#25D366;color:#fff;font-weight:700;
+                padding:10px 24px;border-radius:10px;text-decoration:none;font-size:.95rem">
+        💬 Confirmar por WhatsApp
+      </a>
+      <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">
+        ¿No tienes WhatsApp? No te preocupes, recibirás notificaciones por email.
       </div>
     </div>`;
 }
