@@ -3221,15 +3221,29 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     ]
     return "\n".join(lines)
 
-def enviar_whatsapp(to_number: str, body: str):
-    """Send a WhatsApp message via Twilio. Returns (ok, error_str)."""
+TWILIO_WA_TEMPLATE_SID = "HXf59461c2ee985716307f77e316fdc692"
+
+def enviar_whatsapp(to_number: str, body: str, content_sid: str = None, content_variables: dict = None):
+    """Send a WhatsApp message via Twilio. Returns (ok, error_str).
+    If content_sid and content_variables are provided, sends a template message.
+    Otherwise sends a freeform message (only valid within 24h session window).
+    """
     if not TWILIO_SID or not TWILIO_TOKEN or not TWILIO_WA_FROM:
         return False, "Twilio no configurado"
     try:
+        import json
         from twilio.rest import Client
         client = Client(TWILIO_SID, TWILIO_TOKEN)
         wa_to  = f"whatsapp:{to_number}" if not to_number.startswith("whatsapp:") else to_number
-        client.messages.create(from_=TWILIO_WA_FROM, to=wa_to, body=body)
+        if content_sid and content_variables:
+            client.messages.create(
+                from_=TWILIO_WA_FROM,
+                to=wa_to,
+                content_sid=content_sid,
+                content_variables=json.dumps(content_variables)
+            )
+        else:
+            client.messages.create(from_=TWILIO_WA_FROM, to=wa_to, body=body)
         return True, ""
     except Exception as e:
         return False, str(e)
@@ -3254,24 +3268,34 @@ def api_whatsapp_broadcast_session(sid):
     url_base   = request.host_url.rstrip("/")
     body       = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info)
 
-    # Collect all unique phone numbers (players + manual contacts)
-    phones = set()
+    # Collect unique phone numbers with names (players + manual contacts)
+    phone_names = {}  # phone -> first name
     with db_session() as db:
-        v_nums = [r.celular for r in db.query(Voucher.celular).filter(
+        v_rows = db.query(Voucher.celular, Voucher.nombres).filter(
             Voucher.celular != "", Voucher.celular.isnot(None)
-        ).distinct().all()]
-        c_nums = [r.phone for r in db.query(Contact.phone).filter(
+        ).all()
+        c_rows = db.query(Contact.phone, Contact.nombre).filter(
             Contact.phone != "", Contact.phone.isnot(None)
-        ).all()]
+        ).all()
 
-    for raw in v_nums + c_nums:
+    all_rows = [(r.celular, r.nombres) for r in v_rows] + [(r.phone, r.nombre) for r in c_rows]
+    for raw, name in all_rows:
         normalized = _normalize_phone(raw or "", TWILIO_COUNTRY)
         if normalized and len(normalized) >= 8:
-            phones.add(normalized)
+            if normalized not in phone_names:
+                phone_names[normalized] = (name or "").split()[0] if (name or "").strip() else "amigo/a"
+
+    dt_raw  = s.get("datetime_iso", "")
+    dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
+    url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
 
     sent = 0; failed = 0; errors = []
-    for phone in phones:
-        ok, err = enviar_whatsapp(phone, body)
+    for phone, nombre in phone_names.items():
+        ok, err = enviar_whatsapp(
+            phone, "",
+            content_sid=TWILIO_WA_TEMPLATE_SID,
+            content_variables={"1": nombre, "2": dt_str, "3": url_cartillas}
+        )
         if ok:
             sent += 1
         else:
