@@ -696,7 +696,7 @@ async function enviarSolicitud() {
 
   if (!nombres)                { showToast('⚠️ Ingresa tu nombre'); return; }
   if (!email || !email.includes('@')) { showToast('⚠️ Ingresa un email válido'); return; }
-  if (!rawPhone && !isFree)    { showToast('⚠️ Ingresa tu número de celular/WhatsApp'); return; }
+  if (!rawPhone)               { showToast('⚠️ Ingresa tu número de celular/WhatsApp'); return; }
   if (!terms_accepted)         { showToast('⚠️ Debes aceptar los términos y condiciones'); return; }
   if (!method && !isFree)      { showToast('⚠️ Elige un método de pago'); return; }
 
