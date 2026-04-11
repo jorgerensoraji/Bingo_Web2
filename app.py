@@ -1384,9 +1384,9 @@ def api_player_solicitar():
             bingo_type=bingo_type, bingo_nombre=btype["nombre"],
             precio=btype["precio"], session_id=session_id,
             payment_method=method or "gratis", payment_ref=ref,
-            payment_status="manual_approved" if is_free else "pending_review",
+            payment_status="pending_review",
             payment_submitted_at=now,
-            approved_at=now if is_free else None,
+            approved_at=None,
             created=now,
             creado_por="jugador",
         )
@@ -1395,24 +1395,12 @@ def api_player_solicitar():
         v_dict = v.to_dict()
 
     if email:
-        url_base = request.host_url.rstrip("/")
-        if is_free:
-            asunto = f"🎱 Tu código para {btype['nombre']} — Bingo Pro"
-            ok, err = enviar_email(email, asunto, _email_codigo_voucher(v_dict, url_base))
-            if ok:
-                with db_session() as db:
-                    v2 = db.query(Voucher).filter_by(code=code).first()
-                    if v2:
-                        v2.email_codigo_enviado = True
-                        v2.email_enviado_at = datetime.now().isoformat()
-        else:
-            asunto = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
-            ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
+        asunto = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
+        ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
         if not ok:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
-    msg = "¡Registro exitoso! Revisa tu email — te enviamos tu código de cartilla." if is_free \
-          else "Solicitud registrada. Recibirás tu código cuando el admin confirme el pago."
+    msg = "Solicitud registrada. Recibirás tu código cuando el admin confirme tu registro."
     return jsonify({"status": "ok", "message": msg, "email": email})
 
 # ─── Vouchers admin ───────────────────────────────────────────────────────────
