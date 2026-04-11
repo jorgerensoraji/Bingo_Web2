@@ -3571,8 +3571,8 @@ def api_admin_create_bingo_type():
         precio = float(data.get("precio", 0))
     except (ValueError, TypeError):
         precio = 0
-    if precio <= 0:
-        return jsonify({"error": "El precio debe ser mayor a 0"}), 400
+    if precio < 0:
+        return jsonify({"error": "El precio no puede ser negativo"}), 400
 
     try:
         prize_pct = round(float(data.get("prize_pct", 0.55)), 4)
@@ -3624,8 +3624,8 @@ def api_admin_update_bingo_type(bid):
             bt.nombre = sanitize_text(str(data["nombre"])).strip()
         if "precio" in data:
             p = float(data["precio"])
-            if p <= 0:
-                return jsonify({"error": "El precio debe ser mayor a 0"}), 400
+            if p < 0:
+                return jsonify({"error": "El precio no puede ser negativo"}), 400
             bt.precio = p
         if "color"         in data: bt.color         = str(data["color"])
         if "emoji"         in data: bt.emoji         = str(data["emoji"])
