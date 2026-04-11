@@ -255,6 +255,7 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
     </div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin:0">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
 def _email_pago_recibido(voucher_dict: dict, plain_pin: str = "") -> str:
@@ -277,6 +278,7 @@ def _email_pago_recibido(voucher_dict: dict, plain_pin: str = "") -> str:
     </div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin-top:20px">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
 def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, segundos: int) -> str:
@@ -303,6 +305,7 @@ def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, se
     <div>🌐 URL: <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a></div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.72rem;margin-top:20px">Bingo Pro Web v8.0 · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
 def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
@@ -377,6 +380,7 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     </div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.72rem;margin-top:20px">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
 # ─── Rate limiting (unchanged) ────────────────────────────────────────────────
@@ -2977,7 +2981,8 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
 
   <p style="text-align:center;color:#1a3148;font-size:.72rem;margin:0">
     Bingo Pro Web v9.0 · {EMAIL_NOMBRE}<br>
-    <span style="color:#0f2030">Recibiste este email porque participaste en un Bingo anterior.</span>
+    <span style="color:#0f2030">Recibiste este email porque participaste en un Bingo anterior.</span><br>
+    <span style="color:#0f2030">Por favor no respondas a este correo — esta dirección no está monitoreada.</span>
   </p>
 
 </div></body></html>"""
