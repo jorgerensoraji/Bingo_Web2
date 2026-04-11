@@ -1358,6 +1358,17 @@ def api_player_solicitar():
     if method != "efectivo" and ref and _is_duplicate_payment_ref(ref, method, session_id):
         return jsonify({"error": "duplicate_reference",
                         "message": "Este número de operación ya fue registrado."}), 400
+    # Check if same email already has a voucher for this session
+    if email and session_id:
+        with db_session() as db:
+            existing = db.query(Voucher).filter(
+                Voucher.email == email,
+                Voucher.session_id == session_id,
+                Voucher.payment_status.in_(["pending_review", "manual_approved", "approved", "pending"])
+            ).first()
+            if existing:
+                return jsonify({"error": "duplicate_email",
+                                "message": "Ya tienes una solicitud registrada para esta sesión."}), 400
 
     btype = BINGO_TYPES[bingo_type]
     v_dict = {}
@@ -3230,6 +3241,27 @@ def api_contact_delete(cid):
         db.delete(c)
         db.commit()
     return jsonify({"status": "ok"})
+
+@app.route("/api/admin/contacts/dedup", methods=["POST"])
+def api_contacts_dedup():
+    """Remove contacts whose email or phone already exists in the Voucher table."""
+    chk = admin_required()
+    if chk: return chk
+    removed = 0
+    with db_session() as db:
+        voucher_emails = {(v.email or "").strip().lower()
+                         for v in db.query(Voucher.email).all() if v.email}
+        voucher_phones = {(v.celular or "").strip()
+                         for v in db.query(Voucher.celular).all() if v.celular}
+        contacts = db.query(Contact).all()
+        for c in contacts:
+            c_email = (c.email or "").strip().lower()
+            c_phone = (c.phone or "").strip()
+            if (c_email and c_email in voucher_emails) or \
+               (c_phone and c_phone in voucher_phones):
+                db.delete(c)
+                removed += 1
+    return jsonify({"removed": removed})
 
 @app.route("/api/admin/contacts/import", methods=["POST"])
 def api_contacts_import():

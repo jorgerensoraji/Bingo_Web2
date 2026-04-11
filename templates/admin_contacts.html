@@ -139,6 +139,7 @@ textarea.inp{width:100%;resize:vertical;min-height:120px;box-sizing:border-box;f
         <input class="inp" id="search" placeholder="🔍 Buscar…" oninput="filterTable()"
                style="min-width:180px">
         <button class="btn btn-ghost" onclick="exportCSV()">⬇️ Exportar CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="dedupContacts()" title="Elimina contactos que ya existen como jugadores registrados">🧹 Limpiar duplicados</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -294,6 +295,14 @@ function exportCSV() {
 async function logout() {
   await fetch('/api/admin/logout', { method: 'POST' });
   location.href = '/admin/login';
+}
+
+async function dedupContacts() {
+  if (!confirm('¿Eliminar contactos que ya están registrados como jugadores (mismo email o teléfono)?')) return;
+  const res  = await fetch('/api/admin/contacts/dedup', { method: 'POST' });
+  const data = await res.json();
+  alert(`✅ Se eliminaron ${data.removed} contactos duplicados.`);
+  loadContacts();
 }
 
 loadContacts();

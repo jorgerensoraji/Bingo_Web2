@@ -725,6 +725,7 @@ async function enviarSolicitud() {
         invalid_session:     '⚠️ La sesión seleccionada no existe.',
         bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con la sesión.'),
         rate_limited:        '⏳ Demasiados intentos. Espera un momento.',
+        duplicate_email:     '⚠️ Ya tienes una solicitud registrada para esta sesión.',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);
       btn.disabled    = false;

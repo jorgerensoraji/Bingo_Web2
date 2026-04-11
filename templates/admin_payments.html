@@ -354,8 +354,11 @@ async function checkEmailStatus() {
 
 // ── Detectar referencias duplicadas ───────────────────
 function detectDuplicates(vouchers) {
-  const refMap = {};
+  const refMap   = {};
+  const emailMap = {};
   dupRefs = new Set();
+
+  // Duplicate payment references
   vouchers.forEach(v => {
     const ref = (v.payment_ref||'').trim().toUpperCase();
     const met = v.payment_method||'';
@@ -365,6 +368,18 @@ function detectDuplicates(vouchers) {
     refMap[key].push(v.code);
   });
   Object.entries(refMap).forEach(([,codes]) => {
+    if (codes.length > 1) codes.forEach(c => dupRefs.add(c));
+  });
+
+  // Duplicate person (same email + session)
+  vouchers.forEach(v => {
+    const em = (v.email||'').trim().toLowerCase();
+    if (!em) return;
+    const key = `${em}:${v.session_id||''}`;
+    if (!emailMap[key]) emailMap[key] = [];
+    emailMap[key].push(v.code);
+  });
+  Object.entries(emailMap).forEach(([,codes]) => {
     if (codes.length > 1) codes.forEach(c => dupRefs.add(c));
   });
 }
