@@ -1394,6 +1394,28 @@ def api_player_solicitar():
         db.flush()
         v_dict = v.to_dict()
 
+        # Auto-save player to contacts for future broadcasts (upsert by email/phone)
+        phone_e164 = celular if celular and celular.startswith("+") else (f"+{celular}" if celular else "")
+        existing = None
+        if email:
+            existing = db.query(Contact).filter(Contact.email == email).first()
+        if not existing and phone_e164:
+            existing = db.query(Contact).filter(Contact.phone == phone_e164).first()
+        if existing:
+            if nombre and not existing.nombre:
+                existing.nombre = f"{nombres} {apellidos}".strip()
+            if email and not existing.email:
+                existing.email = email
+            if phone_e164 and not existing.phone:
+                existing.phone = phone_e164
+        else:
+            db.add(Contact(
+                nombre=f"{nombres} {apellidos}".strip(),
+                email=email or "",
+                phone=phone_e164,
+                created=now,
+            ))
+
     if email:
         asunto = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
         ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
