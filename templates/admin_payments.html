@@ -217,6 +217,32 @@ td{padding:10px 12px;vertical-align:middle}
     </div>
   </div>
 
+  <!-- Reembolsos -->
+  <div class="card" style="margin-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <h2 style="margin:0;font-size:1.1rem">↩️ Reembolsos Pendientes</h2>
+      <button class="btn btn-ghost btn-sm" onclick="loadReimbursements()">🔄 Actualizar</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Sesión</th>
+            <th>Jugador</th>
+            <th>Email</th>
+            <th>Yape/Plin</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tb-reimb">
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <!-- Modal de confirmación de aprobación -->
@@ -662,6 +688,91 @@ async function logout() {
 checkEmailStatus();
 refresh();
 setInterval(refresh, 6000);
+loadReimbursements();
+
+// ── Reembolsos ─────────────────────────────────────────
+let reimbData = [];
+
+async function loadReimbursements() {
+  try {
+    const res  = await fetch('/api/admin/reimbursements');
+    const data = await res.json();
+    reimbData  = data.reimbursements || [];
+    renderReimbursements();
+  } catch(e) { console.error(e); }
+}
+
+function renderReimbursements() {
+  const tb = document.getElementById('tb-reimb');
+  const pending = reimbData.filter(r => r.status === 'pending');
+  if (!reimbData.length) {
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Sin reembolsos registrados</td></tr>`;
+    return;
+  }
+  tb.innerHTML = reimbData.map(r => {
+    const isPaid = r.status === 'paid';
+    return `<tr style="${isPaid ? 'opacity:.55' : ''}">
+      <td><span style="font-size:.78rem;color:var(--muted)">${esc(r.session_nombre)}</span></td>
+      <td><strong>${esc(r.nombre)} ${esc(r.apellidos)}</strong></td>
+      <td style="font-size:.78rem">${esc(r.email)}</td>
+      <td style="color:var(--accent)">${esc(r.yape_plin)}</td>
+      <td><strong style="color:var(--accent)">S/. ${r.amount.toFixed(2)}</strong></td>
+      <td>${isPaid
+        ? `<span style="color:#27ae60;font-weight:700">✅ Pagado</span><br><span style="font-size:.72rem;color:var(--muted)">${esc(r.paid_at||'')}</span>`
+        : `<span style="color:var(--warning);font-weight:700">⏳ Pendiente</span>`
+      }</td>
+      <td>${isPaid ? '' : `<button class="btn btn-ok btn-sm" onclick="openReimbModal(${r.id})">💸 Marcar pagado</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+let currentReimbId = null;
+function openReimbModal(id) {
+  currentReimbId = id;
+  const r = reimbData.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('reimb-detail').innerHTML =
+    `<strong>${esc(r.nombre)} ${esc(r.apellidos)}</strong> — S/. ${r.amount.toFixed(2)}<br>
+     Yape/Plin: <strong style="color:var(--accent)">${esc(r.yape_plin)}</strong>`;
+  document.getElementById('reimb-ref').value  = '';
+  document.getElementById('reimb-note').value = '';
+  document.getElementById('modal-reimb').style.display = 'flex';
+}
+function closeReimbModal() {
+  document.getElementById('modal-reimb').style.display = 'none';
+}
+async function confirmReimb() {
+  const ref  = document.getElementById('reimb-ref').value.trim();
+  const note = document.getElementById('reimb-note').value.trim();
+  const res  = await fetch(`/api/admin/reimbursements/${currentReimbId}/pay`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ ref, note }),
+  });
+  if (res.ok) { closeReimbModal(); loadReimbursements(); }
+  else { alert('Error al registrar reembolso'); }
+}
 </script>
+
+<!-- Modal reembolso -->
+<div class="modal-back" id="modal-reimb" style="display:none">
+  <div class="modal-box">
+    <h3>💸 Registrar Reembolso</h3>
+    <div id="reimb-detail" style="margin-bottom:14px;font-size:.9rem"></div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Referencia (opcional)</label>
+      <input class="inp" id="reimb-ref" placeholder="Nro. operación Yape/Plin" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Nota (opcional)</label>
+      <input class="inp" id="reimb-note" placeholder="Ej: Enviado por Yape" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeReimbModal()">Cancelar</button>
+      <button class="btn btn-ok" onclick="confirmReimb()">✅ Confirmar reembolso</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -66,7 +66,7 @@ import qrcode
 
 
 from database import init_db, SessionLocal
-from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact
+from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact, Reimbursement
 
 # ── Cargar .env ───────────────────────────────────────────────────────────────
 try:
@@ -305,6 +305,32 @@ def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, se
     <div>🌐 URL: <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a></div>
   </div>
   <p style="text-align:center;color:#1a3148;font-size:.72rem;margin-top:20px">Bingo Pro Web v8.0 · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
+</div></body></html>"""
+
+def _email_sesion_cancelada(voucher_dict: dict, session_nombre: str, amount: float) -> str:
+    nombre = voucher_dict.get("nombres", "Jugador")
+    return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
+<div style="max-width:520px;margin:0 auto;padding:32px 24px">
+  <div style="text-align:center;margin-bottom:28px">
+    <h1 style="font-size:2rem;color:#00e5b4;letter-spacing:3px;margin:0">🎱 BINGO PRO</h1>
+  </div>
+  <div style="background:#0d1825;border:1px solid #1a3148;border-radius:14px;padding:24px">
+    <p style="margin:0 0 12px">Hola <strong style="color:#ddeeff">{nombre}</strong>,</p>
+    <p style="color:#ddeeff;margin:0 0 16px">
+      Lamentamos informarte que la sesión <strong style="color:#f6c343">{session_nombre}</strong> ha sido cancelada.
+    </p>
+    <div style="background:#111f2e;border-radius:10px;padding:14px;font-size:.85rem;color:#ddeeff;margin-bottom:16px">
+      Tu pago de <strong style="color:#00e5b4">S/. {amount:.2f}</strong> será reembolsado a tu número Yape/Plin:
+      <br><strong style="color:#f6c343">{voucher_dict.get('yape_plin','')}</strong>
+    </div>
+    <div style="background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25);border-radius:10px;
+                padding:12px;font-size:.82rem;color:#e74c3c">
+      Si no recibes el reembolso en 48 horas, contáctanos.
+    </div>
+  </div>
+  <p style="text-align:center;color:#1a3148;font-size:.75rem;margin-top:20px">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
   <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
@@ -2116,6 +2142,60 @@ def api_finish_session(sid):
             game.save_to_db()
     return jsonify({"status": "ok"})
 
+def _cancel_session_cleanup(db, sid: str):
+    """Create reimbursements, delete cartillas, send notifications for a cancelled session."""
+    sx = db.query(BingoSession).filter_by(id=sid).first()
+    if not sx:
+        return
+    session_nombre = sx.bingo_nombre or sid
+
+    # Find approved vouchers that need reimbursement
+    vouchers = db.query(Voucher).filter(
+        Voucher.session_id == sid,
+        Voucher.payment_status.in_(["manual_approved", "approved"])
+    ).all()
+
+    url_base = ""
+    try:
+        from flask import request as freq
+        url_base = freq.host_url.rstrip("/")
+    except Exception:
+        pass
+
+    for v in vouchers:
+        # Skip if reimbursement already exists for this voucher
+        existing = db.query(Reimbursement).filter_by(voucher_code=v.code, session_id=sid).first()
+        if existing:
+            continue
+        btype = BINGO_TYPES.get(v.bingo_type, BINGO_TYPES["1sol"])
+        amount = btype.get("precio", v.precio or 0.0)
+        r = Reimbursement(
+            session_id=sid,
+            session_nombre=session_nombre,
+            voucher_code=v.code,
+            nombre=v.nombres or "",
+            apellidos=v.apellidos or "",
+            email=v.email or "",
+            celular=v.celular or "",
+            yape_plin=v.yape_plin or "",
+            amount=amount,
+            status="pending",
+            created=datetime.now().isoformat(timespec="seconds"),
+        )
+        db.add(r)
+        # Send email notification
+        if v.email:
+            v_dict = v.to_dict()
+            try:
+                enviar_email(v.email,
+                             f"Sesión cancelada — {session_nombre} | Bingo Pro",
+                             _email_sesion_cancelada(v_dict, session_nombre, amount))
+            except Exception as e:
+                print(f"[WARN] Email reembolso no enviado a {v.email}: {e}")
+
+    # Delete cartillas linked to this session
+    db.query(Cartilla).filter_by(session_id=sid).delete()
+
 @app.route("/api/admin/session/<sid>/cancel", methods=["POST"])
 def api_cancel_session(sid):
     chk = admin_required()
@@ -2124,6 +2204,7 @@ def api_cancel_session(sid):
         sx = db.query(BingoSession).filter_by(id=sid).first()
         if not sx:
             return jsonify({"error": "not found"}), 404
+        _cancel_session_cleanup(db, sid)
         sx.status = "cancelled"
     # Limpiar game state si era la sesión activa
     with game_lock:
@@ -2143,6 +2224,7 @@ def api_delete_session(sid):
         if sx.status in ("active", "preparing"):
             return jsonify({"error": "cannot_delete_active",
                             "message": "No se puede eliminar una sesión activa o en countdown."}), 400
+        _cancel_session_cleanup(db, sid)
         db.delete(sx)
     return jsonify({"status": "ok"})
 
@@ -3083,6 +3165,29 @@ def admin_contacts_page():
     chk = admin_required()
     if chk: return chk
     return render_template("admin_contacts.html")
+
+@app.route("/api/admin/reimbursements", methods=["GET"])
+def api_reimbursements():
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        rows = db.query(Reimbursement).order_by(Reimbursement.created.desc()).all()
+        return jsonify({"reimbursements": [r.to_dict() for r in rows]})
+
+@app.route("/api/admin/reimbursements/<int:rid>/pay", methods=["POST"])
+def api_pay_reimbursement(rid):
+    chk = admin_required()
+    if chk: return chk
+    data = request.get_json() or {}
+    with db_session() as db:
+        r = db.query(Reimbursement).filter_by(id=rid).first()
+        if not r:
+            return jsonify({"error": "not found"}), 404
+        r.status   = "paid"
+        r.paid_at  = datetime.now().isoformat(timespec="seconds")
+        r.paid_ref  = (data.get("ref") or "").strip()[:80]
+        r.paid_note = (data.get("note") or "").strip()[:200]
+    return jsonify({"status": "ok"})
 
 @app.route("/api/admin/contacts", methods=["GET"])
 def api_contacts_list():

@@ -235,6 +235,46 @@ class BingoTypeDB(Base):
         }
 
 
+class Reimbursement(Base):
+    """Players owed a refund when a session is cancelled or deleted."""
+    __tablename__ = "reimbursements"
+
+    id              = Column(Integer,     primary_key=True, autoincrement=True)
+    session_id      = Column(String(20),  default="", index=True)
+    session_nombre  = Column(String(60),  default="")
+    voucher_code    = Column(String(10),  default="")
+    nombre          = Column(String(60),  default="")
+    apellidos       = Column(String(60),  default="")
+    email           = Column(String(100), default="")
+    celular         = Column(String(20),  default="")
+    yape_plin       = Column(String(20),  default="")
+    amount          = Column(Float,       default=0.0)
+    status          = Column(String(20),  default="pending")  # pending / paid
+    created         = Column(String(30),  default="")
+    paid_at         = Column(String(30),  default="")
+    paid_ref        = Column(String(80),  default="")
+    paid_note       = Column(String(200), default="")
+
+    def to_dict(self) -> dict:
+        return {
+            "id":             self.id,
+            "session_id":     self.session_id    or "",
+            "session_nombre": self.session_nombre or "",
+            "voucher_code":   self.voucher_code  or "",
+            "nombre":         self.nombre        or "",
+            "apellidos":      self.apellidos     or "",
+            "email":          self.email         or "",
+            "celular":        self.celular        or "",
+            "yape_plin":      self.yape_plin      or "",
+            "amount":         self.amount         or 0.0,
+            "status":         self.status         or "pending",
+            "created":        self.created        or "",
+            "paid_at":        self.paid_at        or "",
+            "paid_ref":       self.paid_ref       or "",
+            "paid_note":      self.paid_note      or "",
+        }
+
+
 class Contact(Base):
     """Manual contacts for broadcast — people not yet in the Voucher table."""
     __tablename__ = "contacts"
