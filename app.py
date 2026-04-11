@@ -2998,32 +2998,34 @@ def api_admin_emails():
             Voucher.email, Voucher.nombres, Voucher.apellidos,
             Voucher.payment_status, Voucher.created,
         ).filter(Voucher.email != "").order_by(Voucher.created.desc()).all()
-        c_rows = db.query(Contact).filter(Contact.email != "").all()
+        v_rows = [(r.email, r.nombres, r.apellidos, r.payment_status, r.created) for r in v_rows]
+        c_rows = db.query(Contact.email, Contact.nombre, Contact.created).filter(Contact.email != "").all()
+        c_rows = [(r.email, r.nombre, r.created) for r in c_rows]
 
     seen = {}
-    for r in v_rows:
-        e = (r.email or "").strip().lower()
+    for email, nombres, apellidos, payment_status, created in v_rows:
+        e = (email or "").strip().lower()
         if not e: continue
         if e not in seen:
             seen[e] = {
                 "email":   e,
-                "nombre":  f"{r.nombres or ''} {r.apellidos or ''}".strip(),
-                "status":  r.payment_status,
-                "created": r.created,
+                "nombre":  f"{nombres or ''} {apellidos or ''}".strip(),
+                "status":  payment_status,
+                "created": created,
                 "total":   1,
                 "source":  "player",
             }
         else:
             seen[e]["total"] += 1
-    for c in c_rows:
-        e = (c.email or "").strip().lower()
+    for email, nombre, created in c_rows:
+        e = (email or "").strip().lower()
         if not e: continue
         if e not in seen:
             seen[e] = {
                 "email":   e,
-                "nombre":  c.nombre or "",
+                "nombre":  nombre or "",
                 "status":  "contact",
-                "created": c.created,
+                "created": created,
                 "total":   1,
                 "source":  "contact",
             }
