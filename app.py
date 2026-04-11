@@ -3050,11 +3050,9 @@ def api_broadcast_session(sid):
 
     # Collect all unique emails (players + manual contacts)
     with db_session() as db:
-        v_rows = db.query(Voucher.email).filter(Voucher.email != "").distinct().all()
-        c_rows = db.query(Contact.email).filter(Contact.email != "").all()
-    emails = list({(r.email or "").strip().lower()
-                   for r in list(v_rows) + list(c_rows)
-                   if r.email and r.email.strip()})
+        v_emails = [r.email for r in db.query(Voucher.email).filter(Voucher.email != "").distinct().all()]
+        c_emails = [r.email for r in db.query(Contact.email).filter(Contact.email != "").all()]
+    emails = list({(e or "").strip().lower() for e in v_emails + c_emails if e and e.strip()})
 
     sent = 0; failed = 0; errors = []
     for email in emails:
@@ -3255,16 +3253,16 @@ def api_whatsapp_broadcast_session(sid):
     body       = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info)
 
     # Collect all unique phone numbers (players + manual contacts)
-    with db_session() as db:
-        v_rows = db.query(Voucher.celular).filter(
-            Voucher.celular != "", Voucher.celular.isnot(None)
-        ).distinct().all()
-        c_rows = db.query(Contact.phone).filter(
-            Contact.phone != "", Contact.phone.isnot(None)
-        ).all()
-
     phones = set()
-    for raw in [r.celular for r in v_rows] + [r.phone for r in c_rows]:
+    with db_session() as db:
+        v_nums = [r.celular for r in db.query(Voucher.celular).filter(
+            Voucher.celular != "", Voucher.celular.isnot(None)
+        ).distinct().all()]
+        c_nums = [r.phone for r in db.query(Contact.phone).filter(
+            Contact.phone != "", Contact.phone.isnot(None)
+        ).all()]
+
+    for raw in v_nums + c_nums:
         normalized = _normalize_phone(raw or "", TWILIO_COUNTRY)
         if normalized and len(normalized) >= 8:
             phones.add(normalized)
