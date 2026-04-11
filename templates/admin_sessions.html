@@ -805,6 +805,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                      font-weight:900;font-size:.9rem;cursor:pointer">
         📨 Email
       </button>
+      <button id="bc-all-btn" onclick="sendAll()"
+              style="padding:10px 24px;border:none;border-radius:10px;
+                     background:#7c3aed;color:#fff;font-family:'Outfit',sans-serif;
+                     font-weight:900;font-size:.9rem;cursor:pointer">
+        🚀 Enviar Todo
+      </button>
     </div>
   </div>
 </div>
@@ -917,6 +923,45 @@ async function sendWhatsApp() {
     showToast('❌ Error al enviar WhatsApp');
   }
   btn.disabled = false; btn.textContent = '📱 WhatsApp';
+}
+
+async function sendAll() {
+  if (!_bcSid) return;
+  const btn       = document.getElementById('bc-all-btn');
+  const extraInfo = document.getElementById('bc-extra').value.trim();
+  btn.disabled = true; btn.textContent = '⏳ Enviando…';
+  let emailResult = '', waResult = '';
+  try {
+    const res  = await fetch(`/api/admin/session/${_bcSid}/broadcast`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ extra_info: extraInfo }),
+    });
+    const data = await res.json();
+    emailResult = `📧 ${data.sent} emails`;
+    if (data.failed > 0) emailResult += ` (${data.failed} fallaron)`;
+  } catch(e) { emailResult = '📧 Error'; }
+
+  if (_waConfigured) {
+    try {
+      const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ extra_info: extraInfo }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        waResult = `📱 Error: ${data.message || data.error}`;
+      } else {
+        waResult = `📱 ${data.sent} WhatsApp`;
+        if (data.failed > 0) waResult += ` (${data.failed} fallaron)`;
+      }
+    } catch(e) { waResult = '📱 Error'; }
+  }
+
+  closeBroadcast();
+  showToast(`✅ ${emailResult}${waResult ? ' · ' + waResult : ''}`, 6000);
+  btn.disabled = false; btn.textContent = '🚀 Enviar Todo';
 }
 
 // Close modal on backdrop click
