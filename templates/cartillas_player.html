@@ -757,8 +757,8 @@ async function enviarSolicitud() {
 function showEstadoEsperando(email, method, nombres, celular) {
   const el = document.getElementById('status-display');
   const esEfectivo = method === 'efectivo';
-  const waNumber = '15559237702';
-  const waMsg = encodeURIComponent(`Hola, me registré al Bingo Gana Peru. Mi nombre es ${nombres || ''}.`);
+  const waNumber = '14155238886';
+  const waMsg = encodeURIComponent('join leaf-sides');
   const waLink = `https://wa.me/${waNumber}?text=${waMsg}`;
   el.innerHTML = `
     <div class="status-card pst-pending_review">
@@ -780,12 +780,12 @@ function showEstadoEsperando(email, method, nombres, celular) {
     <div style="margin-top:16px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:12px;text-align:center">
       <div style="font-weight:700;margin-bottom:8px">📲 Recibe notificaciones por WhatsApp</div>
       <div style="font-size:.85rem;color:var(--muted);margin-bottom:12px">
-        Toca el botón para enviarnos un mensaje y activar las notificaciones de la sesión.
+        Toca el botón — se abrirá WhatsApp con un mensaje listo. Solo presiona <strong>Enviar</strong>.
       </div>
       <a href="${waLink}" target="_blank"
          style="display:inline-block;background:#25D366;color:#fff;font-weight:700;
                 padding:10px 24px;border-radius:10px;text-decoration:none;font-size:.95rem">
-        💬 Confirmar por WhatsApp
+        💬 Activar notificaciones WhatsApp
       </a>
       <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">
         ¿No tienes WhatsApp? No te preocupes, recibirás notificaciones por email.
