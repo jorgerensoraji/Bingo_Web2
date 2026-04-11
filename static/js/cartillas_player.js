@@ -84,6 +84,22 @@ async function loadMyCartillas() {
     activeSid = sd.session_id || '';
   } catch(e) {}
 
+  // Verificar cuáles cartillas siguen existiendo en el servidor
+  const existChecks = await Promise.all(
+    arr.map(entry => fetch(`/api/cartilla/${entry.id}`).then(r => ({ id: entry.id, ok: r.ok })).catch(() => ({ id: entry.id, ok: false })))
+  );
+  const existSet = new Set(existChecks.filter(x => x.ok).map(x => x.id));
+  // Limpiar del localStorage las que ya no existen
+  const validArr = arr.filter(e => existSet.has(e.id));
+  if (validArr.length !== arr.length) {
+    localStorage.setItem('my_cartillas', JSON.stringify(validArr));
+    arr = validArr;
+  }
+  if (!arr.length) {
+    listEl.innerHTML = '<div style="color:var(--muted);margin-top:10px;">Aún no has generado cartillas.</div>';
+    return;
+  }
+
   listEl.innerHTML = arr.map(entry => {
     const cid = entry.id;
     const expired = activeSid && entry.session_id && entry.session_id !== activeSid;
