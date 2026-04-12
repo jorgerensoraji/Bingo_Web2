@@ -183,6 +183,19 @@ _chat_lock  = _threading.Lock()
 _chat_msgs  = []          # lista de dicts: {id, name, msg, ts, color}
 _chat_next_id = 1
 _CHAT_MAX   = 150         # máximo mensajes en memoria
+
+# ── In-memory email log (last 100 events) ────────────────
+_email_log       = []
+_email_log_lock  = threading.Lock()
+_EMAIL_LOG_MAX   = 100
+
+def _log_email_event(level: str, msg: str) -> None:
+    entry = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "msg": msg}
+    print(f"[EMAIL] [{level}] {msg}", flush=True)
+    with _email_log_lock:
+        _email_log.append(entry)
+        if len(_email_log) > _EMAIL_LOG_MAX:
+            _email_log.pop(0)
 _CHAT_COLORS = [
     "#00e5b4","#f6c343","#58d68d","#5dade2",
     "#a569bd","#ff8c42","#48c9b0","#f1948a",
@@ -408,15 +421,16 @@ def _send_cartilla_email_async(vinfo: dict, cartillas: list, url_base: str) -> N
                 attachments.append({"content": b64, "name": f"cartilla_{c['id']}.png"})
             html = _email_cartilla_generada(vinfo, cartillas, url_base)
             count = len(cartillas)
+            ids   = ", ".join(c["id"] for c in cartillas)
             subject = f"🎴 Tu{'s' if count>1 else ''} cartilla{'s' if count>1 else ''} de Bingo {'están listas' if count>1 else 'está lista'}"
             ok, err = enviar_email(vinfo["email"], subject, html, attachments)
-            if not ok:
-                print(f"[EMAIL CARTILLA] Error enviando a {vinfo['email']}: {err}", flush=True)
+            if ok:
+                _log_email_event("OK", f"Cartilla(s) [{ids}] enviada(s) a {vinfo['email']}")
             else:
-                print(f"[EMAIL CARTILLA] Enviado a {vinfo['email']} ({len(cartillas)} cartilla(s))", flush=True)
+                _log_email_event("ERROR", f"Fallo enviando cartilla(s) [{ids}] a {vinfo['email']}: {err}")
         except Exception as e:
             import traceback
-            print(f"[EMAIL CARTILLA] Excepción: {e}\n{traceback.format_exc()}", flush=True)
+            _log_email_event("EXCEPTION", f"{e} | {traceback.format_exc()}")
     threading.Thread(target=_do, daemon=True).start()
 
 def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
@@ -4154,6 +4168,47 @@ def whatsapp_incoming():
     from flask import Response
     twiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Message>¡Hola! Bingo Pro recibió tu mensaje. ✅</Message></Response>'
     return Response(twiml, mimetype="text/xml")
+
+@app.route("/admin/email_log")
+@require_admin
+def admin_email_log_page():
+    with _email_log_lock:
+        entries = list(reversed(_email_log))
+    rows = "".join(
+        f'<tr style="border-bottom:1px solid #1a3148">'
+        f'<td style="padding:8px 12px;color:#6a9ab8;white-space:nowrap">{e["ts"]}</td>'
+        f'<td style="padding:8px 12px;font-weight:700;color:{"#27ae60" if e["level"]=="OK" else "#e74c3c" if e["level"] in ("ERROR","EXCEPTION") else "#f6c343"}">{e["level"]}</td>'
+        f'<td style="padding:8px 12px;word-break:break-all">{e["msg"]}</td>'
+        f'</tr>'
+        for e in entries
+    ) or '<tr><td colspan="3" style="padding:20px;color:#6a9ab8;text-align:center">Sin eventos aún — genera una cartilla para ver los logs.</td></tr>'
+    return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Email Log — Bingo Pro</title>
+<style>
+body{{font-family:'Outfit',sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:20px}}
+h1{{color:#00e5b4;font-size:1.6rem;margin-bottom:4px}}
+p{{color:#6a9ab8;font-size:.85rem;margin-bottom:20px}}
+table{{width:100%;border-collapse:collapse;background:#0d1825;border:1px solid #1a3148;border-radius:10px;overflow:hidden}}
+thead th{{padding:10px 12px;text-align:left;background:#111f2e;color:#6a9ab8;font-size:.75rem;letter-spacing:2px;text-transform:uppercase}}
+a{{color:#00e5b4;text-decoration:none;font-size:.85rem}}
+.refresh{{display:inline-block;margin-bottom:16px;padding:8px 16px;background:#111f2e;border:1px solid #1a3148;border-radius:8px;color:#00e5b4;cursor:pointer;font-size:.85rem;text-decoration:none}}
+</style></head><body>
+<a href="/admin">← Volver al Admin</a>
+<h1 style="margin-top:16px">📧 Email Log</h1>
+<p>Últimos {len(entries)} eventos de email (más reciente primero). <a href="/admin/email_log" class="refresh">↻ Actualizar</a></p>
+<table>
+  <thead><tr><th>Fecha/Hora</th><th>Estado</th><th>Mensaje</th></tr></thead>
+  <tbody>{rows}</tbody>
+</table>
+</body></html>"""
+
+@app.route("/api/admin/email_log")
+@require_admin
+def api_admin_email_log():
+    with _email_log_lock:
+        entries = list(reversed(_email_log))
+    return jsonify({"log": entries})
 
 _startup()
 
