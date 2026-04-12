@@ -66,7 +66,7 @@ import qrcode
 
 
 from database import init_db, SessionLocal
-from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact, Reimbursement
+from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact, Reimbursement, Winner, _winner_prize
 
 # ── Cargar .env ───────────────────────────────────────────────────────────────
 try:
@@ -2168,6 +2168,56 @@ def api_finish_session(sid):
         sx.status       = "finished"
         sx.finished_at  = datetime.now().isoformat()
         sx.winners_final= json.dumps(wf, ensure_ascii=False)
+        # Write permanent Winner rows (INSERT OR IGNORE via merge-style)
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        for w in wf:
+            cid  = w.get("id", "") or w.get("cartilla_id", "")
+            tipo = w.get("tipo", "bingo")
+            if not cid:
+                continue
+            if tipo == "linea":
+                amt = float(w.get("linea_prize", 0) or 0)
+            elif tipo == "u":
+                amt = float(w.get("u_prize", 0) or 0)
+            elif tipo == "o":
+                amt = float(w.get("o_prize", 0) or 0)
+            else:
+                amt = float(w.get("prize", 0) or 0)
+            existing = db.query(Winner).filter_by(session_id=sid, cartilla_id=cid, tipo=tipo).first()
+            if existing:
+                existing.prize_amount = amt
+                existing.paid = bool(w.get("paid", False))
+                existing.paid_at = w.get("paid_at", "")
+                existing.paid_method = w.get("paid_method", "")
+                existing.paid_ref = w.get("paid_ref", "")
+                existing.paid_note = w.get("paid_note", "")
+            else:
+                db.add(Winner(
+                    session_id   = sid,
+                    cartilla_id  = cid,
+                    tipo         = tipo,
+                    nombre       = w.get("nombre", ""),
+                    apellidos    = w.get("apellidos", ""),
+                    email        = w.get("email", ""),
+                    celular      = w.get("celular", ""),
+                    yape_plin    = w.get("yape_plin", ""),
+                    prize_amount = amt,
+                    drawn_count  = int(w.get("drawn_count", 0) or 0),
+                    claimed_at   = w.get("claimed_at", ""),
+                    game_id      = w.get("game_id", ""),
+                    n_winners    = int(w.get("n_winners", 1) or 1),
+                    split        = bool(w.get("split", False)),
+                    merged_o     = float(w.get("merged_o", 0) or 0),
+                    merged_u     = float(w.get("merged_u", 0) or 0),
+                    linea_row    = w.get("linea_row"),
+                    puede_reclamar_bingo = bool(w.get("puede_reclamar_bingo", False)),
+                    paid         = bool(w.get("paid", False)),
+                    paid_at      = w.get("paid_at", ""),
+                    paid_method  = w.get("paid_method", ""),
+                    paid_ref     = w.get("paid_ref", ""),
+                    paid_note    = w.get("paid_note", ""),
+                    created      = w.get("claimed_at") or now_iso,
+                ))
     # Limpiar game state si era la sesión activa
     with game_lock:
         if game.session_id == sid:
@@ -2276,27 +2326,22 @@ def api_session_prize(sid):
 def api_winners_history():
     limit = min(int(request.args.get("limit", 20)), 50)
     with db_session() as db:
-        rows = (db.query(BingoSession)
-                .filter_by(status="finished")
-                .order_by(BingoSession.finished_at.desc())
+        rows = (db.query(Winner, BingoSession)
+                .join(BingoSession, Winner.session_id == BingoSession.id, isouter=True)
+                .order_by(Winner.claimed_at.desc())
                 .limit(limit)
                 .all())
         result = []
-        for s in rows:
-            wf = []
-            try:
-                wf = json.loads(s.winners_final or "[]")
-            except Exception:
-                pass
-            for w in wf:
-                result.append({
-                    "session_id":    s.id,
-                    "bingo_nombre":  s.bingo_nombre,
-                    "date":          s.date,
-                    "winner_nombre": w.get("nombre", ""),
-                    "drawn_count":   w.get("drawn_count", 0),
-                    "prize":         w.get("prize", 0),
-                })
+        for w, s in rows:
+            result.append({
+                "session_id":    w.session_id,
+                "bingo_nombre":  s.bingo_nombre if s else "",
+                "date":          s.date if s else "",
+                "winner_nombre": w.nombre or "",
+                "drawn_count":   w.drawn_count or 0,
+                "prize":         w.prize_amount if w.tipo == "bingo" else 0,
+                "tipo":          w.tipo or "bingo",
+            })
     return jsonify({"winners": result})
 
 # ─── Pagos a Ganadores ───────────────────────────────────────────────────────
@@ -2305,73 +2350,79 @@ def api_winner_payments():
     chk = admin_required()
     if chk: return chk
     result = []
-    # From finished/active sessions in DB
+    # Read from permanent winners table
     with db_session() as db:
-        sessions = db.query(BingoSession).order_by(BingoSession.datetime_iso.desc()).all()
-        for s in sessions:
-            wf = []
-            try: wf = json.loads(s.winners_final or "[]")
-            except Exception: pass
-            for w in wf:
-                tipo = w.get("tipo", "bingo")
-                result.append({
-                    "session_id":    s.id,
-                    "session_fecha": s.date,
-                    "session_hora":  s.time,
-                    "bingo_nombre":  s.bingo_nombre,
-                    "bingo_type":    s.bingo_type,
-                    "session_status": s.status,
-                    "cartilla_id":   w.get("id", ""),
-                    "nombre":        w.get("nombre", ""),
-                    "apellidos":     w.get("apellidos", ""),
-                    "celular":       w.get("celular", ""),
-                    "yape_plin":     w.get("yape_plin", ""),
-                    "email":         w.get("email", ""),
-                    "prize":         w.get("prize", 0) if tipo == "bingo" else 0,
-                    "linea_prize":   w.get("linea_prize", 0) if tipo == "linea" else 0,
-                    "claimed_at":    w.get("claimed_at", ""),
-                    "drawn_count":   w.get("drawn_count", 0),
-                    "tipo":          tipo,
-                    "paid":          bool(w.get("paid", False)),
-                    "paid_at":       w.get("paid_at", ""),
-                    "paid_method":   w.get("paid_method", ""),
-                    "paid_ref":      w.get("paid_ref", ""),
-                    "paid_note":     w.get("paid_note", ""),
-                })
-    # Also include current in-memory game winners (active game only — not stale data)
-    with game_lock:
-        active_sid   = game.session_id
-        live_bingo   = list(game.winners_log)       if active_sid else []
-        live_linea   = list(game.linea_winners_log) if active_sid else []
-    live_winners = [({**w, "tipo": "bingo"}) for w in live_bingo] + \
-                   [({**w, "tipo": "linea"}) for w in live_linea]
-    db_ids = {(r["session_id"], r["cartilla_id"], r["tipo"]) for r in result}
-    for w in live_winners:
-        key = (active_sid or "", w.get("id", ""), w.get("tipo", "bingo"))
-        if key not in db_ids:
+        rows = (db.query(Winner, BingoSession)
+                .join(BingoSession, Winner.session_id == BingoSession.id, isouter=True)
+                .order_by(BingoSession.datetime_iso.desc())
+                .all())
+        for w, s in rows:
+            tipo = w.tipo or "bingo"
             result.append({
-                "session_id":    active_sid or "—",
-                "session_fecha": "",
-                "session_hora":  "",
-                "bingo_nombre":  w.get("bingo_nombre", "Juego activo"),
-                "bingo_type":    w.get("bingo_type", ""),
+                "session_id":     w.session_id,
+                "session_fecha":  s.date       if s else "",
+                "session_hora":   s.time       if s else "",
+                "bingo_nombre":   s.bingo_nombre if s else "",
+                "bingo_type":     s.bingo_type  if s else "",
+                "session_status": s.status      if s else "finished",
+                "cartilla_id":    w.cartilla_id or "",
+                "nombre":         w.nombre      or "",
+                "apellidos":      w.apellidos   or "",
+                "celular":        w.celular      or "",
+                "yape_plin":      w.yape_plin   or "",
+                "email":          w.email       or "",
+                "prize":          w.prize_amount if tipo == "bingo" else 0,
+                "linea_prize":    w.prize_amount if tipo == "linea" else 0,
+                "u_prize":        w.prize_amount if tipo == "u"     else 0,
+                "o_prize":        w.prize_amount if tipo == "o"     else 0,
+                "claimed_at":     w.claimed_at  or "",
+                "drawn_count":    w.drawn_count or 0,
+                "tipo":           tipo,
+                "paid":           bool(w.paid),
+                "paid_at":        w.paid_at     or "",
+                "paid_method":    w.paid_method or "",
+                "paid_ref":       w.paid_ref    or "",
+                "paid_note":      w.paid_note   or "",
+            })
+    # Also include current in-memory game winners not yet finished
+    with game_lock:
+        active_sid = game.session_id
+        live_all   = (
+            [({**w, "tipo": "bingo"}) for w in game.winners_log] +
+            [({**w, "tipo": "linea"}) for w in game.linea_winners_log] +
+            [({**w, "tipo": "u"})     for w in game.u_winners_log] +
+            [({**w, "tipo": "o"})     for w in game.o_winners_log]
+        ) if active_sid else []
+    db_keys = {(r["session_id"], r["cartilla_id"], r["tipo"]) for r in result}
+    for w in live_all:
+        key = (active_sid or "", w.get("id", ""), w.get("tipo", "bingo"))
+        if key not in db_keys:
+            tipo = w.get("tipo", "bingo")
+            result.append({
+                "session_id":     active_sid or "—",
+                "session_fecha":  "",
+                "session_hora":   "",
+                "bingo_nombre":   w.get("bingo_nombre", "Juego activo"),
+                "bingo_type":     w.get("bingo_type", ""),
                 "session_status": "active",
-                "cartilla_id":   w.get("id", ""),
-                "nombre":        w.get("nombre", ""),
-                "apellidos":     w.get("apellidos", ""),
-                "celular":       w.get("celular", ""),
-                "yape_plin":     w.get("yape_plin", ""),
-                "email":         w.get("email", ""),
-                "prize":         w.get("prize", 0) if w.get("tipo") == "bingo" else 0,
-                "linea_prize":   w.get("linea_prize", 0) if w.get("tipo") == "linea" else 0,
-                "claimed_at":    w.get("claimed_at", ""),
-                "drawn_count":   w.get("drawn_count", 0),
-                "tipo":          w.get("tipo", "bingo"),
-                "paid":          False,
-                "paid_at":       "",
-                "paid_method":   "",
-                "paid_ref":      "",
-                "paid_note":     "",
+                "cartilla_id":    w.get("id", ""),
+                "nombre":         w.get("nombre", ""),
+                "apellidos":      w.get("apellidos", ""),
+                "celular":        w.get("celular", ""),
+                "yape_plin":      w.get("yape_plin", ""),
+                "email":          w.get("email", ""),
+                "prize":          w.get("prize", 0)       if tipo == "bingo" else 0,
+                "linea_prize":    w.get("linea_prize", 0) if tipo == "linea" else 0,
+                "u_prize":        w.get("u_prize", 0)     if tipo == "u"     else 0,
+                "o_prize":        w.get("o_prize", 0)     if tipo == "o"     else 0,
+                "claimed_at":     w.get("claimed_at", ""),
+                "drawn_count":    w.get("drawn_count", 0),
+                "tipo":           tipo,
+                "paid":           False,
+                "paid_at":        "",
+                "paid_method":    "",
+                "paid_ref":       "",
+                "paid_note":      "",
             })
     return jsonify({"payments": result})
 
@@ -2390,33 +2441,42 @@ def api_pay_winner():
     if not session_id or not cartilla_id:
         return jsonify({"error": "session_id y cartilla_id requeridos"}), 400
 
+    paid_at_iso = datetime.now().isoformat()
     updated = False
-    # Try to update in DB (finished/scheduled sessions)
-    with db_session() as db:
-        sx = db.query(BingoSession).filter_by(id=session_id).first()
-        if sx:
-            wf = []
-            try: wf = json.loads(sx.winners_final or "[]")
-            except Exception: pass
-            for w in wf:
-                if w.get("id") == cartilla_id:
-                    w["paid"]        = True
-                    w["paid_at"]     = datetime.now().isoformat()
-                    w["paid_method"] = paid_method
-                    w["paid_ref"]    = paid_ref
-                    w["paid_note"]   = paid_note
-                    updated = True
-            if updated:
-                sx.winners_final = json.dumps(wf, ensure_ascii=False)
-                db.flush()
 
-    # Also update in-memory game winners (active game)
+    # Update permanent winners table (all tipos for this cartilla in that session)
+    with db_session() as db:
+        winner_rows = db.query(Winner).filter_by(session_id=session_id, cartilla_id=cartilla_id).all()
+        for wr in winner_rows:
+            wr.paid        = True
+            wr.paid_at     = paid_at_iso
+            wr.paid_method = paid_method
+            wr.paid_ref    = paid_ref
+            wr.paid_note   = paid_note
+            updated = True
+        # Also keep sessions.winners_final JSON in sync
+        if updated:
+            sx = db.query(BingoSession).filter_by(id=session_id).first()
+            if sx:
+                try:
+                    wf = json.loads(sx.winners_final or "[]")
+                    for w in wf:
+                        if w.get("id", "") == cartilla_id or w.get("cartilla_id", "") == cartilla_id:
+                            w["paid"] = True; w["paid_at"] = paid_at_iso
+                            w["paid_method"] = paid_method; w["paid_ref"] = paid_ref
+                            w["paid_note"] = paid_note
+                    sx.winners_final = json.dumps(wf, ensure_ascii=False)
+                except Exception:
+                    pass
+
+    # Also update in-memory game winners (active game, not yet finished)
     if not updated:
         with game_lock:
-            for w in game.winners_log:
-                if w.get("id") == cartilla_id:
+            all_logs = game.winners_log + game.linea_winners_log + game.u_winners_log + game.o_winners_log
+            for w in all_logs:
+                if w.get("id") == cartilla_id and game.session_id == session_id:
                     w["paid"]        = True
-                    w["paid_at"]     = datetime.now().isoformat()
+                    w["paid_at"]     = paid_at_iso
                     w["paid_method"] = paid_method
                     w["paid_ref"]    = paid_ref
                     w["paid_note"]   = paid_note
@@ -2442,11 +2502,14 @@ def api_caja():
                          if v.payment_status in ("approved", "manual_approved"))
         total_prem = 0.0
         sesiones   = []
+        # Build winners map: session_id → list of Winner rows
+        all_winners = db.query(Winner).all()
+        winners_by_sid = {}
+        for wr in all_winners:
+            winners_by_sid.setdefault(wr.session_id, []).append(wr)
         for s in sessions:
-            wf = []
-            try: wf = json.loads(s.winners_final or "[]")
-            except Exception: pass
-            premios   = sum(w.get("prize", 0) + w.get("linea_prize", 0) for w in wf)
+            sw = winners_by_sid.get(s.id, [])
+            premios   = sum(wr.prize_amount or 0 for wr in sw)
             total_prem += premios
             sid_vs    = [v for v in vouchers
                          if v.session_id == s.id
@@ -2459,7 +2522,7 @@ def api_caja():
                 "recaudado": round(recaudado, 2),
                 "premios_paid": round(premios, 2),
                 "ganancia": round(recaudado - premios, 2),
-                "ganadores": wf,
+                "ganadores": [wr.to_dict() for wr in sw],
             })
         total_vouchers = len(vouchers)
 

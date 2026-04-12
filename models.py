@@ -293,3 +293,81 @@ class Contact(Base):
             "phone":   self.phone   or "",
             "created": self.created or "",
         }
+
+
+def _winner_prize(w: dict) -> float:
+    """Normalise prize amount from any winner dict regardless of tipo."""
+    tipo = w.get("tipo", "bingo")
+    if tipo == "linea": return float(w.get("linea_prize", 0) or 0)
+    if tipo == "u":     return float(w.get("u_prize",     0) or 0)
+    if tipo == "o":     return float(w.get("o_prize",     0) or 0)
+    return float(w.get("prize", 0) or 0)
+
+
+class Winner(Base):
+    """Permanent winner record — survives session deletion."""
+    __tablename__ = "winners"
+
+    id           = Column(Integer,     primary_key=True, autoincrement=True)
+    session_id   = Column(String(20),  default="", index=True)
+    cartilla_id  = Column(String(10),  default="")
+    tipo         = Column(String(10),  default="bingo")   # bingo | linea | u | o
+    nombre       = Column(String(60),  default="")
+    apellidos    = Column(String(60),  default="")
+    email        = Column(String(100), default="")
+    celular      = Column(String(20),  default="")
+    yape_plin    = Column(String(20),  default="")
+    prize_amount = Column(Float,       default=0.0)
+    drawn_count  = Column(Integer,     default=0)
+    claimed_at   = Column(String(30),  default="")
+    game_id      = Column(String(40),  default="")
+    n_winners    = Column(Integer,     default=1)
+    split        = Column(Boolean,     default=False)
+    merged_o     = Column(Float,       default=0.0)
+    merged_u     = Column(Float,       default=0.0)
+    linea_row    = Column(Integer,     nullable=True)
+    puede_reclamar_bingo = Column(Boolean, default=False)
+    paid         = Column(Boolean,     default=False)
+    paid_at      = Column(String(30),  default="")
+    paid_method  = Column(String(30),  default="")
+    paid_ref     = Column(String(80),  default="")
+    paid_note    = Column(String(200), default="")
+    created      = Column(String(30),  default="")
+
+    __table_args__ = (
+        Index("ix_winners_session", "session_id"),
+        Index("ix_winners_uniq", "session_id", "cartilla_id", "tipo", unique=True),
+    )
+
+    def to_dict(self) -> dict:
+        tipo = self.tipo or "bingo"
+        return {
+            "session_id":   self.session_id  or "",
+            "cartilla_id":  self.cartilla_id or "",
+            "tipo":         tipo,
+            "nombre":       self.nombre      or "",
+            "apellidos":    self.apellidos   or "",
+            "email":        self.email       or "",
+            "celular":      self.celular     or "",
+            "yape_plin":    self.yape_plin   or "",
+            "prize":        self.prize_amount if tipo == "bingo" else 0,
+            "linea_prize":  self.prize_amount if tipo == "linea" else 0,
+            "u_prize":      self.prize_amount if tipo == "u"     else 0,
+            "o_prize":      self.prize_amount if tipo == "o"     else 0,
+            "prize_amount": self.prize_amount or 0,
+            "drawn_count":  self.drawn_count  or 0,
+            "claimed_at":   self.claimed_at   or "",
+            "game_id":      self.game_id      or "",
+            "n_winners":    self.n_winners    or 1,
+            "split":        bool(self.split),
+            "merged_o":     self.merged_o     or 0,
+            "merged_u":     self.merged_u     or 0,
+            "linea_row":    self.linea_row,
+            "puede_reclamar_bingo": bool(self.puede_reclamar_bingo),
+            "paid":         bool(self.paid),
+            "paid_at":      self.paid_at      or "",
+            "paid_method":  self.paid_method  or "",
+            "paid_ref":     self.paid_ref      or "",
+            "paid_note":    self.paid_note     or "",
+            "created":      self.created       or "",
+        }
