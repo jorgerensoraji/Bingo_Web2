@@ -230,7 +230,7 @@
 
   <!-- Main tabs -->
   <div class="main-tabs">
-    <button class="main-tab-btn active" onclick="switchMainTab('sesiones',this)">📅 Sesiones</button>
+    <button class="main-tab-btn active" onclick="switchMainTab('sesiones',this)">📅 Bingos</button>
     <button class="main-tab-btn" onclick="switchMainTab('tipos',this)">🎰 Tipos de Bingo</button>
   </div>
 
@@ -241,7 +241,7 @@
   <div class="stats-top">
     <div class="stat-mini">
       <div class="v" id="st-total">0</div>
-      <div class="l">Sesiones total</div>
+      <div class="l">Bingos total</div>
     </div>
     <div class="stat-mini">
       <div class="v" id="st-active" style="color:var(--accent)">0</div>
@@ -301,7 +301,7 @@
     <!-- Columna derecha: lista de sesiones -->
     <div>
       <div class="card">
-        <h2>🗓 Sesiones</h2>
+        <h2>🗓 Bingos</h2>
 
         <div class="filter-row">
           <select id="f-type" class="inp" onchange="renderSessions()">
@@ -576,7 +576,7 @@ async function loadSessions() {
 
     renderSessions();
   } catch(e) {
-    showToast('❌ Error al cargar sesiones');
+    showToast('❌ Error al cargar bingos');
   }
 }
 
@@ -591,7 +591,7 @@ function renderSessions() {
   const el = document.getElementById('sessions-list');
   if (!list.length) {
     el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:30px">
-      No hay sesiones con ese filtro.</div>`;
+      No hay bingos con ese filtro.</div>`;
     return;
   }
 
@@ -1102,7 +1102,7 @@ async function toggleTypeActive(bid, currentActive) {
 }
 
 async function deleteType(bid, nombre) {
-  if (!confirm(`¿Eliminar "${nombre}"?\nSi hay sesiones que usaron este tipo no podrás eliminarlo — desactívalo.`)) return;
+  if (!confirm(`¿Eliminar "${nombre}"?\nSi hay bingos que usaron este tipo no podrás eliminarlo — desactívalo.`)) return;
   try {
     const res  = await fetch(`/api/admin/sessions/${bid}`, {method:'DELETE'});
     const data = await res.json();

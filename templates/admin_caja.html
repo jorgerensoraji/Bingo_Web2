@@ -186,7 +186,7 @@ td{padding:10px 12px;vertical-align:middle}
   <div class="logo">💼 Caja</div>
   <div class="nav-links">
     <a class="nav-link" href="/admin">🛠 Admin</a>
-    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/sessions">📅 Bingos</a>
     <a class="nav-link" href="/admin/game">🎮 Juego</a>
     <a class="nav-link" href="/admin/sessions">🎰 Tipos</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
@@ -249,7 +249,7 @@ td{padding:10px 12px;vertical-align:middle}
       <div class="kpi" style="--kpi-color:var(--accent)">
         <div class="v" id="k-total">S/.0</div>
         <div class="l">Total Recaudado</div>
-        <div class="sub" id="k-total-sub">0 sesiones</div>
+        <div class="sub" id="k-total-sub">0 bingos</div>
       </div>
       <div class="kpi" style="--kpi-color:var(--warning)">
         <div class="v" id="k-premios">S/.0</div>
@@ -288,7 +288,7 @@ td{padding:10px 12px;vertical-align:middle}
       </div>
       <div class="stat-box">
         <div class="v" style="color:var(--accent)" id="k-sesiones">0</div>
-        <div class="l">Sesiones</div>
+        <div class="l">Bingos</div>
       </div>
     </div>
 
@@ -678,7 +678,7 @@ function renderResumenKPIs(sesiones, vouchers, reimbs){
   document.getElementById('k-premios').textContent=fmt(premios);
   document.getElementById('k-reimb-total').textContent=fmt(reimbTotal);
   document.getElementById('k-ganancia').textContent=fmt(ganancia);
-  document.getElementById('k-total-sub').textContent=`${sesiones.length} sesión(es)`;
+  document.getElementById('k-total-sub').textContent=`${sesiones.length} bingo(s)`;
   document.getElementById('k-margen-sub').textContent=`${margen}% margen promedio`;
   document.getElementById('k-premios-sub').textContent='bingo + línea';
   document.getElementById('k-reimb-sub').textContent=`${reimbs.filter(r=>r.status==='pending').length} pendiente(s)`;
@@ -709,7 +709,7 @@ function renderByType(sesiones){
       <span style="color:${bt.color};font-weight:700;font-size:.95rem;min-width:130px">
         ${bt.emoji} ${esc(bt.nombre)}
       </span>
-      <span style="color:var(--muted);font-size:.8rem">${v.count} sesión(es) · ${v.jugadores} jugadores</span>
+      <span style="color:var(--muted);font-size:.8rem">${v.count} bingo(s) · ${v.jugadores} jugadores</span>
       <span style="color:var(--accent)"><strong>${fmt(v.recaudado)}</strong> recaudado</span>
       <span style="color:var(--warning)">${fmt(v.premios)} en premios</span>
       <span style="color:#27ae60;font-weight:700">${fmt(v.ganancia)} ganancia</span>
@@ -722,7 +722,7 @@ function renderByType(sesiones){
 function renderResumenTable(sesiones){
   const tb=document.getElementById('tb-sessions');
   if(!sesiones||!sesiones.length){
-    tb.innerHTML='<tr><td colspan="10" class="empty">Sin sesiones en este período</td></tr>'; return;
+    tb.innerHTML='<tr><td colspan="10" class="empty">Sin bingos en este período</td></tr>'; return;
   }
   const statusPill={
     finished:'<span class="pill pill-green">✅ Finalizada</span>',
@@ -758,7 +758,7 @@ function renderResumenTable(sesiones){
 function exportCSV(){
   if(!_resumenData){ showToast('⚠️ No hay datos'); return; }
   const sesiones=filterByPeriod(_resumenData.sesiones||[]);
-  if(!sesiones.length){ showToast('⚠️ Sin sesiones en este período'); return; }
+  if(!sesiones.length){ showToast('⚠️ Sin bingos en este período'); return; }
   const rows=[
     ['ID','Fecha','Hora','Tipo','Jugadores','Recaudado','Premios','Ganancia','Margen%','Estado'],
     ...sesiones.map(s=>{

@@ -402,7 +402,7 @@
 
       <!-- Próximas sesiones -->
       <div class="panel">
-        <div class="panel-title">📅 Próximas Sesiones</div>
+        <div class="panel-title">📅 Próximos Bingos</div>
         <div id="sessions-list">
           <div style="color:var(--muted);font-size:.85rem">Cargando…</div>
         </div>
@@ -635,7 +635,7 @@ function renderSessions() {
 
   // ── Panel Próximas Sesiones (todas) ──
   if (!ssAll.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No hay sesiones programadas por el momento.</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No hay bingos programados por el momento.</div>';
     return;
   }
   el.innerHTML = ssAll.map(s => {
@@ -744,7 +744,7 @@ async function enviarSolicitud() {
         terms_not_accepted:  '⚠️ Debes aceptar los términos y condiciones.',
         missing_ref:         '⚠️ Ingresa el número de operación.',
         duplicate_reference: '⚠️ ' + (data.message || 'Referencia duplicada.'),
-        no_session:          '❌ No hay sesiones disponibles. El administrador debe crear una sesión.',
+        no_session:          '❌ No hay bingos disponibles. El administrador debe crear un bingo.',
         invalid_bingo_type:  '⚠️ Tipo de bingo inválido.',
         invalid_session:     '⚠️ La sesión seleccionada no existe.',
         bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con la sesión.'),

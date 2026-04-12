@@ -140,7 +140,7 @@
   <div class="logo">🎰 Tipos de Bingo</div>
   <div class="nav-links">
     <a class="nav-link" href="/admin">🛠 Admin</a>
-    <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
+    <a class="nav-link" href="/admin/sessions">📅 Bingos</a>
     <a class="nav-link" href="/admin/game">🎮 Juego</a>
     <a class="nav-link" href="/admin/caja">💼 Caja</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
@@ -286,7 +286,7 @@
     <div class="field" style="display:flex;align-items:center;gap:12px;margin-top:4px">
       <input id="f-active" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--accent)">
       <div>
-        <label style="cursor:pointer" for="f-active">Tipo activo (visible para jugadores y sesiones)</label>
+        <label style="cursor:pointer" for="f-active">Tipo activo (visible para jugadores y bingos)</label>
         <div style="font-size:.72rem;color:var(--muted)">Desactiva para ocultarlo sin eliminarlo</div>
       </div>
     </div>
@@ -493,7 +493,7 @@ async function toggleActive(bid, currentActive) {
 
 // ── Delete ─────────────────────────────────────────────
 async function deleteType(bid, nombre) {
-  if (!confirm(`¿Eliminar "${nombre}"?\n\nEsto no se puede deshacer. Si hay sesiones que usaron este tipo, el sistema te impedirá eliminarlo — desactívalo en su lugar.`)) return;
+  if (!confirm(`¿Eliminar "${nombre}"?\n\nEsto no se puede deshacer. Si hay bingos que usaron este tipo, el sistema te impedirá eliminarlo — desactívalo en su lugar.`)) return;
   try {
     const res  = await fetch(`/api/admin/bingo_types/${bid}`, {method:'DELETE'});
     const data = await res.json();
