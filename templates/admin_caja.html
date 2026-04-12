@@ -901,7 +901,7 @@ function renderVoucherRow(v){
     const rowClass=pst==='pending_review'?'row-review':pst==='rejected'?'row-rejected':'';
     return `<tr class="${rowClass}">
       <td><span class="code-mono">${v.code}</span><div>${origen}</div>${isDup?'<div style="font-size:.65rem;color:var(--danger)">⚠️ Ref. duplicada</div>':''}</td>
-      <td style="font-size:.82rem;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(who)}">${esc(who)||'—'}</td>
+      <td style="font-size:.82rem;max-width:110px;word-break:break-word;white-space:normal;line-height:1.4">${esc(who)||'—'}</td>
       <td style="font-size:.78rem;color:var(--muted);max-width:140px;word-break:break-all">
         ${v.email?`<a href="mailto:${esc(v.email)}" style="color:var(--accent)">${esc(v.email)}</a>`:'—'}
         ${v.celular?`<div style="font-size:.7rem;margin-top:2px">${esc(v.celular)}</div>`:''}
