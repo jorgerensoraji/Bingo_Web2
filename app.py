@@ -1237,7 +1237,8 @@ def admin_game_page():
 @app.route("/admin/sessions")
 def admin_sessions_page():
     if not is_admin(): return redirect("/admin/login")
-    return render_template("admin_sessions.html")
+    bingo_types = sorted(BINGO_TYPES.values(), key=lambda x: x.get("sort_order", 0))
+    return render_template("admin_sessions.html", bingo_types=bingo_types)
 
 @app.route("/admin/payments")
 def admin_payments_page():
@@ -2172,6 +2173,60 @@ def api_create_session():
             created=datetime.now().isoformat(),
         )
         db.add(s)
+        db.flush()
+        s_dict = s.to_dict()
+    return jsonify({"status": "ok", "session": s_dict})
+
+@app.route("/api/admin/session/<sid>", methods=["PUT"])
+def api_update_session(sid):
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        s = db.query(BingoSession).filter_by(id=sid).first()
+        if not s:
+            return jsonify({"error": "not found"}), 404
+        if s.status not in ("scheduled", "preparing"):
+            return jsonify({"error": "Solo se pueden editar sesiones programadas o en countdown."}), 400
+
+        data       = request.get_json() or {}
+        bingo_type = data.get("bingo_type", s.bingo_type)
+        dt_str     = data.get("datetime", s.datetime_iso)
+
+        if bingo_type not in BINGO_TYPES:
+            return jsonify({"error": "Tipo de bingo inválido"}), 400
+        try:
+            new_dt = datetime.fromisoformat(dt_str)
+        except ValueError:
+            return jsonify({"error": "Formato de fecha inválido"}), 400
+
+        # Check time conflict (skip self)
+        conflictos = db.query(BingoSession).filter(
+            BingoSession.id != sid,
+            BingoSession.status.notin_(["cancelled", "finished"])
+        ).all()
+        for c in conflictos:
+            try:
+                c_dt = datetime.fromisoformat(c.datetime_iso)
+            except Exception:
+                continue
+            diff_min = abs((new_dt - c_dt).total_seconds()) / 60
+            if diff_min < 60:
+                c_dstr = c_dt.strftime("%d/%m/%Y %H:%M")
+                return jsonify({
+                    "error": f"Conflicto de horario con '{c.bingo_nombre}' a las {c_dstr} "
+                             f"({int(diff_min)} min de diferencia). Mínimo 1 hora entre sesiones."
+                }), 409
+
+        btype = BINGO_TYPES[bingo_type]
+        s.bingo_type   = bingo_type
+        s.bingo_nombre = btype["nombre"]
+        s.bingo_color  = btype["color"]
+        s.bingo_precio = btype["precio"]
+        s.datetime_iso = dt_str
+        s.date         = dt_str[:10]
+        s.time         = dt_str[11:16] if len(dt_str) >= 16 else "00:00"
+        s.descripcion  = (data.get("descripcion") or "").strip()[:300]
+        s.max_players  = int(data.get("max_players") or 0)
         db.flush()
         s_dict = s.to_dict()
     return jsonify({"status": "ok", "session": s_dict})

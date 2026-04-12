@@ -721,6 +721,10 @@ function buildActions(s) {
       <button class="btn btn-ok btn-sm" onclick="startSession('${s.id}')">
         ▶ Iniciar
       </button>
+      <button class="btn btn-ghost btn-sm" onclick="openEditSession('${s.id}')"
+              style="border-color:rgba(47,128,237,.5);color:#2f80ed">
+        ✏️ Editar
+      </button>
       <button class="btn btn-no btn-sm" onclick="cancelSession('${s.id}')">
         ✕ Cancelar
       </button>`;
@@ -1406,6 +1410,91 @@ async function sendAll() {
 document.getElementById('broadcast-modal').addEventListener('click', function(e) {
   if (e.target === this) closeBroadcast();
 });
+
+// ── Edit session ──────────────��─────────────────────────
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditSession();
+});
+
+function openEditSession(sid) {
+  const s = allSessions.find(x => x.id === sid);
+  if (!s) return;
+  document.getElementById('edit-sid').value         = sid;
+  document.getElementById('edit-datetime').value    = s.datetime_iso ? s.datetime_iso.slice(0,16) : '';
+  document.getElementById('edit-desc').value        = s.descripcion || '';
+  document.getElementById('edit-max').value         = s.max_players || 0;
+  // Set bingo type select
+  const sel = document.getElementById('edit-btype');
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === s.bingo_type) { sel.selectedIndex = i; break; }
+  }
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditSession() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+async function saveEditSession() {
+  const sid      = document.getElementById('edit-sid').value;
+  const dt       = document.getElementById('edit-datetime').value;
+  const desc     = document.getElementById('edit-desc').value.trim();
+  const max      = parseInt(document.getElementById('edit-max').value) || 0;
+  const btype    = document.getElementById('edit-btype').value;
+  if (!dt) { showToast('⚠️ Elige fecha y hora'); return; }
+
+  const res  = await fetch(`/api/admin/session/${sid}`, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ bingo_type: btype, datetime: dt, descripcion: desc, max_players: max }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    showToast('❌ ' + (data.error || 'Error al guardar'));
+    return;
+  }
+  showToast('✅ Sesión actualizada');
+  closeEditSession();
+  loadSessions();
+}
 </script>
+
+<!-- ── Modal editar sesión ── -->
+<div class="tmodal-bg" id="edit-modal">
+  <div class="tmodal" style="max-width:480px">
+    <h3>✏️ Editar Sesión</h3>
+    <input type="hidden" id="edit-sid">
+
+    <div class="tfield">
+      <label class="tlabel">Tipo de Bingo</label>
+      <select id="edit-btype" class="tinput">
+        {% for bt in bingo_types %}
+        <option value="{{ bt.id }}">{{ bt.emoji }} {{ bt.nombre }} — S/. {{ "%.2f"|format(bt.precio) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="tfield">
+      <label class="tlabel">Fecha y Hora</label>
+      <input id="edit-datetime" type="datetime-local" class="tinput">
+    </div>
+
+    <div class="tfield">
+      <label class="tlabel">Descripción (opcional)</label>
+      <input id="edit-desc" type="text" class="tinput" placeholder="Ej: Bingo de verano, premios especiales..." maxlength="300">
+    </div>
+
+    <div class="tfield">
+      <label class="tlabel">Límite de jugadores (0 = sin límite)</label>
+      <input id="edit-max" type="number" class="tinput" min="0" max="9999" value="0">
+    </div>
+
+    <div class="tmodal-actions">
+      <button class="btn btn-ghost" onclick="closeEditSession()">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveEditSession()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
