@@ -1539,6 +1539,36 @@ loadWinnersHistory();
 checkStarted();
 setInterval(checkStarted,4000);
 setInterval(loadSessions,30000);
+
+// ── Auto-load code from URL (?code=ABC123) ─────────────
+(async function autoLoadCode() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = (params.get('code') || '').trim().toUpperCase();
+  if (!code) return;
+  // Clean URL without reload
+  history.replaceState(null, '', window.location.pathname);
+  try {
+    const res  = await fetch('/api/voucher/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error === 'not_found' ? '❌ Código no encontrado' : '❌ ' + data.error);
+      return;
+    }
+    // Hide registration CTA, show status panel directly
+    document.getElementById('panel-ya-tengo-codigo').style.display = 'none';
+    document.getElementById('panel-solicitud').style.display       = 'none';
+    document.getElementById('panel-estado').style.display          = 'block';
+    document.getElementById('inp-code-check').value = code;
+    activeCode  = code;
+    lastStatus  = data.payment_status;
+    renderEstado(data);
+    if (['pending','pending_review'].includes(data.payment_status)) startPolling(code);
+    setStep(['approved','manual_approved'].includes(data.payment_status) ? 4 : 3);
+  } catch(e) { showToast('❌ Error de conexión'); }
+})();
 </script>
 <p style="text-align:center;margin:28px 0 10px;font-size:.8rem;color:var(--muted)">
   ¿Tienes algún problema? <a href="/ayuda" style="color:var(--accent);text-decoration:none;font-weight:600;">Visita nuestra página de Ayuda &amp; Contacto ❓</a>

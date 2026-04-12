@@ -229,7 +229,7 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
     code   = voucher_dict.get("code", "")
     nombre = voucher_dict.get("nombres", "Jugador")
     precio = bt["precio"]
-    url_cartillas = f"{url_base}/cartillas"
+    url_cartillas = f"{url_base}/cartillas?code={code}"
     url_juego     = f"{url_base}/"
 
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
@@ -249,7 +249,7 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
     </div>
     <div style="background:#0a1520;border-radius:10px;padding:14px;font-size:.85rem;color:#4a6b85;margin-bottom:16px">
       <strong style="color:#ddeeff">¿Cómo participar?</strong><br><br>
-      1. Ve a <a href="{url_cartillas}" style="color:#00e5b4">{url_cartillas}</a> e ingresa tu código <strong style="color:#00e5b4">{code}</strong> para generar tu cartilla<br><br>
+      1. <a href="{url_cartillas}" style="color:#00e5b4;font-weight:700">Haz clic aquí para generar tu cartilla →</a> (tu código <strong style="color:#00e5b4">{code}</strong> se cargará automáticamente)<br><br>
       2. El día del juego entra a <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a><br><br>
       3. Si juegas desde otro dispositivo, usa tu código <strong style="color:#00e5b4">{code}</strong> para cargar tus cartillas<br><br>
       4. ¡Disfruta el juego y que ganes! 🎉
