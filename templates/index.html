@@ -450,29 +450,33 @@
     to   { box-shadow:0 0 0 5px rgba(0,229,180,.35), 0 0 32px rgba(0,229,180,.7), 0 4px 20px rgba(0,0,0,.5); }
   }
 
-  /* Mouth EQ overlay (bottom of photo, visible only when talking) */
+  /* Mouth EQ waveform — sits below the photo circle */
   .host-mouth-overlay {
-    position:absolute; bottom:0; left:0; right:0; height:22px;
-    display:flex; align-items:flex-end; justify-content:center; gap:2px;
-    padding:0 18px 4px;
-    background:linear-gradient(transparent, rgba(4,16,21,.55));
-    opacity:0; transition:opacity .2s;
+    display:flex; align-items:flex-end; justify-content:center; gap:3px;
+    height:18px; width:70px;
+    padding-bottom:2px;
   }
-  #bingo-host.talking .host-mouth-overlay { opacity:1; }
   .host-tooth {
-    width:5px; border-radius:2px 2px 1px 1px;
+    width:6px; border-radius:3px 3px 1px 1px;
+    background:rgba(0,229,180,.35);
+    height:3px; flex-shrink:0;
+    transition:background .2s;
+  }
+  /* Idle: flat tiny bars */
+  #bingo-host:not(.talking) .host-tooth { height:3px !important; background:rgba(0,229,180,.2); box-shadow:none; }
+  /* Talking: full EQ dance */
+  #bingo-host.talking .host-tooth {
     background:rgba(0,229,180,.9);
-    box-shadow:0 0 5px rgba(0,229,180,.6);
-    height:3px;
+    box-shadow:0 0 6px rgba(0,229,180,.6);
   }
   #bingo-host.talking .host-tooth:nth-child(1) { animation:mouthTalk1 .19s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(2) { animation:mouthTalk2 .14s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(3) { animation:mouthTalk3 .21s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(4) { animation:mouthTalk2 .17s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(5) { animation:mouthTalk1 .12s ease-in-out infinite alternate; }
-  @keyframes mouthTalk1 { from { height:3px;  opacity:.7; } to { height:12px; opacity:1; } }
-  @keyframes mouthTalk2 { from { height:9px;  opacity:1; } to { height:3px;  opacity:.7; } }
-  @keyframes mouthTalk3 { from { height:6px;  opacity:.8; } to { height:12px; opacity:1; } }
+  @keyframes mouthTalk1 { from { height:3px;  opacity:.7; } to { height:16px; opacity:1; } }
+  @keyframes mouthTalk2 { from { height:12px; opacity:1; } to { height:3px;  opacity:.7; } }
+  @keyframes mouthTalk3 { from { height:7px;  opacity:.8; } to { height:16px; opacity:1; } }
 
   /* Headset mic overlay */
   .host-headset {
@@ -805,16 +809,16 @@
         <!-- AI Photo avatar -->
         <div class="host-avatar">
           <img src="/static/images/host.jpg.png" alt="Presentadora">
-          <!-- Mouth EQ overlay -->
-          <div class="host-mouth-overlay">
-            <div class="host-tooth"></div>
-            <div class="host-tooth"></div>
-            <div class="host-tooth"></div>
-            <div class="host-tooth"></div>
-            <div class="host-tooth"></div>
-          </div>
           <!-- Headset mic -->
           <div class="host-headset"></div>
+        </div>
+        <!-- Mouth EQ waveform (below circle, not clipped) -->
+        <div class="host-mouth-overlay">
+          <div class="host-tooth"></div>
+          <div class="host-tooth"></div>
+          <div class="host-tooth"></div>
+          <div class="host-tooth"></div>
+          <div class="host-tooth"></div>
         </div>
       </div>
 
