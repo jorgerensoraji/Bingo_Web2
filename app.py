@@ -409,9 +409,14 @@ def _send_cartilla_email_async(vinfo: dict, cartillas: list, url_base: str) -> N
             html = _email_cartilla_generada(vinfo, cartillas, url_base)
             count = len(cartillas)
             subject = f"🎴 Tu{'s' if count>1 else ''} cartilla{'s' if count>1 else ''} de Bingo {'están listas' if count>1 else 'está lista'}"
-            enviar_email(vinfo["email"], subject, html, attachments)
-        except Exception:
-            pass
+            ok, err = enviar_email(vinfo["email"], subject, html, attachments)
+            if not ok:
+                print(f"[EMAIL CARTILLA] Error enviando a {vinfo['email']}: {err}", flush=True)
+            else:
+                print(f"[EMAIL CARTILLA] Enviado a {vinfo['email']} ({len(cartillas)} cartilla(s))", flush=True)
+        except Exception as e:
+            import traceback
+            print(f"[EMAIL CARTILLA] Excepción: {e}\n{traceback.format_exc()}", flush=True)
     threading.Thread(target=_do, daemon=True).start()
 
 def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
