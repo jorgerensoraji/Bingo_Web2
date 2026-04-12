@@ -381,13 +381,13 @@ td{padding:10px 12px;vertical-align:middle}
         <table>
           <thead>
             <tr>
-              <th>Código</th><th>Cliente</th><th>Email</th><th>Tipo</th>
+              <th>Código</th><th>Cliente</th><th>Email</th><th>Tipo</th><th>Sesión</th>
               <th>Precio</th><th>Método / Ref.</th><th>Estado</th>
               <th>Email</th><th>Cartillas</th><th>Fecha</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tb">
-            <tr><td colspan="11" class="empty">Cargando…</td></tr>
+            <tr><td colspan="12" class="empty">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
@@ -907,6 +907,7 @@ function renderVoucherRow(v){
         ${v.celular?`<div style="font-size:.7rem;margin-top:2px">${esc(v.celular)}</div>`:''}
       </td>
       <td><span style="color:${bt.color};font-weight:700;font-size:.82rem">${bt.emoji} ${esc(bt.nombre)}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${v.session_id?`<span style="font-family:'Courier New',monospace;color:var(--accent);font-size:.78rem">${esc(v.session_id)}</span>`:'—'}</td>
       <td style="color:var(--accent);font-weight:700">S/. ${(v.precio||0).toFixed(2)}</td>
       <td><div style="font-size:.8rem;color:var(--muted)">${mIcon} ${esc(v.payment_method||'—')}</div>${refHtml}</td>
       <td>${badge}</td>
@@ -930,7 +931,7 @@ function filterTable(){
     v.payment_ref?.toLowerCase().includes(q));
   const tb=document.getElementById('tb');
   if(!list.length){
-    tb.innerHTML=`<tr><td colspan="11" class="empty">Sin resultados</td></tr>`; return;
+    tb.innerHTML=`<tr><td colspan="12" class="empty">Sin resultados</td></tr>`; return;
   }
   // Group by session_id
   const groups={};
@@ -958,7 +959,7 @@ function filterTable(){
     const ok=g.items.filter(v=>['approved','manual_approved'].includes(v.payment_status)).length;
     const rej=g.items.filter(v=>v.payment_status==='rejected').length;
     const rev=g.items.filter(v=>['approved','manual_approved'].includes(v.payment_status)).reduce((s,v)=>s+(v.precio||0),0);
-    html+=`<tr class="grp-hdr"><td colspan="11">
+    html+=`<tr class="grp-hdr"><td colspan="12">
       <div class="grp-title" style="color:${bt.color}">${bt.emoji} ${esc(g.nombre||bt.nombre)}
         <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">${g.sid==='__nosession__'?'sin sesión asignada':g.sid}</span>
       </div>
