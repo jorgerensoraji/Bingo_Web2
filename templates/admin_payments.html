@@ -91,6 +91,27 @@ td{padding:10px 12px;vertical-align:middle}
           animation:blink 2s ease-in-out infinite;display:inline-block}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
+/* Group header row */
+.group-header-row td{
+  background:rgba(0,229,180,.05);
+  border-top:2px solid rgba(0,229,180,.18);
+  border-bottom:1px solid rgba(0,229,180,.12);
+  padding:10px 16px;
+}
+.group-header-row:first-child td{border-top:none}
+.group-name{
+  font-family:'Bebas Neue',sans-serif;font-size:1.05rem;
+  color:var(--accent);letter-spacing:1px;
+}
+.group-pill{
+  display:inline-block;padding:2px 9px;border-radius:20px;
+  font-size:.72rem;font-weight:700;
+}
+.gp-total {background:rgba(100,180,220,.12);color:#8dbdd6}
+.gp-pend  {background:rgba(246,195,67,.15);color:var(--warning)}
+.gp-ok    {background:rgba(39,174,96,.15);color:#27ae60}
+.gp-rev   {background:rgba(0,229,180,.12);color:var(--accent)}
+
 /* Modal de aprobación */
 .modal-back{
   display:none;position:fixed;inset:0;background:rgba(7,13,20,.85);
@@ -415,38 +436,8 @@ async function refresh() {
   } catch(e) { showToast('❌ Error al cargar datos'); }
 }
 
-// ── Filtrar y renderizar tabla ─────────────────────────
-function filterTable() {
-  const q   = document.getElementById('search').value.toLowerCase();
-  const fst = document.getElementById('f-status').value;
-  const fbt = document.getElementById('f-btype').value;
-
-  let list = allVouchers;
-  if (fst !== 'all') list = list.filter(v => v.payment_status === fst);
-  if (fbt !== 'all') list = list.filter(v => v.bingo_type === fbt);
-  if (q) list = list.filter(v =>
-    v.code?.toLowerCase().includes(q) ||
-    v.nombres?.toLowerCase().includes(q) ||
-    v.apellidos?.toLowerCase().includes(q) ||
-    v.email?.toLowerCase().includes(q) ||
-    v.payment_ref?.toLowerCase().includes(q)
-  );
-
-  // Pendientes primero
-  list = [...list].sort((a,b) => {
-    const o = {pending_review:0, pending:1, approved:2, manual_approved:2, rejected:3};
-    return (o[a.payment_status]??9) - (o[b.payment_status]??9);
-  });
-
-  const tb = document.getElementById('tb');
-  if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="11"
-      style="text-align:center;color:var(--muted);padding:24px">
-      Sin resultados</td></tr>`;
-    return;
-  }
-
-  tb.innerHTML = list.map(v => {
+// ── Renderizar una fila de voucher ────────────────────
+function renderVoucherRow(v) {
     const who    = [v.nombres, v.apellidos].filter(Boolean).join(' ');
     const bt     = BT[v.bingo_type] || BT['1sol'];
     const dt     = (v.payment_submitted_at||v.created||'').replace('T',' ').slice(0,16);
@@ -535,7 +526,90 @@ function filterTable() {
         </div>
       </td>
     </tr>`;
-  }).join('');
+}
+
+// ── Filtrar y renderizar tabla agrupada por sesión ────
+function filterTable() {
+  const q   = document.getElementById('search').value.toLowerCase();
+  const fst = document.getElementById('f-status').value;
+  const fbt = document.getElementById('f-btype').value;
+
+  let list = allVouchers;
+  if (fst !== 'all') list = list.filter(v => v.payment_status === fst);
+  if (fbt !== 'all') list = list.filter(v => v.bingo_type === fbt);
+  if (q) list = list.filter(v =>
+    v.code?.toLowerCase().includes(q) ||
+    v.nombres?.toLowerCase().includes(q) ||
+    v.apellidos?.toLowerCase().includes(q) ||
+    v.email?.toLowerCase().includes(q) ||
+    v.payment_ref?.toLowerCase().includes(q)
+  );
+
+  const tb = document.getElementById('tb');
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="11"
+      style="text-align:center;color:var(--muted);padding:24px">
+      Sin resultados</td></tr>`;
+    return;
+  }
+
+  // Agrupar por session_id
+  const groups = {};
+  const groupOrder = [];
+  list.forEach(v => {
+    const sid = v.session_id || '__none__';
+    if (!groups[sid]) {
+      groups[sid] = {
+        sid,
+        name: v.bingo_nombre || (sid === '__none__' ? 'Sin sesión asignada' : sid),
+        vouchers: [],
+        hasPending: false,
+      };
+      groupOrder.push(sid);
+    }
+    groups[sid].vouchers.push(v);
+    if (v.payment_status === 'pending_review') groups[sid].hasPending = true;
+  });
+
+  // Grupos con pendientes primero, luego por nombre
+  groupOrder.sort((a, b) => {
+    const ga = groups[a], gb = groups[b];
+    if (ga.hasPending !== gb.hasPending) return ga.hasPending ? -1 : 1;
+    return ga.name.localeCompare(gb.name);
+  });
+
+  const statusOrder = {pending_review:0, pending:1, approved:2, manual_approved:2, rejected:3};
+
+  let html = '';
+  groupOrder.forEach(sid => {
+    const g        = groups[sid];
+    const total    = g.vouchers.length;
+    const pending  = g.vouchers.filter(v => v.payment_status === 'pending_review').length;
+    const approved = g.vouchers.filter(v => ['approved','manual_approved'].includes(v.payment_status)).length;
+    const revenue  = g.vouchers
+      .filter(v => ['approved','manual_approved'].includes(v.payment_status))
+      .reduce((s, v) => s + (v.precio || 0), 0);
+
+    html += `<tr class="group-header-row">
+      <td colspan="11">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="group-name">🎱 ${esc(g.name)}</span>
+          <span class="group-pill gp-total">${total} registro${total!==1?'s':''}</span>
+          ${pending  ? `<span class="group-pill gp-pend">⏳ ${pending} pendiente${pending!==1?'s':''}</span>` : ''}
+          <span class="group-pill gp-ok">✅ ${approved} aprobado${approved!==1?'s':''}</span>
+          <span class="group-pill gp-rev" style="margin-left:auto">S/. ${revenue.toFixed(2)} recaudado</span>
+        </div>
+      </td>
+    </tr>`;
+
+    // Pendientes primero dentro del grupo
+    const sorted = [...g.vouchers].sort((a, b) =>
+      (statusOrder[a.payment_status]??9) - (statusOrder[b.payment_status]??9)
+    );
+    html += sorted.map(v => renderVoucherRow(v)).join('');
+  });
+
+  tb.innerHTML = html;
 }
 
 // ── Modal de aprobación ────────────────────────────────
