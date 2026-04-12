@@ -189,13 +189,22 @@ _email_log       = []
 _email_log_lock  = threading.Lock()
 _EMAIL_LOG_MAX   = 100
 
+_EMAIL_LOG_FILE = os.path.join(os.path.dirname(__file__), "email_log.txt")
+
 def _log_email_event(level: str, msg: str) -> None:
-    entry = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "msg": msg}
-    print(f"[EMAIL] [{level}] {msg}", flush=True)
+    ts    = datetime.now().isoformat(timespec="seconds")
+    entry = {"ts": ts, "level": level, "msg": msg}
+    line  = f"[{ts}] [{level}] {msg}"
+    print(line, flush=True)
     with _email_log_lock:
         _email_log.append(entry)
         if len(_email_log) > _EMAIL_LOG_MAX:
             _email_log.pop(0)
+    try:
+        with open(_EMAIL_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 _CHAT_COLORS = [
     "#00e5b4","#f6c343","#58d68d","#5dade2",
     "#a569bd","#ff8c42","#48c9b0","#f1948a",
@@ -2863,6 +2872,7 @@ def api_generate():
             mark_voucher_cartilla(code, c["id"])
 
     # Send email with cartilla PNG(s) attached (skip if admin-generated or no email)
+    _log_email_event("DEBUG", f"api_generate: por_admin={por_admin} vinfo={'OK' if vinfo else 'None'} email={vinfo.get('email') if vinfo else 'N/A'} code={code!r}")
     if not por_admin and vinfo and vinfo.get("email"):
         _send_cartilla_email_async(vinfo, results, request.host_url.rstrip("/"))
 
@@ -4173,8 +4183,22 @@ def whatsapp_incoming():
 def admin_email_log_page():
     chk = admin_required()
     if chk: return chk
-    with _email_log_lock:
-        entries = list(reversed(_email_log))
+    # Prefer file (survives restarts), fall back to in-memory
+    file_entries = []
+    try:
+        with open(_EMAIL_LOG_FILE, encoding="utf-8") as f:
+            for line in f.readlines()[-100:]:
+                line = line.strip()
+                if not line: continue
+                parts = line.split("] [", 2)
+                ts    = parts[0].lstrip("[") if len(parts) > 0 else ""
+                level = parts[1] if len(parts) > 1 else "INFO"
+                msg   = parts[2].rstrip("]") if len(parts) > 2 else line
+                file_entries.append({"ts": ts, "level": level, "msg": msg})
+        entries = list(reversed(file_entries))
+    except FileNotFoundError:
+        with _email_log_lock:
+            entries = list(reversed(_email_log))
     rows = "".join(
         f'<tr style="border-bottom:1px solid #1a3148">'
         f'<td style="padding:8px 12px;color:#6a9ab8;white-space:nowrap">{e["ts"]}</td>'
