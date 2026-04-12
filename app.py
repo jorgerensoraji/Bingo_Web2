@@ -2171,8 +2171,8 @@ def api_finish_session(sid):
     # Limpiar game state si era la sesión activa
     with game_lock:
         if game.session_id == sid:
-            game.session_id       = None
-            game.session_finished = True
+            game.reset()                  # clears drawn, winners, paused, pools, etc.
+            game.session_finished = True  # keep flag so player view can detect the end
             game.save_to_db()
     return jsonify({"status": "ok"})
 

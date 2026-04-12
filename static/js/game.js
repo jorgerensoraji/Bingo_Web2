@@ -517,7 +517,7 @@ async function loadExistingState() {
     const res  = await fetch('/api/state');
     const data = await res.json();
     const serverDrawn = data.drawn || [];
-    if (serverDrawn.length === 0) return;
+    if (serverDrawn.length === 0 || data.session_finished) return;
 
     drawn      = serverDrawn;
     lastNumber = data.last;
