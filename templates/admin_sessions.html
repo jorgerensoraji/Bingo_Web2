@@ -1173,7 +1173,7 @@ function renderTypes(types) {
 
 async function loadTypes() {
   try {
-    const res  = await fetch('/api/admin/sessions');
+    const res  = await fetch('/api/admin/bingo_types');
     const data = await res.json();
     renderTypes(data.bingo_types || []);
   } catch(e) {
