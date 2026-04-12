@@ -97,6 +97,7 @@ TWILIO_SID        = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN      = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_WA_FROM    = os.environ.get("TWILIO_WHATSAPP_FROM", "")  # e.g. whatsapp:+14155238886
 TWILIO_COUNTRY    = os.environ.get("TWILIO_DEFAULT_COUNTRY", "+51")  # default country code
+ADMIN_WHATSAPP    = os.environ.get("ADMIN_WHATSAPP", "")  # admin's personal WhatsApp e.g. +51987654321
 
 if not ADMIN_USER or not ADMIN_PASS:
     print("\nERROR: ADMIN_USER y ADMIN_PASS no configurados.\n")
@@ -107,6 +108,18 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 def is_admin() -> bool:
     return bool(session.get("is_admin"))
+
+# ─── Quick-action token helpers (HMAC, no DB needed) ──────────────────────────
+import hmac as _hmac, hashlib as _hashlib
+
+def _quick_token(action: str, code: str) -> str:
+    """Generate a secure token for one-click approve/reject links."""
+    msg = f"{action}:{code}".encode()
+    return _hmac.new(_raw_key.encode(), msg, _hashlib.sha256).hexdigest()[:32]
+
+def _verify_quick_token(action: str, code: str, token: str) -> bool:
+    expected = _quick_token(action, code)
+    return _hmac.compare_digest(expected, (token or ""))
 
 def is_setup_pending() -> bool:
     """True when user passed password check but hasn't enrolled 2FA yet."""
@@ -1424,6 +1437,30 @@ def api_player_solicitar():
         if not ok:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
+    # Notify admin via WhatsApp with one-click approve/reject links
+    if ADMIN_WHATSAPP:
+        try:
+            url_base   = request.host_url.rstrip("/")
+            tok_ok     = _quick_token("approve", v_dict["code"])
+            tok_no     = _quick_token("reject",  v_dict["code"])
+            metodo_str = method.upper() if method else "—"
+            ref_str    = ref if ref else "—"
+            wa_body = (
+                f"💳 *Nuevo pago recibido*\n"
+                f"👤 {nombres} {apellidos}\n"
+                f"🎱 {btype['nombre']} — S/. {btype['precio']:.2f}\n"
+                f"💰 {metodo_str} | Ref: {ref_str}\n"
+                f"📱 {celular or '—'}\n"
+                f"🎫 Voucher: *{v_dict['code']}*\n\n"
+                f"✅ Aprobar:\n{url_base}/admin/quick/approve/{v_dict['code']}?token={tok_ok}\n\n"
+                f"❌ Rechazar:\n{url_base}/admin/quick/reject/{v_dict['code']}?token={tok_no}"
+            )
+            ok_wa, err_wa = enviar_whatsapp(ADMIN_WHATSAPP, wa_body)
+            if not ok_wa:
+                print(f"[WARN] WhatsApp admin no enviado: {err_wa}")
+        except Exception as e:
+            print(f"[WARN] WhatsApp admin error: {e}")
+
     msg = "Solicitud registrada. Recibirás tu código cuando el admin confirme tu registro."
     return jsonify({"status": "ok", "message": msg, "email": email})
 
@@ -1522,6 +1559,108 @@ def api_reject_voucher(code):
         v.rejected_at     = datetime.now().isoformat()
         v.rejected_reason = data.get("reason", "")
     return jsonify({"status": "ok"})
+
+@app.route("/admin/quick/approve/<code>")
+def quick_approve(code):
+    code  = code.strip().upper()
+    token = request.args.get("token", "")
+    if not _verify_quick_token("approve", code, token):
+        return _quick_result("error", "Enlace inválido o expirado.")
+    v_dict = {}
+    with db_session() as db:
+        v = db.query(Voucher).filter_by(code=code).first()
+        if not v:
+            return _quick_result("error", f"Voucher {code} no encontrado.")
+        if v.payment_status in ("manual_approved", "approved"):
+            return _quick_result("already", f"El voucher {code} ya estaba aprobado.", code)
+        v.payment_status = "manual_approved"
+        v.approved_at    = datetime.now().isoformat()
+        db.flush()
+        v_dict = v.to_dict()
+    # Send approval email to player
+    email = v_dict.get("email", "")
+    if email:
+        url_base = request.host_url.rstrip("/")
+        asunto   = f"🎱 Tu código para {v_dict.get('bingo_nombre','Bingo')} — Bingo Pro"
+        ok, err  = enviar_email(email, asunto, _email_codigo_voucher(v_dict, url_base))
+        if ok:
+            with db_session() as db2:
+                v2 = db2.query(Voucher).filter_by(code=code).first()
+                if v2:
+                    v2.email_codigo_enviado = True
+                    v2.email_enviado_at     = datetime.now().isoformat()
+        else:
+            print(f"[WARN] Email aprobación no enviado: {err}")
+    return _quick_result("approved", f"Voucher {code} aprobado correctamente.", code)
+
+@app.route("/admin/quick/reject/<code>", methods=["GET", "POST"])
+def quick_reject(code):
+    code  = code.strip().upper()
+    token = request.args.get("token", "")
+    if not _verify_quick_token("reject", code, token):
+        return _quick_result("error", "Enlace inválido o expirado.")
+    if request.method == "POST":
+        reason = (request.form.get("reason") or "Pago no verificado").strip()[:200]
+        with db_session() as db:
+            v = db.query(Voucher).filter_by(code=code).first()
+            if not v:
+                return _quick_result("error", f"Voucher {code} no encontrado.")
+            if v.payment_status == "rejected":
+                return _quick_result("already", f"El voucher {code} ya estaba rechazado.", code)
+            v.payment_status  = "rejected"
+            v.rejected_at     = datetime.now().isoformat()
+            v.rejected_reason = reason
+        return _quick_result("rejected", f"Voucher {code} rechazado.", code)
+    # GET — show a small form to enter reason
+    return f"""<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rechazar pago</title>
+<style>
+  body{{font-family:system-ui,sans-serif;background:#070d14;color:#ddeeff;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box}}
+  .card{{background:#0d1825;border:1px solid #1a3148;border-radius:16px;padding:28px 24px;max-width:420px;width:100%}}
+  h2{{color:#e74c3c;margin:0 0 8px;font-size:1.3rem}}
+  p{{color:#4a6b85;font-size:.87rem;margin:0 0 20px}}
+  label{{font-size:.83rem;color:#4a6b85;display:block;margin-bottom:6px}}
+  textarea{{width:100%;box-sizing:border-box;background:#111f2e;border:1px solid #1a3148;border-radius:8px;
+            color:#ddeeff;font-family:inherit;font-size:.9rem;padding:10px;resize:vertical;min-height:80px}}
+  button{{margin-top:14px;width:100%;padding:13px;border:none;border-radius:10px;
+          background:#e74c3c;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}}
+  button:hover{{background:#c0392b}}
+</style></head>
+<body><div class="card">
+  <h2>❌ Rechazar voucher {code}</h2>
+  <p>Escribe el motivo del rechazo (opcional). El jugador lo verá en su email.</p>
+  <form method="POST">
+    <label>Motivo</label>
+    <textarea name="reason" placeholder="Ej: El número de operación no coincide..."></textarea>
+    <button type="submit">Confirmar rechazo</button>
+  </form>
+</div></body></html>"""
+
+def _quick_result(status: str, message: str, code: str = "") -> str:
+    icons   = {"approved": "✅", "rejected": "❌", "already": "ℹ️", "error": "⚠️"}
+    colors  = {"approved": "#00e5b4", "rejected": "#e74c3c", "already": "#f6c343", "error": "#f6c343"}
+    icon    = icons.get(status, "ℹ️")
+    color   = colors.get(status, "#4a6b85")
+    link    = f'<a href="/admin/payments" style="color:{color};font-size:.85rem;">Ver todos los pagos</a>' if code else ""
+    return f"""<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bingo Pro</title>
+<style>
+  body{{font-family:system-ui,sans-serif;background:#070d14;color:#ddeeff;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box}}
+  .card{{background:#0d1825;border:1px solid #1a3148;border-radius:16px;padding:32px 24px;
+         max-width:400px;width:100%;text-align:center}}
+  .icon{{font-size:3rem;margin-bottom:14px}}
+  h2{{color:{color};margin:0 0 10px;font-size:1.25rem}}
+  p{{color:#4a6b85;font-size:.88rem;margin:0 0 20px;line-height:1.5}}
+</style></head>
+<body><div class="card">
+  <div class="icon">{icon}</div>
+  <h2>{message}</h2>
+  {link}
+</div></body></html>"""
 
 @app.route("/api/admin/voucher/<code>/delete", methods=["DELETE"])
 def api_admin_delete_voucher(code):
