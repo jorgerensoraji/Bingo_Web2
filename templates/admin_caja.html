@@ -381,9 +381,9 @@ td{padding:10px 12px;vertical-align:middle}
         <table>
           <thead>
             <tr>
-              <th>Código</th><th>Cliente</th><th>Email</th><th>Tipo</th><th>Sesión</th>
+              <th>Código</th><th style="width:110px">Cliente</th><th>Email</th><th>Tipo</th><th>Sesión</th>
               <th>Precio</th><th>Método / Ref.</th><th>Estado</th>
-              <th>Email</th><th>Cartillas</th><th>Fecha</th><th>Acciones</th>
+              <th>Email</th><th>Cartillas</th><th>Fecha</th><th style="width:90px">Acciones</th>
             </tr>
           </thead>
           <tbody id="tb">
@@ -901,7 +901,7 @@ function renderVoucherRow(v){
     const rowClass=pst==='pending_review'?'row-review':pst==='rejected'?'row-rejected':'';
     return `<tr class="${rowClass}">
       <td><span class="code-mono">${v.code}</span><div>${origen}</div>${isDup?'<div style="font-size:.65rem;color:var(--danger)">⚠️ Ref. duplicada</div>':''}</td>
-      <td style="font-size:.82rem">${esc(who)||'—'}</td>
+      <td style="font-size:.82rem;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(who)}">${esc(who)||'—'}</td>
       <td style="font-size:.78rem;color:var(--muted);max-width:140px;word-break:break-all">
         ${v.email?`<a href="mailto:${esc(v.email)}" style="color:var(--accent)">${esc(v.email)}</a>`:'—'}
         ${v.celular?`<div style="font-size:.7rem;margin-top:2px">${esc(v.celular)}</div>`:''}
