@@ -1400,7 +1400,7 @@ def api_player_solicitar():
         if not existing and phone_e164:
             existing = db.query(Contact).filter(Contact.phone == phone_e164).first()
         if existing:
-            if nombre and not existing.nombre:
+            if nombres and not existing.nombre:
                 existing.nombre = f"{nombres} {apellidos}".strip()
             if email and not existing.email:
                 existing.email = email
