@@ -400,10 +400,10 @@
     .header-right .stat { display:none; }
   }
 
-  /* ── Bingo Host — Human Avatar ── */
+  /* ── Bingo Host — AI Photo Avatar ── */
   #bingo-host {
     display:flex; flex-direction:column; align-items:center;
-    flex-shrink:0; align-self:center; gap:3px;
+    flex-shrink:0; align-self:center; gap:6px;
     position:relative; cursor:default; user-select:none;
   }
 
@@ -425,158 +425,71 @@
     border-bottom:none;
   }
 
-  /* Outer wrapper for head + body */
-  .host-avatar { display:flex; flex-direction:column; align-items:center; position:relative; }
-
-  /* Hair — top dome */
-  .host-hair-top {
-    width:58px; height:26px;
-    background:linear-gradient(180deg, #0f7060 0%, #0a4a3c 100%);
-    border-radius:50% 50% 0 0 / 80% 80% 0 0;
-    position:relative; z-index:3;
-    margin-bottom:-5px;
-    box-shadow:0 -2px 8px rgba(0,0,0,.25);
+  /* Photo frame */
+  .host-avatar {
+    position:relative; width:90px; height:90px;
+    border-radius:50%; overflow:hidden;
+    border:3px solid rgba(0,229,180,.35);
+    box-shadow:0 0 16px rgba(0,229,180,.15), 0 4px 20px rgba(0,0,0,.5);
+    transition:border-color .3s, box-shadow .3s;
+    flex-shrink:0;
   }
-  /* Hair highlight */
-  .host-hair-top::before {
-    content:''; position:absolute; top:4px; left:14px; width:22px; height:8px;
-    background:radial-gradient(ellipse, rgba(255,255,255,.12) 0%, transparent 80%);
-    border-radius:50%;
+  .host-avatar img {
+    width:100%; height:100%; object-fit:cover; object-position:center top;
+    display:block;
   }
 
-  /* Face */
-  .host-face {
-    width:54px; height:60px;
-    background:linear-gradient(170deg, #fbd5a8 0%, #f0b87a 100%);
-    border-radius:46% 46% 42% 42% / 48% 48% 44% 44%;
-    position:relative; z-index:2;
-    box-shadow:inset 0 -6px 14px rgba(0,0,0,.1), 0 3px 10px rgba(0,0,0,.25);
-    display:flex; flex-direction:column; align-items:center;
-    padding-top:12px; gap:5px; overflow:visible;
+  /* Talking ring animation */
+  #bingo-host.talking .host-avatar {
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(0,229,180,.25), 0 0 24px rgba(0,229,180,.5), 0 4px 20px rgba(0,0,0,.5);
+    animation:hostPulse .6s ease-in-out infinite alternate;
   }
-  /* Side hair strands */
-  .host-face::before, .host-face::after {
-    content:''; position:absolute; top:6px; width:11px; height:50px;
-    background:linear-gradient(180deg, #0a4a3c 0%, #0f7060 60%, transparent 100%);
-    border-radius:0 0 10px 10px; z-index:1;
-  }
-  .host-face::before { left:-4px; }
-  .host-face::after  { right:-4px; }
-
-  /* Cheeks */
-  .host-cheek {
-    position:absolute; width:13px; height:9px;
-    background:rgba(240,100,100,.18);
-    border-radius:50%; bottom:14px;
-  }
-  .host-cheek-l { left:3px; }
-  .host-cheek-r { right:3px; }
-
-  /* Eyes */
-  .host-eyes { display:flex; gap:11px; position:relative; z-index:5; }
-  .host-eye {
-    width:11px; height:11px; border-radius:50%;
-    background:#fff;
-    border:1px solid rgba(0,0,0,.12);
-    display:flex; align-items:center; justify-content:center;
-    position:relative; overflow:visible;
-    animation:eyeBlink 4s ease-in-out infinite;
-  }
-  /* Eyelashes */
-  .host-eye::before {
-    content:''; position:absolute; top:-3px; left:-2px;
-    width:15px; height:5px;
-    background:linear-gradient(180deg, #2a1506 0%, transparent 100%);
-    border-radius:50% 50% 0 0;
-    z-index:6;
-  }
-  .host-pupil {
-    width:6px; height:6px; border-radius:50%;
-    background:radial-gradient(circle at 35% 35%, #5a3a1a 0%, #1a0c04 100%);
-    position:relative;
-  }
-  .host-pupil::after {
-    content:''; position:absolute; top:1px; left:1px;
-    width:2px; height:2px; border-radius:50%;
-    background:rgba(255,255,255,.75);
-  }
-  @keyframes eyeBlink {
-    0%,90%,100% { transform:scaleY(1); }
-    94%          { transform:scaleY(.1); }
-  }
-  /* Eyes shimmer when talking */
-  #bingo-host.talking .host-eye {
-    animation:eyeGlow .4s ease-in-out infinite alternate;
-  }
-  @keyframes eyeGlow {
-    from { box-shadow:0 0 0 rgba(0,229,180,0); }
-    to   { box-shadow:0 0 6px rgba(0,229,180,.5); }
+  @keyframes hostPulse {
+    from { box-shadow:0 0 0 3px rgba(0,229,180,.2), 0 0 18px rgba(0,229,180,.4), 0 4px 20px rgba(0,0,0,.5); }
+    to   { box-shadow:0 0 0 5px rgba(0,229,180,.35), 0 0 32px rgba(0,229,180,.7), 0 4px 20px rgba(0,0,0,.5); }
   }
 
-  /* Nose */
-  .host-nose {
-    width:10px; height:6px;
-    border-bottom:2px solid rgba(170,90,30,.3);
-    border-left:1.5px solid rgba(170,90,30,.15);
-    border-right:1.5px solid rgba(170,90,30,.15);
-    border-radius:0 0 50% 50%;
-    position:relative; z-index:5;
+  /* Mouth EQ overlay (bottom of photo, visible only when talking) */
+  .host-mouth-overlay {
+    position:absolute; bottom:0; left:0; right:0; height:22px;
+    display:flex; align-items:flex-end; justify-content:center; gap:2px;
+    padding:0 18px 4px;
+    background:linear-gradient(transparent, rgba(4,16,21,.55));
+    opacity:0; transition:opacity .2s;
   }
-
-  /* Mouth equalizer bars */
-  .host-mouth {
-    display:flex; gap:2px; align-items:flex-end; height:14px;
-    padding:0 3px; position:relative; z-index:5;
-  }
+  #bingo-host.talking .host-mouth-overlay { opacity:1; }
   .host-tooth {
     width:5px; border-radius:2px 2px 1px 1px;
-    background:rgba(0,229,180,.85);
-    box-shadow:0 0 5px rgba(0,229,180,.5);
-    height:4px;
+    background:rgba(0,229,180,.9);
+    box-shadow:0 0 5px rgba(0,229,180,.6);
+    height:3px;
   }
-  #bingo-host:not(.talking) .host-tooth { height:3px; opacity:.45; background:rgba(200,120,60,.5); box-shadow:none; }
   #bingo-host.talking .host-tooth:nth-child(1) { animation:mouthTalk1 .19s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(2) { animation:mouthTalk2 .14s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(3) { animation:mouthTalk3 .21s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(4) { animation:mouthTalk2 .17s ease-in-out infinite alternate; }
   #bingo-host.talking .host-tooth:nth-child(5) { animation:mouthTalk1 .12s ease-in-out infinite alternate; }
-  @keyframes mouthTalk1 { from { height:3px;  opacity:.7; } to { height:13px; opacity:1; } }
-  @keyframes mouthTalk2 { from { height:10px; opacity:1; } to { height:3px;  opacity:.7; } }
-  @keyframes mouthTalk3 { from { height:6px;  opacity:.8; } to { height:13px; opacity:1; } }
+  @keyframes mouthTalk1 { from { height:3px;  opacity:.7; } to { height:12px; opacity:1; } }
+  @keyframes mouthTalk2 { from { height:9px;  opacity:1; } to { height:3px;  opacity:.7; } }
+  @keyframes mouthTalk3 { from { height:6px;  opacity:.8; } to { height:12px; opacity:1; } }
 
-  /* Headset arc */
+  /* Headset mic overlay */
   .host-headset {
-    position:absolute; right:-10px; top:10px;
-    width:16px; height:30px;
+    position:absolute; right:-2px; top:22px;
+    width:14px; height:28px;
     border:2px solid var(--accent);
     border-left:none;
     border-radius:0 50% 50% 0;
-    box-shadow:0 0 6px rgba(0,229,180,.35);
-    z-index:10;
+    box-shadow:0 0 6px rgba(0,229,180,.4);
+    pointer-events:none;
   }
-  /* Mic boom dot */
   .host-headset::after {
     content:''; position:absolute;
     bottom:-5px; right:-3px;
     width:7px; height:7px; border-radius:50%;
     background:var(--accent);
     box-shadow:0 0 8px var(--accent);
-  }
-
-  /* Shoulders / body */
-  .host-body {
-    width:56px; height:22px;
-    background:linear-gradient(160deg, #0f7060 0%, #0a4a3c 100%);
-    border-radius:0 0 14px 14px;
-    margin-top:-2px; position:relative; z-index:1;
-    box-shadow:0 4px 10px rgba(0,0,0,.3);
-  }
-  /* Collar shine */
-  .host-body::before {
-    content:''; position:absolute; top:2px; left:50%; transform:translateX(-50%);
-    width:14px; height:6px;
-    background:rgba(255,255,255,.07);
-    border-radius:0 0 8px 8px;
   }
 
   @media(max-width:600px) {
@@ -889,33 +802,19 @@
       <div id="bingo-host" title="¡Presentadora de Bingo!">
         <!-- Speech bubble -->
         <div id="host-bubble"><span id="host-bubble-text">?</span></div>
-        <!-- Human avatar -->
+        <!-- AI Photo avatar -->
         <div class="host-avatar">
-          <div class="host-hair-top"></div>
-          <div class="host-face">
-            <!-- Cheeks -->
-            <div class="host-cheek host-cheek-l"></div>
-            <div class="host-cheek host-cheek-r"></div>
-            <!-- Eyes -->
-            <div class="host-eyes">
-              <div class="host-eye"><div class="host-pupil"></div></div>
-              <div class="host-eye"><div class="host-pupil"></div></div>
-            </div>
-            <!-- Nose -->
-            <div class="host-nose"></div>
-            <!-- Mouth equalizer -->
-            <div class="host-mouth">
-              <div class="host-tooth"></div>
-              <div class="host-tooth"></div>
-              <div class="host-tooth"></div>
-              <div class="host-tooth"></div>
-              <div class="host-tooth"></div>
-            </div>
-            <!-- Headset -->
-            <div class="host-headset"></div>
+          <img src="/static/images/host.jpg.png" alt="Presentadora">
+          <!-- Mouth EQ overlay -->
+          <div class="host-mouth-overlay">
+            <div class="host-tooth"></div>
+            <div class="host-tooth"></div>
+            <div class="host-tooth"></div>
+            <div class="host-tooth"></div>
+            <div class="host-tooth"></div>
           </div>
-          <!-- Shoulders -->
-          <div class="host-body"></div>
+          <!-- Headset mic -->
+          <div class="host-headset"></div>
         </div>
       </div>
 
