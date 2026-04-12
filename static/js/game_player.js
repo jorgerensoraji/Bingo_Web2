@@ -338,17 +338,21 @@ function handleAdminOffline() {
 // ── BANNER GLOBAL DE GANADOR (visible para todos) ────────────────────────────
 var _lastBannerKey = '';
 
-function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
+function showGlobalWinnerBanner(winners, lineaWinners, isPaused, uWinners, oWinners) {
   var hasBingo = winners && winners.length > 0;
   var hasLinea = lineaWinners && lineaWinners.length > 0;
+  var hasU     = uWinners && uWinners.length > 0;
+  var hasO     = oWinners && oWinners.length > 0;
 
   var key = (hasBingo ? winners.map(function(w){return w.id;}).join(',') : '') +
-            '|' + (hasLinea ? lineaWinners.map(function(w){return w.id;}).join(',') : '');
+            '|' + (hasLinea ? lineaWinners.map(function(w){return w.id;}).join(',') : '') +
+            '|' + (hasU ? uWinners.map(function(w){return w.id;}).join(',') : '') +
+            '|' + (hasO ? oWinners.map(function(w){return w.id;}).join(',') : '');
 
   var el = document.getElementById('winner-zone');
   if (!el) return;
 
-  if (!hasBingo && !hasLinea) {
+  if (!hasBingo && !hasLinea && !hasU && !hasO) {
     el.style.display = 'none';
     el.innerHTML = '';
     _lastBannerKey = '';
@@ -363,7 +367,7 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
 
   var html = '';
 
-  // LÍNEA banner (always on top, game continues)
+  // LÍNEA banner (game continues)
   if (hasLinea) {
     var lw = lineaWinners[0];
     var lp = Number(lw.linea_prize || 0).toFixed(2);
@@ -372,6 +376,32 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
       'color:#fff8e0;padding:10px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
       'font-size:.92rem;font-weight:700;border-bottom:2px solid #f6c343;">' +
       '⭐ <strong>' + esc(lnames) + '</strong> ganó la LÍNEA — Premio: S/. ' + lp +
+      ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">El juego continúa ▶</span>' +
+      '</div>';
+  }
+
+  // U banner (game continues)
+  if (hasU) {
+    var uw = uWinners[0];
+    var up = Number(uw.u_prize || 0).toFixed(2);
+    var unames = uWinners.map(function(w){ return (w.nombre||w.id); }).join(' & ');
+    html += '<div style="background:linear-gradient(90deg,#1e3a5f,#2563a8,#1e3a5f);' +
+      'color:#dbeafe;padding:10px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
+      'font-size:.92rem;font-weight:700;border-bottom:2px solid #3b82f6;">' +
+      '🔷 <strong>' + esc(unames) + '</strong> ganó la U — Premio: S/. ' + up +
+      ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">El juego continúa ▶</span>' +
+      '</div>';
+  }
+
+  // O banner (game continues)
+  if (hasO) {
+    var ow = oWinners[0];
+    var op = Number(ow.o_prize || 0).toFixed(2);
+    var onames = oWinners.map(function(w){ return (w.nombre||w.id); }).join(' & ');
+    html += '<div style="background:linear-gradient(90deg,#5f1e4a,#a8256b,#5f1e4a);' +
+      'color:#fce7f3;padding:10px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
+      'font-size:.92rem;font-weight:700;border-bottom:2px solid #ec4899;">' +
+      '⭕ <strong>' + esc(onames) + '</strong> ganó la O — Premio: S/. ' + op +
       ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">El juego continúa ▶</span>' +
       '</div>';
   }
@@ -411,8 +441,10 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused) {
   var myIds = new Set(myCartillas.map(function(c){ return (c.id || c); }));
   var iAmBingoWinner = hasBingo && winners.some(function(w){ return myIds.has(w.id); });
   var iAmLineaWinner = hasLinea && lineaWinners.some(function(w){ return myIds.has(w.id); });
+  var iAmUWinner     = hasU && uWinners.some(function(w){ return myIds.has(w.id); });
+  var iAmOWinner     = hasO && oWinners.some(function(w){ return myIds.has(w.id); });
 
-  if (iAmBingoWinner || iAmLineaWinner) {
+  if (iAmBingoWinner || iAmLineaWinner || iAmUWinner || iAmOWinner) {
     var waPhone = (adminWhatsapp || '').replace(/\D/g, '');
     var waLink  = waPhone
       ? 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent('Hola, acabo de ganar el bingo y quiero consultar sobre mi pago.')
@@ -630,8 +662,8 @@ async function syncState() {
     // No change → skip
     if (serverDrawn.length === drawnLocal.length) {
       updatePrizeDisplay(data);
-      updateWinnersDisplay(data.winners || [], data.linea_winners || []);
-      showGlobalWinnerBanner(data.winners || [], data.linea_winners || [], data.paused);
+      updateWinnersDisplay(data.winners || [], data.linea_winners || [], data.u_winners || [], data.o_winners || []);
+      showGlobalWinnerBanner(data.winners || [], data.linea_winners || [], data.paused, data.u_winners || [], data.o_winners || []);
       return;
     }
 
@@ -672,9 +704,9 @@ async function syncState() {
     updateRecent();
     updateStats(serverDrawn.length, data.remaining);
     updatePrizeDisplay(data);
-    updateWinnersDisplay(data.winners || [], data.linea_winners || []);
+    updateWinnersDisplay(data.winners || [], data.linea_winners || [], data.u_winners || [], data.o_winners || []);
     updateMyCartillaAutoMark();
-    showGlobalWinnerBanner(data.winners || [], data.linea_winners || [], data.paused);
+    showGlobalWinnerBanner(data.winners || [], data.linea_winners || [], data.paused, data.u_winners || [], data.o_winners || []);
 
     if (data.remaining === 0 && serverDrawn.length === gameBalls) {
       showGameOver();
@@ -936,7 +968,7 @@ function updateStatusMsg(count, remaining) {
 // ── v6: Mostrar pozo en tiempo real ──────────────────
 function updatePrizeDisplay(data) {
   const el = document.getElementById('game-status-msg');
-  if (!el || !gameStarted) return;
+  if (!el || !data.session_id) return;
   const pool  = data.prize_pool  || 0;
   const oPool = data.o_pool      || 0;
   const uPool = data.u_pool      || 0;
