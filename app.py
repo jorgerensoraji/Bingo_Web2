@@ -4170,8 +4170,9 @@ def whatsapp_incoming():
     return Response(twiml, mimetype="text/xml")
 
 @app.route("/admin/email_log")
-@require_admin
 def admin_email_log_page():
+    chk = admin_required()
+    if chk: return chk
     with _email_log_lock:
         entries = list(reversed(_email_log))
     rows = "".join(
@@ -4204,8 +4205,9 @@ a{{color:#00e5b4;text-decoration:none;font-size:.85rem}}
 </body></html>"""
 
 @app.route("/api/admin/email_log")
-@require_admin
 def api_admin_email_log():
+    chk = admin_required()
+    if chk: return chk
     with _email_log_lock:
         entries = list(reversed(_email_log))
     return jsonify({"log": entries})
