@@ -13,7 +13,7 @@ CHANGES v8.0 (SQLite migration):
   ✅ Foundation ready for payment webhooks (v8.2)
 """
 
-import asyncio, hashlib, json, os, random, socket, tempfile
+import asyncio, base64, hashlib, json, os, random, socket, tempfile
 import threading, time, uuid
 from security import (
     apply_security_headers, get_csrf_token, csrf_required,
@@ -192,7 +192,7 @@ def _chat_color(name: str) -> str:
     idx = sum(ord(c) for c in name) % len(_CHAT_COLORS)
     return _CHAT_COLORS[idx]
 
-def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
+def enviar_email(destinatario: str, asunto: str, cuerpo_html: str, attachments: list = None) -> tuple:
     if not email_configurado():
         return False, "Email no configurado. Agrega EMAIL_FROM y EMAIL_PASS en las variables de entorno."
     if not destinatario or "@" not in destinatario:
@@ -204,6 +204,8 @@ def enviar_email(destinatario: str, asunto: str, cuerpo_html: str) -> tuple:
             "subject":     asunto,
             "htmlContent": cuerpo_html,
         }
+        if attachments:
+            payload["attachment"] = attachments
         headers = {
             "api-key":      EMAIL_PASS,
             "Content-Type": "application/json",
@@ -346,6 +348,71 @@ def _email_sesion_cancelada(voucher_dict: dict, session_nombre: str, amount: flo
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin-top:20px">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
   <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
+
+def _email_cartilla_generada(voucher_dict: dict, cartillas: list, url_base: str) -> str:
+    nombre   = voucher_dict.get("nombres", "Jugador")
+    bt       = BINGO_TYPES.get(voucher_dict.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
+    url_juego = f"{url_base}/"
+    ids_html = "".join(
+        f'<div style="font-family:\'Courier New\',monospace;font-size:1.4rem;font-weight:900;'
+        f'color:#00e5b4;letter-spacing:6px;margin:4px 0">{c["id"]}</div>'
+        for c in cartillas
+    )
+    count = len(cartillas)
+    plural = "s" if count > 1 else ""
+    return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
+<div style="max-width:520px;margin:0 auto;padding:32px 24px">
+  <div style="text-align:center;margin-bottom:28px">
+    <h1 style="font-size:2rem;color:#00e5b4;letter-spacing:3px;margin:0">🎱 BINGO PRO</h1>
+    <p style="color:#6a9ab8;margin:4px 0 0">Tu{plural} cartilla{plural} {'están listas' if count>1 else 'está lista'}</p>
+  </div>
+  <div style="background:#0d1825;border:1px solid #1a3148;border-radius:14px;padding:24px;margin-bottom:20px">
+    <p style="margin:0 0 8px;color:#6a9ab8;font-size:.85rem">Hola, <strong style="color:#ddeeff">{nombre}</strong></p>
+    <p style="margin:0 0 20px;color:#ddeeff">
+      {'Tu cartilla ha sido' if count==1 else f'Tus {count} cartillas han sido'} generada{plural} exitosamente.
+      {'La encontrarás adjunta' if count==1 else 'Las encontrarás adjuntas'} a este correo.
+    </p>
+    <div style="background:#111f2e;border:2px solid #00e5b4;border-radius:12px;padding:20px;text-align:center;margin-bottom:20px">
+      <div style="font-size:.75rem;color:#6a9ab8;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px">
+        ID{plural} de tu{plural} cartilla{plural}
+      </div>
+      {ids_html}
+      <div style="font-size:.78rem;color:#6a9ab8;margin-top:10px">{bt['emoji']} {bt['nombre']}</div>
+    </div>
+    <div style="background:#0a1520;border-radius:10px;padding:14px;font-size:.85rem;color:#6a9ab8;margin-bottom:20px">
+      <strong style="color:#ddeeff">¿Cómo jugar?</strong><br><br>
+      1. Guarda {'este ID' if count==1 else 'estos IDs'} — los necesitarás si juegas desde otro dispositivo<br><br>
+      2. El día del bingo entra al juego en: <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a><br><br>
+      3. ¡Buena suerte! 🎉
+    </div>
+    <div style="text-align:center">
+      <a href="{url_juego}" style="display:inline-block;padding:14px 28px;background:#00e5b4;color:#041015;
+         border-radius:10px;text-decoration:none;font-weight:900;font-size:.95rem">
+        🎮 Ir al Juego
+      </a>
+    </div>
+  </div>
+  <p style="text-align:center;color:#1a3148;font-size:.75rem;margin:0">Bingo Pro Web · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
+</div></body></html>"""
+
+def _send_cartilla_email_async(vinfo: dict, cartillas: list, url_base: str) -> None:
+    """Fire-and-forget: send cartilla PNG(s) to player email in a background thread."""
+    def _do():
+        try:
+            attachments = []
+            for c in cartillas:
+                buf = cartilla_to_png(c)
+                b64 = base64.b64encode(buf.read()).decode()
+                attachments.append({"content": b64, "name": f"cartilla_{c['id']}.png"})
+            html = _email_cartilla_generada(vinfo, cartillas, url_base)
+            count = len(cartillas)
+            subject = f"🎴 Tu{'s' if count>1 else ''} cartilla{'s' if count>1 else ''} de Bingo {'están listas' if count>1 else 'está lista'}"
+            enviar_email(vinfo["email"], subject, html, attachments)
+        except Exception:
+            pass
+    threading.Thread(target=_do, daemon=True).start()
 
 def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     nombre     = winner.get("nombre", "Jugador")
@@ -2776,6 +2843,10 @@ def api_generate():
         if code:
             mark_voucher_cartilla(code, c["id"])
 
+    # Send email with cartilla PNG(s) attached (skip if admin-generated or no email)
+    if not por_admin and vinfo and vinfo.get("email"):
+        _send_cartilla_email_async(vinfo, results, request.host_url.rstrip("/"))
+
     return jsonify({"status": "ok", "cartillas": results})
 
 @app.route("/api/cartilla/save_manual", methods=["POST"])
@@ -2805,6 +2876,11 @@ def api_save_manual():
                       generada_por_admin=is_admin())
     if code:
         mark_voucher_cartilla(code, c["id"])
+
+    # Send email with cartilla PNG attached (skip if admin-generated or no email)
+    if not is_admin() and vinfo and vinfo.get("email"):
+        _send_cartilla_email_async(vinfo, [c], request.host_url.rstrip("/"))
+
     return jsonify({"status": "ok", "cartilla": c})
 
 @app.route("/api/cartilla/list")
