@@ -992,7 +992,12 @@ function abrirModalAprobacion(code){
   document.getElementById('modal-nota').value='';
   document.getElementById('modal-aprobar').classList.add('show');
 }
-function cerrarModal(){ document.getElementById('modal-aprobar').classList.remove('show'); pendingApprove=null; }
+function cerrarModal(){
+  document.getElementById('modal-aprobar').classList.remove('show');
+  pendingApprove=null;
+  const btn=document.querySelector('#modal-aprobar .btn-ok');
+  if(btn){ btn.disabled=false; btn.textContent='✅ Confirmar + enviar email'; }
+}
 document.getElementById('modal-aprobar').addEventListener('click',function(e){ if(e.target===this) cerrarModal(); });
 
 async function confirmarAprobacion(){
