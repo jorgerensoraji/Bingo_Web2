@@ -694,21 +694,10 @@ function renderSessions() {
 
 // ── Construir botones de acción ────────────────────────
 function buildActions(s) {
-  const bt  = BINGO_TYPES[s.bingo_type] || BINGO_TYPES['1sol'];
-  const msg = encodeURIComponent(
-    `🎱 *${bt.nombre}* — S/. ${bt.precio}\n` +
-    `📅 Fecha: ${s.datetime_iso?.replace('T',' ').slice(0,16) || '—'}\n` +
-    `${s.descripcion ? '📝 ' + s.descripcion + '\n' : ''}` +
-    `\nRegistra tu pago en /cartillas`
-  );
-  const waBtn = `<a class="btn btn-ghost btn-sm"
-    href="https://wa.me/?text=${msg}" target="_blank"
-    style="text-decoration:none">📲 WA</a>`;
-
   // Botón eliminar — bloqueado si activa o en countdown
   const canDelete = !['active','preparing'].includes(s.status);
   const delBtn = canDelete
-    ? `<button class="btn btn-no btn-sm" onclick="deleteSession('${s.id}')">🗑</button>`
+    ? `<button class="btn btn-no btn-sm" onclick="deleteSession('${s.id}')">🗑 Eliminar</button>`
     : `<button class="btn btn-ghost btn-sm" disabled
                title="No se puede eliminar una sesión activa o en countdown">🗑</button>`;
 
@@ -724,9 +713,6 @@ function buildActions(s) {
       <button class="btn btn-ghost btn-sm" onclick="openEditSession('${s.id}')"
               style="border-color:rgba(47,128,237,.5);color:#2f80ed">
         ✏️ Editar
-      </button>
-      <button class="btn btn-no btn-sm" onclick="cancelSession('${s.id}')">
-        ✕ Cancelar
       </button>`;
   } else if (s.status === 'preparing') {
     btns = `
@@ -760,7 +746,6 @@ function buildActions(s) {
       🎫 Vouchers
     </button>
     ${broadcastBtn}
-    ${waBtn}
     ${delBtn}
   </div>`;
 }
