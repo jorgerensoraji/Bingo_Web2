@@ -188,7 +188,7 @@ td{padding:10px 12px;vertical-align:middle}
     <a class="nav-link" href="/admin">🛠 Admin</a>
     <a class="nav-link" href="/admin/sessions">📅 Sesiones</a>
     <a class="nav-link" href="/admin/game">🎮 Juego</a>
-    <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
+    <a class="nav-link" href="/admin/sessions">🎰 Tipos</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
     <a class="nav-link" href="/admin/manual" target="_blank">📖 Manual</a>
     <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
@@ -576,7 +576,7 @@ async function logout(){
 // Load bingo types from API
 async function loadBingoTypes(){
   try{
-    const r=await fetch('/api/admin/bingo_types');
+    const r=await fetch('/api/admin/sessions');
     const d=await r.json();
     (d.bingo_types||[]).forEach(bt=>{
       _btypes[bt.id]={nombre:bt.nombre,color:bt.color||'#00e5b4',emoji:bt.emoji||'🎯',max_cartillas:bt.max_cartillas||1};

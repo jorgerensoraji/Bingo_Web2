@@ -6,6 +6,8 @@
 - **Ruta del proyecto:** `/var/www/bingopro/`
 - **Usuario SSH:** root
 
+
+
 ---
 
 ## 1. Cómo conectarse al servidor
@@ -18,6 +20,7 @@ ssh root@209.38.76.32
 
 Ingresa tu contraseña cuando la pida. La encuentras en:
 - El email que te envió DigitalOcean cuando creaste el droplet
+- **Password:** HumildeS1!s
 - O en DigitalOcean Dashboard → Droplets → Reset Root Password
 
 ---

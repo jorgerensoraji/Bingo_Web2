@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👥 Jugadores — Bingo Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap;
+      border-bottom:2px solid var(--border);padding-bottom:0}
+.tab-btn{
+  padding:10px 20px;border:none;background:none;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;
+  color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;
+  transition:color .15s,border-color .15s;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* Stats */
+.stats-top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:700px){.stats-top{grid-template-columns:repeat(2,1fr)}}
+.stat-mini{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-mini .v{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--accent)}
+.stat-mini .l{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+
+/* Card */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.card h2{margin:0 0 14px;font-size:1.05rem}
+
+/* Inputs & buttons */
+.inp{padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+     color:var(--text);outline:none;font-family:'Outfit',sans-serif;font-size:.88rem;transition:border-color .2s}
+.inp:focus{border-color:var(--accent)}
+.btn{padding:9px 18px;border:none;border-radius:10px;font-family:'Outfit',sans-serif;
+     font-weight:700;font-size:.85rem;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-accent{background:var(--accent);color:#041015}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
+.btn-sm{padding:5px 12px;font-size:.78rem;border-radius:7px}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);
+   color:var(--muted);font-size:.72rem;letter-spacing:1px;text-transform:uppercase}
+td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700}
+.badge-approved{background:rgba(39,174,96,.15);color:#27ae60;border:1px solid rgba(39,174,96,.3)}
+.badge-pending{background:rgba(246,195,67,.1);color:#f6c343;border:1px solid rgba(246,195,67,.3)}
+.badge-rejected{background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
+.badge-other{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.badge-contact{background:rgba(0,229,180,.1);color:var(--accent);border:1px solid rgba(0,229,180,.3)}
+
+/* Form row */
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:14px}
+@media(max-width:700px){.form-row{grid-template-columns:1fr 1fr}}
+.form-label{font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+
+/* Inner tabs (add/import) */
+.inner-tabs{display:flex;gap:8px;margin-bottom:16px}
+.inner-tab{padding:8px 18px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+            color:var(--muted);font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer}
+.inner-tab.active{background:var(--accent);color:#041015;border-color:var(--accent)}
+.inner-panel{display:none}.inner-panel.active{display:block}
+textarea.inp{width:100%;resize:vertical;min-height:120px;box-sizing:border-box;font-size:.8rem;
+             font-family:'Courier New',monospace}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:12px 24px;font-size:.9rem;z-index:1000;transition:transform .3s;
+  pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">👥 Jugadores</div>
+  <div class="nav-links">
+    <a class="nav-link" href="/admin">🛠 Admin</a>
+    <a class="nav-link" href="/admin/sessions">📅 Bingos</a>
+    <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/config">⚙️ Config</a>
+    <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;
+              margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;
+                 color:var(--accent);letter-spacing:2px;margin:0">Jugadores</h2>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:2px">
+        Contactos WhatsApp · Lista de emails registrados
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('contactos',this)">👥 Contactos</button>
+    <button class="tab-btn" onclick="switchTab('emails',this)">📧 Emails</button>
+  </div>
+
+  <!-- ══════════════ TAB: CONTACTOS ══════════════ -->
+  <div class="tab-pane active" id="tab-contactos">
+
+    <div class="stats-top" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-mini">
+        <div class="v" id="st-ctotal">—</div><div class="l">Contactos</div>
+      </div>
+      <div class="stat-mini">
+        <div class="v" style="color:#3b82f6" id="st-cemails">—</div><div class="l">Con email</div>
+      </div>
+      <div class="stat-mini">
+        <div class="v" style="color:#25d366" id="st-cphones">—</div><div class="l">Con WhatsApp</div>
+      </div>
+    </div>
+
+    <!-- Add / Import -->
+    <div class="card">
+      <div class="inner-tabs">
+        <button class="inner-tab active" onclick="switchInner('add',this)">➕ Agregar uno</button>
+        <button class="inner-tab" onclick="switchInner('import',this)">📥 Importar CSV</button>
+      </div>
+
+      <div id="inner-add" class="inner-panel active">
+        <div class="form-row">
+          <div>
+            <div class="form-label">Nombre</div>
+            <input class="inp" id="f-nombre" placeholder="Nombre completo" style="width:100%;box-sizing:border-box">
+          </div>
+          <div>
+            <div class="form-label">Email</div>
+            <input class="inp" id="f-email" type="email" placeholder="correo@ejemplo.com" style="width:100%;box-sizing:border-box">
+          </div>
+          <div>
+            <div class="form-label">Teléfono (WhatsApp)</div>
+            <input class="inp" id="f-phone" placeholder="+51987654321" style="width:100%;box-sizing:border-box">
+          </div>
+          <div><button class="btn btn-accent" onclick="addContact()">Agregar</button></div>
+        </div>
+        <div style="font-size:.72rem;color:var(--muted)">
+          Al menos un email o teléfono es obligatorio. Teléfono en formato E.164 (ej: +51987654321).
+        </div>
+      </div>
+
+      <div id="inner-import" class="inner-panel">
+        <div style="margin-bottom:10px;font-size:.85rem;color:var(--muted);line-height:1.7">
+          Pega una lista CSV con columnas: <strong style="color:var(--text)">nombre, email, teléfono</strong><br>
+          La primera fila puede ser encabezado (se detecta automáticamente).
+        </div>
+        <div style="background:var(--card);border-radius:8px;padding:10px 14px;font-family:'Courier New',monospace;
+                    font-size:.78rem;color:var(--accent);margin-bottom:12px">
+          nombre,email,phone<br>
+          Juan Pérez,juan@email.com,+51987654321<br>
+          María García,maria@email.com,+51912345678
+        </div>
+        <textarea class="inp" id="f-csv" placeholder="Pega tu CSV aquí…"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-accent" onclick="importCSV()">📥 Importar</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('f-csv').value=''">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">📋 Lista de contactos</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="inp" id="c-search" placeholder="🔍 Buscar…" oninput="filterContacts()"
+                 style="min-width:180px">
+          <button class="btn btn-ghost btn-sm" onclick="exportContactsCSV()">⬇️ CSV</button>
+          <button class="btn btn-danger btn-sm" onclick="dedupContacts()"
+                  title="Elimina contactos que ya existen como jugadores registrados">
+            🧹 Limpiar duplicados
+          </button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Nombre</th><th>Email</th><th>WhatsApp</th><th>Agregado</th><th></th></tr>
+          </thead>
+          <tbody id="contacts-body">
+            <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="c-count" style="font-size:.75rem;color:var(--muted);margin-top:10px"></div>
+    </div>
+
+  </div><!-- /tab-contactos -->
+
+  <!-- ══════════════ TAB: EMAILS ══════════════ -->
+  <div class="tab-pane" id="tab-emails">
+
+    <div class="stats-top">
+      <div class="stat-mini">
+        <div class="v" id="st-etotal">—</div><div class="l">Emails únicos</div>
+      </div>
+      <div class="stat-mini">
+        <div class="v" style="color:#27ae60" id="st-eapproved">—</div><div class="l">Aprobados</div>
+      </div>
+      <div class="stat-mini">
+        <div class="v" style="color:var(--warning)" id="st-epending">—</div><div class="l">Pendientes</div>
+      </div>
+      <div class="stat-mini">
+        <div class="v" style="color:var(--muted)" id="st-eother">—</div><div class="l">Otros</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">📋 Emails registrados</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="inp" id="e-search" placeholder="🔍 Buscar email o nombre…"
+                 oninput="filterEmails()" style="min-width:200px">
+          <button class="btn btn-ghost btn-sm" onclick="exportEmailsCSV()">⬇️ CSV</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Email</th><th>Nombre</th><th>Último estado</th><th>Registros</th><th>Desde</th></tr>
+          </thead>
+          <tbody id="emails-body">
+            <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="e-count" style="font-size:.75rem;color:var(--muted);margin-top:10px"></div>
+    </div>
+
+  </div><!-- /tab-emails -->
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  SHARED
+// ═══════════════════════════════════════════════════
+function showToast(msg,ms=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+async function logout(){
+  await fetch('/api/admin/logout',{method:'POST'});
+  location.href='/admin/login';
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='contactos') loadContacts();
+  if(name==='emails')    loadEmails();
+}
+
+function switchInner(name,btn){
+  document.querySelectorAll('.inner-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.inner-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('inner-'+name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+//  CONTACTOS
+// ═══════════════════════════════════════════════════
+let allContacts=[];
+
+function renderContacts(data){
+  const tbody=document.getElementById('contacts-body');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Sin contactos todavía</td></tr>';
+    document.getElementById('c-count').textContent=''; return;
+  }
+  tbody.innerHTML=data.map((c,i)=>`
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><strong>${esc(c.nombre)||'<span style="color:var(--muted)">—</span>'}</strong></td>
+      <td>${c.email?`<a href="mailto:${esc(c.email)}" style="color:var(--accent);text-decoration:none">${esc(c.email)}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${c.phone?`<span style="color:#25d366">${esc(c.phone)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="color:var(--muted)">${(c.created||'').slice(0,10)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteContact(${c.id})">🗑</button></td>
+    </tr>`).join('');
+  document.getElementById('c-count').textContent=`Mostrando ${data.length} de ${allContacts.length} contactos`;
+}
+
+function filterContacts(){
+  const q=document.getElementById('c-search').value.toLowerCase();
+  renderContacts(q?allContacts.filter(c=>
+    (c.nombre||'').toLowerCase().includes(q)||
+    (c.email||'').toLowerCase().includes(q)||
+    (c.phone||'').includes(q)):allContacts);
+}
+
+async function loadContacts(){
+  try{
+    const res=await fetch('/api/admin/contacts');
+    const data=await res.json();
+    allContacts=data.contacts||[];
+    document.getElementById('st-ctotal').textContent=allContacts.length;
+    document.getElementById('st-cemails').textContent=allContacts.filter(c=>c.email).length;
+    document.getElementById('st-cphones').textContent=allContacts.filter(c=>c.phone).length;
+    renderContacts(allContacts);
+  }catch(e){
+    document.getElementById('contacts-body').innerHTML=
+      '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger)">Error al cargar</td></tr>';
+  }
+}
+
+async function addContact(){
+  const nombre=document.getElementById('f-nombre').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  if(!email&&!phone){showToast('⚠️ Ingresa al menos un email o teléfono');return;}
+  try{
+    const res=await fetch('/api/admin/contacts',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nombre,email,phone})});
+    const data=await res.json();
+    if(!res.ok){showToast('❌ '+(data.error||'Error'));return;}
+    document.getElementById('f-nombre').value='';
+    document.getElementById('f-email').value='';
+    document.getElementById('f-phone').value='';
+    showToast('✅ Contacto agregado');
+    loadContacts();
+  }catch(e){showToast('❌ Error al agregar')}
+}
+
+async function deleteContact(id){
+  if(!confirm('¿Eliminar este contacto?')) return;
+  await fetch(`/api/admin/contacts/${id}`,{method:'DELETE'});
+  showToast('🗑 Contacto eliminado');
+  loadContacts();
+}
+
+async function importCSV(){
+  const csv=document.getElementById('f-csv').value.trim();
+  if(!csv){showToast('⚠️ Pega tu CSV primero');return;}
+  try{
+    const res=await fetch('/api/admin/contacts/import',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({csv})});
+    const data=await res.json();
+    if(!res.ok){showToast('❌ '+(data.error||'Error'));return;}
+    document.getElementById('f-csv').value='';
+    showToast(`✅ ${data.added} importados · ${data.skipped} omitidos`,4000);
+    loadContacts();
+  }catch(e){showToast('❌ Error al importar')}
+}
+
+function exportContactsCSV(){
+  if(!allContacts.length){showToast('No hay contactos');return;}
+  const header=['Nombre','Email','Telefono','Agregado'];
+  const rows=allContacts.map(c=>[c.nombre,c.email,c.phone,(c.created||'').slice(0,10)]
+    .map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv=[header.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='contactos_bingo_pro.csv';a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ CSV exportado');
+}
+
+async function dedupContacts(){
+  if(!confirm('¿Eliminar contactos que ya están registrados como jugadores (mismo email o teléfono)?')) return;
+  const res=await fetch('/api/admin/contacts/dedup',{method:'POST'});
+  const data=await res.json();
+  showToast(`✅ Se eliminaron ${data.removed} contactos duplicados`);
+  loadContacts();
+}
+
+// ═══════════════════════════════════════════════════
+//  EMAILS
+// ═══════════════════════════════════════════════════
+let allEmails=[];
+
+function statusBadge(s){
+  if(['approved','manual_approved'].includes(s)) return '<span class="badge badge-approved">✅ Aprobado</span>';
+  if(s==='pending_review') return '<span class="badge badge-pending">⏳ Pendiente</span>';
+  if(s==='rejected') return '<span class="badge badge-rejected">❌ Rechazado</span>';
+  if(s==='contact') return '<span class="badge badge-contact">👥 Contacto</span>';
+  return `<span class="badge badge-other">${s||'—'}</span>`;
+}
+
+function renderEmails(data){
+  const tbody=document.getElementById('emails-body');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Sin resultados</td></tr>';
+    document.getElementById('e-count').textContent=''; return;
+  }
+  tbody.innerHTML=data.map((r,i)=>`
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><strong>${esc(r.email)}</strong></td>
+      <td>${esc(r.nombre)||'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="text-align:center">${r.total}</td>
+      <td style="color:var(--muted)">${(r.created||'').slice(0,10)}</td>
+    </tr>`).join('');
+  document.getElementById('e-count').textContent=`Mostrando ${data.length} de ${allEmails.length} emails`;
+}
+
+function filterEmails(){
+  const q=document.getElementById('e-search').value.toLowerCase();
+  renderEmails(q?allEmails.filter(r=>(r.email||'').toLowerCase().includes(q)||(r.nombre||'').toLowerCase().includes(q)):allEmails);
+}
+
+async function loadEmails(){
+  try{
+    const res=await fetch('/api/admin/emails');
+    const data=await res.json();
+    allEmails=data.emails||[];
+    document.getElementById('st-etotal').textContent=allEmails.length;
+    const approved=allEmails.filter(r=>['approved','manual_approved'].includes(r.status)).length;
+    const pending=allEmails.filter(r=>r.status==='pending_review').length;
+    document.getElementById('st-eapproved').textContent=approved;
+    document.getElementById('st-epending').textContent=pending;
+    document.getElementById('st-eother').textContent=allEmails.length-approved-pending;
+    renderEmails(allEmails);
+  }catch(e){
+    document.getElementById('emails-body').innerHTML=
+      '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger)">Error al cargar</td></tr>';
+  }
+}
+
+function exportEmailsCSV(){
+  if(!allEmails.length){showToast('No hay datos');return;}
+  const header=['Email','Nombre','Estado','Registros','Desde'];
+  const rows=allEmails.map(r=>[r.email,r.nombre,r.status,r.total,(r.created||'').slice(0,10)]
+    .map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv=[header.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='emails_bingo_pro.csv';a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ CSV exportado');
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+loadContacts();
+</script>
+</body>
+</html>

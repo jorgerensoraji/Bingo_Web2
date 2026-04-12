@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📅 Sesiones — Bingo Pro</title>
+<title>📅 Bingos — Bingo Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/game.css">
 <style>
@@ -124,6 +124,82 @@
 .filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .filter-row .inp{width:auto;flex:1}
 
+/* Main tabs */
+.main-tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap;
+           border-bottom:2px solid var(--border);padding-bottom:0}
+.main-tab-btn{
+  padding:10px 20px;border:none;background:none;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;
+  color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;
+  transition:color .15s,border-color .15s;
+}
+.main-tab-btn:hover{color:var(--text)}
+.main-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.main-tab-pane{display:none}.main-tab-pane.active{display:block}
+
+/* Tipos grid */
+.types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px}
+.type-card{background:var(--panel);border:2px solid var(--border);border-radius:18px;padding:20px;position:relative;transition:border-color .2s}
+.type-card.inactive{opacity:.5}
+.type-card .tc-badge{position:absolute;top:14px;right:14px;font-size:.6rem;letter-spacing:2px;
+                     padding:3px 9px;border-radius:20px;font-weight:700;text-transform:uppercase}
+.tc-badge.active{background:rgba(39,174,96,.2);color:#27ae60}
+.tc-badge.inactive-b{background:rgba(231,76,60,.15);color:var(--danger)}
+.tc-badge.special{background:rgba(246,195,67,.2);color:#f6c343}
+.type-card h3{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;margin:0 0 4px;line-height:1}
+.type-card .tc-price{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;line-height:1;margin-bottom:12px}
+.type-card .tc-desc{font-size:.78rem;color:var(--muted);margin-bottom:14px}
+.prize-bar-t{height:10px;border-radius:6px;overflow:hidden;display:flex;margin-bottom:10px}
+.prize-bar-t .pb-seg{height:100%;transition:width .3s}
+.prize-rows-t{margin-bottom:14px}
+.prize-row-t{display:flex;justify-content:space-between;font-size:.78rem;padding:3px 0}
+.prize-row-t .pr-label{color:var(--muted)}
+.prize-row-t .pr-val{font-weight:700}
+.prize-row-t.house{border-top:1px solid var(--border);margin-top:4px;padding-top:6px}
+.tc-meta{font-size:.72rem;color:var(--muted);margin-bottom:14px}
+.tc-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Type modal */
+.tmodal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+           z-index:900;align-items:center;justify-content:center;padding:20px}
+.tmodal-bg.open{display:flex}
+.tmodal{background:var(--panel);border:1px solid var(--border);border-radius:18px;
+        padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+        box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.tmodal h3{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--accent);
+            letter-spacing:2px;margin:0 0 20px}
+.tfield{margin-bottom:14px}
+.tfield label{display:block;font-size:.72rem;color:var(--muted);letter-spacing:1px;
+              text-transform:uppercase;margin-bottom:5px}
+.tfield input,.tfield select{width:100%;padding:10px 12px;background:var(--sub);
+  border:1px solid var(--border);border-radius:9px;color:var(--text);
+  font-family:'Outfit',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box}
+.tfield input:focus,.tfield select:focus{border-color:var(--accent)}
+.tfield-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pct-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pct-input-wrap{position:relative}
+.pct-input-wrap input{padding-right:28px}
+.pct-input-wrap::after{content:'%';position:absolute;right:10px;top:50%;
+                       transform:translateY(-50%);color:var(--muted);font-size:.82rem;pointer-events:none}
+.house-calc{background:var(--sub);border:1px solid var(--border);border-radius:10px;
+            padding:14px;margin:14px 0;text-align:center}
+.house-calc .hc-bar{height:12px;border-radius:6px;overflow:hidden;display:flex;margin:10px 0}
+.house-calc .hc-val{font-family:'Bebas Neue',sans-serif;font-size:2rem}
+.house-calc .hc-label{font-size:.72rem;color:var(--muted);letter-spacing:1px}
+.house-calc .hc-warn{color:var(--danger);font-size:.78rem;margin-top:4px}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+        transition:transform .15s,border-color .15s;flex-shrink:0}
+.swatch.sel,.swatch:hover{transform:scale(1.2);border-color:#fff}
+.emoji-row-t{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.emoji-opt{font-size:1.4rem;cursor:pointer;padding:4px 6px;border-radius:8px;
+           border:2px solid transparent;transition:border-color .15s}
+.emoji-opt.sel,.emoji-opt:hover{border-color:var(--accent)}
+.tmodal-actions{display:flex;gap:10px;margin-top:20px}
+.tmodal-actions .btn{flex:1;padding:12px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .es-icon{font-size:3rem;margin-bottom:12px}
+
 /* Toast */
 .toast{
   position:fixed;bottom:24px;left:50%;
@@ -138,21 +214,28 @@
 <body>
 
 <header>
-  <div class="logo">📅 Sesiones</div>
+  <div class="logo">📅 Bingos</div>
   <div class="nav-links">
     <a class="nav-link" href="/admin">🛠 Admin</a>
     <a class="nav-link" href="/admin/game">🎮 Juego</a>
     <a class="nav-link" href="/admin/caja">💼 Caja</a>
+    <a class="nav-link" href="/admin/jugadores">👥 Jugadores</a>
     <a class="nav-link" href="/admin/config">⚙️ Config</a>
-    <a class="nav-link" href="/admin/bingo_types">🎰 Tipos</a>
-    <a class="nav-link" href="/admin/emails">📧 Emails</a>
-    <a class="nav-link" href="/admin/contacts">👥 Contactos</a>
     <a class="nav-link" href="/admin/manual" target="_blank">📖 Manual</a>
     <a class="nav-link" href="#" onclick="logout()">🚪 Salir</a>
   </div>
 </header>
 
 <div class="wrap">
+
+  <!-- Main tabs -->
+  <div class="main-tabs">
+    <button class="main-tab-btn active" onclick="switchMainTab('sesiones',this)">📅 Sesiones</button>
+    <button class="main-tab-btn" onclick="switchMainTab('tipos',this)">🎰 Tipos de Bingo</button>
+  </div>
+
+  <!-- ══════ TAB SESIONES ══════ -->
+  <div class="main-tab-pane active" id="mtab-sesiones">
 
   <!-- Stats rápidas -->
   <div class="stats-top">
@@ -245,6 +328,138 @@
       </div>
     </div>
 
+  </div>
+</div><!-- /layout -->
+</div><!-- /mtab-sesiones -->
+
+<!-- ══════ TAB TIPOS DE BINGO ══════ -->
+<div class="main-tab-pane" id="mtab-tipos">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;
+              margin-bottom:24px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;
+                 color:var(--accent);letter-spacing:2px;margin:0">Tipos de Bingo</h2>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:2px">
+        Crea, edita y gestiona todos los tipos de bingo.
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="openCreateType()">＋ Nuevo Tipo</button>
+  </div>
+
+  <div id="types-grid" class="types-grid">
+    <div class="empty-state"><div class="es-icon">⏳</div>Cargando…</div>
+  </div>
+
+</div><!-- /mtab-tipos -->
+
+</div><!-- /wrap -->
+
+<!-- Modal crear/editar tipo -->
+<div class="tmodal-bg" id="tmodal">
+  <div class="tmodal">
+    <h3 id="tmodal-title">Nuevo Tipo de Bingo</h3>
+
+    <div class="tfield-row">
+      <div class="tfield">
+        <label>Nombre del tipo</label>
+        <input id="tf-nombre" type="text" placeholder="Ej: Bingo 20 Soles">
+      </div>
+      <div class="tfield">
+        <label>Precio (S/.)</label>
+        <input id="tf-precio" type="number" min="0" step="0.50" placeholder="20.00">
+      </div>
+    </div>
+
+    <div class="tfield">
+      <label>Descripción (opcional)</label>
+      <input id="tf-desc" type="text" placeholder="Ej: Bingo B-I-N-G-O · Edición Especial">
+    </div>
+
+    <div class="tfield-row">
+      <div class="tfield">
+        <label>Máx. cartillas por jugador</label>
+        <input id="tf-maxc" type="number" min="1" max="10" value="1">
+      </div>
+      <div class="tfield">
+        <label>Emoji</label>
+        <input id="tf-emoji-inp" type="text" maxlength="4" placeholder="🎯" value="🎯"
+               style="font-size:1.4rem;text-align:center">
+        <div class="emoji-row-t">
+          <span class="emoji-opt sel" onclick="setTEmoji('🎯')">🎯</span>
+          <span class="emoji-opt" onclick="setTEmoji('⭐')">⭐</span>
+          <span class="emoji-opt" onclick="setTEmoji('🌟')">🌟</span>
+          <span class="emoji-opt" onclick="setTEmoji('🏆')">🏆</span>
+          <span class="emoji-opt" onclick="setTEmoji('🎪')">🎪</span>
+          <span class="emoji-opt" onclick="setTEmoji('🎉')">🎉</span>
+          <span class="emoji-opt" onclick="setTEmoji('💎')">💎</span>
+          <span class="emoji-opt" onclick="setTEmoji('🔥')">🔥</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tfield">
+      <label>Color</label>
+      <div class="color-swatches" id="tcolor-swatches">
+        <div class="swatch sel" style="background:#f472b6" onclick="setTColor('#f472b6')" data-c="#f472b6"></div>
+        <div class="swatch" style="background:#a855f7" onclick="setTColor('#a855f7')" data-c="#a855f7"></div>
+        <div class="swatch" style="background:#818cf8" onclick="setTColor('#818cf8')" data-c="#818cf8"></div>
+        <div class="swatch" style="background:#00e5b4" onclick="setTColor('#00e5b4')" data-c="#00e5b4"></div>
+        <div class="swatch" style="background:#f59e0b" onclick="setTColor('#f59e0b')" data-c="#f59e0b"></div>
+        <div class="swatch" style="background:#ef4444" onclick="setTColor('#ef4444')" data-c="#ef4444"></div>
+        <div class="swatch" style="background:#3b82f6" onclick="setTColor('#3b82f6')" data-c="#3b82f6"></div>
+        <div class="swatch" style="background:#10b981" onclick="setTColor('#10b981')" data-c="#10b981"></div>
+        <input id="tf-color" type="color" value="#f472b6"
+               style="width:28px;height:28px;padding:0;border:none;border-radius:50%;cursor:pointer"
+               oninput="setTColor(this.value)">
+      </div>
+    </div>
+
+    <div class="tfield">
+      <label>Distribución de premios</label>
+      <div class="pct-row">
+        <div><label style="font-size:.72rem;color:#00e5b4">🎉 BINGO</label>
+          <div class="pct-input-wrap"><input id="tf-bingo" type="number" min="0" max="100" step="1" value="55" oninput="recalcTHouse()"></div></div>
+        <div><label style="font-size:.72rem;color:#ec4899">⭕ O</label>
+          <div class="pct-input-wrap"><input id="tf-o" type="number" min="0" max="100" step="1" value="15" oninput="recalcTHouse()"></div></div>
+        <div><label style="font-size:.72rem;color:#3b82f6">🔷 U</label>
+          <div class="pct-input-wrap"><input id="tf-u" type="number" min="0" max="100" step="1" value="13" oninput="recalcTHouse()"></div></div>
+        <div><label style="font-size:.72rem;color:#f6c343">⭐ LÍNEA</label>
+          <div class="pct-input-wrap"><input id="tf-linea" type="number" min="0" max="100" step="1" value="4" oninput="recalcTHouse()"></div></div>
+      </div>
+    </div>
+
+    <div class="house-calc" id="t-house-calc">
+      <div class="hc-bar" id="t-hc-bar"></div>
+      <div class="hc-val" id="t-hc-val">13%</div>
+      <div class="hc-label">GANANCIA TUYA (CASA)</div>
+      <div class="hc-warn" id="t-hc-warn" style="display:none"></div>
+    </div>
+
+    <div class="tfield" style="display:flex;align-items:center;gap:12px">
+      <input id="tf-special" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent)">
+      <div>
+        <label style="cursor:pointer" for="tf-special">✨ Evento especial</label>
+        <div style="font-size:.72rem;color:var(--muted)">Muestra una etiqueta especial para los jugadores</div>
+      </div>
+    </div>
+    <div class="tfield" id="tspecial-label-wrap" style="display:none">
+      <label>Etiqueta del evento</label>
+      <input id="tf-special-label" type="text" maxlength="80" placeholder="Ej: Navidad 2025">
+    </div>
+
+    <div class="tfield" style="display:flex;align-items:center;gap:12px">
+      <input id="tf-active" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--accent)">
+      <div>
+        <label style="cursor:pointer" for="tf-active">Tipo activo (visible para jugadores)</label>
+        <div style="font-size:.72rem;color:var(--muted)">Desactiva para ocultarlo sin eliminarlo</div>
+      </div>
+    </div>
+
+    <div class="tmodal-actions">
+      <button class="btn btn-ghost" onclick="closeTModal()">Cancelar</button>
+      <button class="btn btn-accent" id="tmodal-save-btn" onclick="saveType()">✅ Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -744,6 +959,230 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadSessions();
   setInterval(loadSessions, 8000);
 });
+
+// ── Main tab switcher ──────────────────────────────
+function switchMainTab(name, btn) {
+  document.querySelectorAll('.main-tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mtab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'tipos') loadTypes();
+}
+
+// ═══════════════════════════════════════════════════
+//  TIPOS DE BINGO
+// ═══════════════════════════════════════════════════
+let _tEditId   = null;
+let _tSelColor = '#f472b6';
+
+function setTColor(c) {
+  _tSelColor = c;
+  document.getElementById('tf-color').value = c;
+  document.querySelectorAll('#tcolor-swatches .swatch').forEach(s => {
+    s.classList.toggle('sel', s.dataset.c === c);
+  });
+}
+function setTEmoji(e) {
+  document.getElementById('tf-emoji-inp').value = e;
+  document.querySelectorAll('.emoji-opt').forEach(o => {
+    o.classList.toggle('sel', o.textContent.trim() === e);
+  });
+}
+document.getElementById('tf-special').addEventListener('change', function() {
+  document.getElementById('tspecial-label-wrap').style.display = this.checked ? '' : 'none';
+});
+
+function recalcTHouse() {
+  const bingo = parseFloat(document.getElementById('tf-bingo').value)||0;
+  const o     = parseFloat(document.getElementById('tf-o').value)||0;
+  const u     = parseFloat(document.getElementById('tf-u').value)||0;
+  const linea = parseFloat(document.getElementById('tf-linea').value)||0;
+  const house = 100 - bingo - o - u - linea;
+  const hv    = document.getElementById('t-hc-val');
+  const hw    = document.getElementById('t-hc-warn');
+  const bar   = document.getElementById('t-hc-bar');
+  const calc  = document.getElementById('t-house-calc');
+  hv.textContent = (house >= 0 ? house.toFixed(1) : '0') + '%';
+  hv.style.color = house < 0 ? 'var(--danger)' : house < 5 ? '#f6c343' : '#27ae60';
+  if (house < 0) {
+    hw.textContent = '⚠️ Los premios suman más del 100%.';
+    hw.style.display = ''; calc.style.borderColor = 'var(--danger)';
+  } else if (house < 5) {
+    hw.textContent = '⚠️ Ganancia muy baja.';
+    hw.style.display = ''; calc.style.borderColor = '#f6c343';
+  } else { hw.style.display = 'none'; calc.style.borderColor = ''; }
+  const total = bingo + o + u + linea + Math.max(0, house);
+  bar.innerHTML = [
+    {pct:bingo,color:'#00e5b4'},{pct:o,color:'#ec4899'},
+    {pct:u,color:'#3b82f6'},{pct:linea,color:'#f6c343'},
+    {pct:Math.max(0,house),color:'#555'},
+  ].map(s=>`<div style="width:${(s.pct/total*100).toFixed(1)}%;background:${s.color};height:100%"></div>`).join('');
+}
+
+function openCreateType() {
+  _tEditId = null;
+  document.getElementById('tmodal-title').textContent = 'Nuevo Tipo de Bingo';
+  document.getElementById('tmodal-save-btn').textContent = '✅ Crear Tipo';
+  document.getElementById('tf-nombre').value = '';
+  document.getElementById('tf-precio').value = '';
+  document.getElementById('tf-desc').value   = '';
+  document.getElementById('tf-maxc').value   = '1';
+  document.getElementById('tf-bingo').value  = '55';
+  document.getElementById('tf-o').value      = '15';
+  document.getElementById('tf-u').value      = '13';
+  document.getElementById('tf-linea').value  = '4';
+  document.getElementById('tf-active').checked  = true;
+  document.getElementById('tf-special').checked = false;
+  document.getElementById('tf-special-label').value = '';
+  document.getElementById('tspecial-label-wrap').style.display = 'none';
+  setTColor('#f472b6'); setTEmoji('🎯'); recalcTHouse();
+  document.getElementById('tmodal').classList.add('open');
+}
+
+function openEditType(bt) {
+  _tEditId = bt.id;
+  document.getElementById('tmodal-title').textContent = 'Editar Tipo';
+  document.getElementById('tmodal-save-btn').textContent = '✅ Guardar Cambios';
+  document.getElementById('tf-nombre').value = bt.nombre;
+  document.getElementById('tf-precio').value = bt.precio;
+  document.getElementById('tf-desc').value   = bt.descripcion || '';
+  document.getElementById('tf-maxc').value   = bt.max_cartillas || 1;
+  document.getElementById('tf-bingo').value  = Math.round((bt.prize_pct||0)*100);
+  document.getElementById('tf-o').value      = Math.round((bt.o_pct||0)*100);
+  document.getElementById('tf-u').value      = Math.round((bt.u_pct||0)*100);
+  document.getElementById('tf-linea').value  = Math.round((bt.linea_pct||0)*100);
+  document.getElementById('tf-active').checked  = !!bt.is_active;
+  document.getElementById('tf-special').checked = !!bt.is_special;
+  document.getElementById('tf-special-label').value = bt.special_label || '';
+  document.getElementById('tspecial-label-wrap').style.display = bt.is_special ? '' : 'none';
+  setTColor(bt.color || '#f472b6'); setTEmoji(bt.emoji || '🎯'); recalcTHouse();
+  document.getElementById('tmodal').classList.add('open');
+}
+
+function closeTModal() {
+  document.getElementById('tmodal').classList.remove('open');
+  _tEditId = null;
+}
+document.getElementById('tmodal').addEventListener('click', e => {
+  if (e.target === document.getElementById('tmodal')) closeTModal();
+});
+
+async function saveType() {
+  const nombre = document.getElementById('tf-nombre').value.trim();
+  if (!nombre) { showToast('⚠️ El nombre es obligatorio'); return; }
+  const precio = parseFloat(document.getElementById('tf-precio').value);
+  if (isNaN(precio) || precio < 0) { showToast('⚠️ El precio no puede ser negativo'); return; }
+  const bingo = parseFloat(document.getElementById('tf-bingo').value)||0;
+  const o     = parseFloat(document.getElementById('tf-o').value)||0;
+  const u     = parseFloat(document.getElementById('tf-u').value)||0;
+  const linea = parseFloat(document.getElementById('tf-linea').value)||0;
+  if (bingo + o + u + linea > 100.01) { showToast('⚠️ Los premios suman más del 100%'); return; }
+  const payload = {
+    nombre, precio, color: _tSelColor,
+    emoji:         document.getElementById('tf-emoji-inp').value.trim() || '🎯',
+    descripcion:   document.getElementById('tf-desc').value.trim(),
+    max_cartillas: parseInt(document.getElementById('tf-maxc').value) || 1,
+    prize_pct: bingo/100, o_pct: o/100, u_pct: u/100, linea_pct: linea/100,
+    is_active:     document.getElementById('tf-active').checked,
+    is_special:    document.getElementById('tf-special').checked,
+    special_label: document.getElementById('tf-special-label').value.trim(),
+  };
+  const url    = _tEditId ? `/api/admin/sessions/${_tEditId}` : '/api/admin/sessions';
+  const method = _tEditId ? 'PUT' : 'POST';
+  try {
+    const res  = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
+    showToast(_tEditId ? '✅ Tipo actualizado' : '✅ Tipo creado');
+    closeTModal();
+    loadTypes();
+    buildBtypes(); // refresh selector in sesiones tab
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+async function toggleTypeActive(bid, currentActive) {
+  try {
+    const res = await fetch(`/api/admin/sessions/${bid}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({is_active: !currentActive}),
+    });
+    if (!res.ok) { showToast('❌ Error'); return; }
+    showToast(currentActive ? '⏸ Desactivado' : '▶️ Activado');
+    loadTypes(); buildBtypes();
+  } catch(e) { showToast('❌ Error'); }
+}
+
+async function deleteType(bid, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}"?\nSi hay sesiones que usaron este tipo no podrás eliminarlo — desactívalo.`)) return;
+  try {
+    const res  = await fetch(`/api/admin/sessions/${bid}`, {method:'DELETE'});
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
+    showToast('🗑️ Tipo eliminado');
+    loadTypes(); buildBtypes();
+  } catch(e) { showToast('❌ Error'); }
+}
+
+function renderTypes(types) {
+  const grid = document.getElementById('types-grid');
+  if (!types.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="es-icon">🎰</div>
+      <div>No hay tipos de bingo creados aún.</div>
+      <button class="btn btn-accent" style="margin-top:16px" onclick="openCreateType()">＋ Crear primer tipo</button>
+    </div>`; return;
+  }
+  function esc2(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function fmt2(n){return Number(n||0).toFixed(2)}
+  grid.innerHTML = types.map(bt => {
+    const bingo=(bt.prize_pct||0)*100, o=(bt.o_pct||0)*100, u=(bt.u_pct||0)*100, linea=(bt.linea_pct||0)*100;
+    const house=Math.max(0,(bt.house_pct||0)*100);
+    const total=bingo+o+u+linea+house||100;
+    const bar=[{pct:bingo,color:'#00e5b4'},{pct:o,color:'#ec4899'},{pct:u,color:'#3b82f6'},
+               {pct:linea,color:'#f6c343'},{pct:house,color:'#444'}]
+      .map(s=>`<div class="pb-seg" style="width:${(s.pct/total*100).toFixed(1)}%;background:${s.color}"></div>`).join('');
+    const badges=[
+      bt.is_active?'':`<span class="tc-badge inactive-b">Inactivo</span>`,
+      bt.is_special?`<span class="tc-badge special">✨ ${esc2(bt.special_label||'Especial')}</span>`:'',
+    ].filter(Boolean).join('');
+    return `<div class="type-card${bt.is_active?'':' inactive'}" style="border-color:${bt.color}22">
+      ${badges||`<span class="tc-badge active">Activo</span>`}
+      <h3 style="color:${bt.color}">${esc2(bt.emoji)} ${esc2(bt.nombre)}</h3>
+      <div class="tc-price" style="color:${bt.color}">S/. ${fmt2(bt.precio)}</div>
+      <div class="tc-desc">${esc2(bt.descripcion||'Bingo B-I-N-G-O')}</div>
+      <div class="prize-bar-t">${bar}</div>
+      <div class="prize-rows-t">
+        <div class="prize-row-t"><span class="pr-label">🎉 BINGO</span><span class="pr-val" style="color:#00e5b4">${bingo.toFixed(0)}%</span></div>
+        <div class="prize-row-t"><span class="pr-label">⭕ O</span><span class="pr-val" style="color:#ec4899">${o.toFixed(0)}%</span></div>
+        <div class="prize-row-t"><span class="pr-label">🔷 U</span><span class="pr-val" style="color:#3b82f6">${u.toFixed(0)}%</span></div>
+        <div class="prize-row-t"><span class="pr-label">⭐ LÍNEA</span><span class="pr-val" style="color:#f6c343">${linea.toFixed(0)}%</span></div>
+        <div class="prize-row-t house"><span class="pr-label">💼 Tu ganancia</span>
+          <span class="pr-val" style="color:${house<5?'var(--danger)':house<10?'#f6c343':'#27ae60'}">${house.toFixed(0)}%</span></div>
+      </div>
+      <div class="tc-meta">Máx. ${bt.max_cartillas||1} cartilla${(bt.max_cartillas||1)>1?'s':''} por jugador</div>
+      <div class="tc-actions">
+        <button class="btn btn-ghost btn-sm" onclick='openEditType(${JSON.stringify(bt)})'>✏️ Editar</button>
+        <button class="btn btn-warn btn-sm" onclick="toggleTypeActive('${esc2(bt.id)}',${bt.is_active})">
+          ${bt.is_active?'⏸ Desactivar':'▶️ Activar'}
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteType('${esc2(bt.id)}','${esc2(bt.nombre)}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadTypes() {
+  try {
+    const res  = await fetch('/api/admin/sessions');
+    const data = await res.json();
+    renderTypes(data.bingo_types || []);
+  } catch(e) {
+    document.getElementById('types-grid').innerHTML =
+      '<div class="empty-state"><div class="es-icon">❌</div>Error al cargar</div>';
+  }
+}
+
+recalcTHouse();
 </script>
 
 <!-- ══ Modal broadcast ══ -->
@@ -828,7 +1267,7 @@ async function openBroadcast(sid) {
 
   // Load email count
   try {
-    const r = await fetch('/api/admin/emails');
+    const r = await fetch('/api/admin/jugadores');
     const d = await r.json();
     document.getElementById('bc-count').textContent = d.total || 0;
   } catch(e) { document.getElementById('bc-count').textContent = '?'; }

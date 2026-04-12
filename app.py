@@ -3194,18 +3194,17 @@ def api_broadcast_session(sid):
 
 @app.route("/admin/emails")
 def admin_emails_page():
-    chk = admin_required()
-    if chk: return chk
-    return render_template("admin_emails.html")
-
-
-# ─── Contacts (manual broadcast list) ────────────────────────────────────────
+    return redirect("/admin/jugadores")
 
 @app.route("/admin/contacts")
 def admin_contacts_page():
+    return redirect("/admin/jugadores")
+
+@app.route("/admin/jugadores")
+def admin_jugadores_page():
     chk = admin_required()
     if chk: return chk
-    return render_template("admin_contacts.html")
+    return render_template("admin_jugadores.html")
 
 @app.route("/api/admin/reimbursements", methods=["GET"])
 def api_reimbursements():
@@ -3565,9 +3564,7 @@ def api_bingo_types():
 # ─── Admin: Bingo Types CRUD ──────────────────────────────────────────────────
 @app.route("/admin/bingo_types")
 def admin_bingo_types_page():
-    chk = admin_required()
-    if chk: return chk
-    return render_template("admin_bingo_types.html")
+    return redirect("/admin/sessions")
 
 @app.route("/api/admin/bingo_types")
 def api_admin_list_bingo_types():
