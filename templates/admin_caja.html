@@ -178,6 +178,19 @@ td{padding:10px 12px;vertical-align:middle}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .empty{text-align:center;color:var(--muted);padding:30px;font-size:.9rem}
 .winner-inline{font-size:.78rem;color:var(--muted);line-height:1.7}
+
+/* Session group headers in Aprobaciones */
+.grp-hdr td{
+  padding:10px 12px;background:var(--sub);
+  border-top:2px solid var(--border);border-bottom:1px solid var(--border);
+}
+.grp-title{font-weight:900;font-size:.9rem}
+.grp-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.gp{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.gp-total{background:rgba(141,189,214,.12);color:var(--muted)}
+.gp-pend {background:rgba(246,195,67,.15);color:var(--warning)}
+.gp-ok   {background:rgba(39,174,96,.15);color:#27ae60}
+.gp-rev  {background:rgba(231,76,60,.12);color:var(--danger)}
 </style>
 </head>
 <body>
@@ -848,26 +861,7 @@ async function refreshVouchers(){
   }catch(e){ showToast('❌ Error al cargar vouchers') }
 }
 
-function filterTable(){
-  const q=document.getElementById('search').value.toLowerCase();
-  const fst=document.getElementById('f-status').value;
-  let list=allVouchers;
-  if(fst!=='all') list=list.filter(v=>v.payment_status===fst);
-  if(q) list=list.filter(v=>
-    v.code?.toLowerCase().includes(q)||
-    v.nombres?.toLowerCase().includes(q)||
-    v.apellidos?.toLowerCase().includes(q)||
-    v.email?.toLowerCase().includes(q)||
-    v.payment_ref?.toLowerCase().includes(q));
-  list=[...list].sort((a,b)=>{
-    const o={pending_review:0,pending:1,approved:2,manual_approved:2,rejected:3};
-    return (o[a.payment_status]??9)-(o[b.payment_status]??9);
-  });
-  const tb=document.getElementById('tb');
-  if(!list.length){
-    tb.innerHTML=`<tr><td colspan="11" class="empty">Sin resultados</td></tr>`; return;
-  }
-  tb.innerHTML=list.map(v=>{
+function renderVoucherRow(v){
     const who=[v.nombres,v.apellidos].filter(Boolean).join(' ');
     const bt=getBT(v.bingo_type);
     const dt=(v.payment_submitted_at||v.created||'').replace('T',' ').slice(0,16);
@@ -921,7 +915,64 @@ function filterTable(){
       <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${dt||'—'}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">${btnAprobar}${btnRechazar}${btnReenviar}${btnDel}</div></td>
     </tr>`;
-  }).join('');
+}
+
+function filterTable(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const fst=document.getElementById('f-status').value;
+  let list=allVouchers;
+  if(fst!=='all') list=list.filter(v=>v.payment_status===fst);
+  if(q) list=list.filter(v=>
+    v.code?.toLowerCase().includes(q)||
+    v.nombres?.toLowerCase().includes(q)||
+    v.apellidos?.toLowerCase().includes(q)||
+    v.email?.toLowerCase().includes(q)||
+    v.payment_ref?.toLowerCase().includes(q));
+  const tb=document.getElementById('tb');
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="11" class="empty">Sin resultados</td></tr>`; return;
+  }
+  // Group by session_id
+  const groups={};
+  const ORDER={pending_review:0,pending:1,approved:2,manual_approved:2,rejected:3};
+  list.forEach(v=>{
+    const sid=v.session_id||'__nosession__';
+    if(!groups[sid]) groups[sid]={sid,nombre:v.bingo_nombre||'Sin sesión',bingo_type:v.bingo_type,items:[]};
+    groups[sid].items.push(v);
+  });
+  // Sort each group's items by status
+  Object.values(groups).forEach(g=>{
+    g.items.sort((a,b)=>(ORDER[a.payment_status]??9)-(ORDER[b.payment_status]??9));
+  });
+  // Sort groups: groups with pending_review first
+  const sortedGroups=Object.values(groups).sort((a,b)=>{
+    const ap=a.items.some(v=>v.payment_status==='pending_review')?0:1;
+    const bp=b.items.some(v=>v.payment_status==='pending_review')?0:1;
+    return ap-bp;
+  });
+  let html='';
+  sortedGroups.forEach(g=>{
+    const bt=getBT(g.bingo_type);
+    const total=g.items.length;
+    const pend=g.items.filter(v=>v.payment_status==='pending_review').length;
+    const ok=g.items.filter(v=>['approved','manual_approved'].includes(v.payment_status)).length;
+    const rej=g.items.filter(v=>v.payment_status==='rejected').length;
+    const rev=g.items.filter(v=>['approved','manual_approved'].includes(v.payment_status)).reduce((s,v)=>s+(v.precio||0),0);
+    html+=`<tr class="grp-hdr"><td colspan="11">
+      <div class="grp-title" style="color:${bt.color}">${bt.emoji} ${esc(g.nombre||bt.nombre)}
+        <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">${g.sid==='__nosession__'?'sin sesión asignada':g.sid}</span>
+      </div>
+      <div class="grp-pills">
+        <span class="gp gp-total">${total} cartilla${total!==1?'s':''}</span>
+        ${pend?`<span class="gp gp-pend">⏳ ${pend} en revisión</span>`:''}
+        ${ok?`<span class="gp gp-ok">✅ ${ok} aprobada${ok!==1?'s':''}</span>`:''}
+        ${rej?`<span class="gp gp-rev">❌ ${rej} rechazada${rej!==1?'s':''}</span>`:''}
+        <span class="gp gp-ok">S/. ${rev.toFixed(2)} recaudado</span>
+      </div>
+    </td></tr>`;
+    g.items.forEach(v=>{ html+=renderVoucherRow(v); });
+  });
+  tb.innerHTML=html;
 }
 
 function abrirModalAprobacion(code){
