@@ -126,6 +126,51 @@
   border:1px solid rgba(0,229,180,.2);border-radius:10px;
   font-size:.82rem;margin-bottom:10px;display:none;
 }
+
+/* ══ Modal Wizard ══ */
+.modal-back{
+  display:none;position:fixed;inset:0;
+  background:rgba(7,13,20,.88);z-index:600;
+  align-items:center;justify-content:center;padding:16px;
+}
+.modal-back.open{display:flex}
+.modal-box{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:20px;width:100%;max-width:500px;
+  max-height:92vh;overflow-y:auto;padding:24px;
+}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;
+}
+.modal-close{
+  background:none;border:none;color:var(--muted);
+  font-size:1.2rem;cursor:pointer;padding:4px 8px;
+  border-radius:8px;transition:color .2s;line-height:1;
+}
+.modal-close:hover{color:var(--text)}
+.wiz-steps{display:flex;gap:0;margin-bottom:22px}
+.wiz-step{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  position:relative;
+}
+.wiz-step:not(:last-child)::after{
+  content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;
+  background:var(--border);z-index:0;
+}
+.wiz-step.done::after{background:var(--accent)}
+.wiz-dot{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:900;z-index:1;
+  border:2px solid var(--border);background:var(--bg);color:var(--muted);
+}
+.wiz-step.done .wiz-dot{background:var(--accent);border-color:var(--accent);color:#041015}
+.wiz-step.active .wiz-dot{border-color:var(--accent);color:var(--accent)}
+.wiz-label{font-size:.6rem;color:var(--muted);margin-top:4px;text-align:center;
+            letter-spacing:.5px;text-transform:uppercase}
+.wiz-step.active .wiz-label{color:var(--accent)}
+.wiz-nav{display:flex;gap:10px;margin-top:20px}
 </style>
 </head>
 <body>
@@ -195,130 +240,20 @@
     <!-- ═══ PANEL IZQUIERDO ═══ -->
     <div>
 
-      <!-- SECCIÓN A: Formulario de solicitud nueva -->
-      <div class="solicitud-panel" id="panel-solicitud">
-        <div class="panel-title">📝 Registro e información de pago</div>
-
-        <!-- Datos personales -->
-        <div class="form-group">
-          <label>Nombres *</label>
-          <input type="text" id="inp-nombres" placeholder="Ej: Ana María" maxlength="40">
+      <!-- SECCIÓN A: Botón para abrir el wizard de registro -->
+      <div class="solicitud-panel" id="panel-solicitud" style="text-align:center;padding:32px 24px">
+        <div style="font-size:2.8rem;margin-bottom:10px">🎴</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;
+                    color:var(--accent);letter-spacing:2px;margin-bottom:8px">
+          ¡Únete al Bingo!
         </div>
-        <div class="form-group">
-          <label>Apellidos *</label>
-          <input type="text" id="inp-apellidos" placeholder="Ej: García López" maxlength="40">
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:22px;line-height:1.6">
+          Regístrate en 3 pasos rápidos:<br>
+          tus datos → elige tu bingo → confirma y envía.
         </div>
-        <div class="form-group">
-          <label>Email * <span style="color:var(--muted);font-weight:400">(recibirás tu código aquí)</span></label>
-          <input type="email" id="inp-email" placeholder="tu@email.com" maxlength="100">
-        </div>
-        <div class="form-group">
-          <label>Celular / WhatsApp * <span style="color:var(--muted);font-weight:400">(para premio y anuncios)</span></label>
-          <div style="display:flex;gap:6px;align-items:stretch;width:100%;box-sizing:border-box">
-            <select id="inp-country-code"
-                    style="width:110px;min-width:0;flex-shrink:0;padding:10px 6px;border-radius:10px;
-                           border:1px solid rgba(0,229,180,.4);background:var(--card);color:var(--text);
-                           font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;cursor:pointer;
-                           box-sizing:border-box">
-              <option value="+51">🇵🇪 +51</option>
-              <option value="+1">🇺🇸 +1</option>
-              <option value="+52">🇲🇽 +52</option>
-              <option value="+54">🇦🇷 +54</option>
-              <option value="+56">🇨🇱 +56</option>
-              <option value="+57">🇨🇴 +57</option>
-              <option value="+58">🇻🇪 +58</option>
-              <option value="+593">🇪🇨 +593</option>
-              <option value="+595">🇵🇾 +595</option>
-              <option value="+598">🇺🇾 +598</option>
-              <option value="+591">🇧🇴 +591</option>
-              <option value="+34">🇪🇸 +34</option>
-            </select>
-            <input type="tel" id="inp-yape-plin" placeholder="987654321" maxlength="15"
-                   style="flex:1;min-width:0;border-color:rgba(0,229,180,.4);box-sizing:border-box"
-                   oninput="this.value=this.value.replace(/[^\d]/g,'')">
-          </div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            Número local sin 0 inicial. Ej: 987654321 → se guarda como +51987654321
-          </div>
-        </div>
-
-        <hr class="section-sep">
-
-        <!-- Tipo de bingo -->
-        <div class="form-group">
-          <label>Tipo de Bingo *</label>
-          <div id="btype-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px"></div>
-        </div>
-
-        <!-- Sesión -->
-        <div class="form-group" id="session-group">
-          <label id="session-label">
-            📅 ¿En qué sesión quieres jugar? <span id="session-req" style="color:var(--accent);display:none">*</span>
-          </label>
-          <select id="inp-session" onchange="onSessionChange()"
-                  style="border-color:var(--border);transition:border-color .2s">
-            <option value="">— Elige el Bingo en que quieres jugar —</option>
-          </select>
-          <div id="session-hint" style="font-size:.72rem;margin-top:4px;display:none;
-               color:var(--accent)">
-            ⚠️ Debes elegir un Bingo para participar.
-          </div>
-          <div id="session-no-sessions" style="font-size:.75rem;margin-top:4px;
-               color:var(--danger);display:none">
-            ❌ No hay Bingos disponibles. El administrador debe crear un Bingo antes de poder comprar cartillas.
-          </div>
-        </div>
-
-        <hr class="section-sep">
-
-        <!-- Método de pago (oculto para bingo gratis) -->
-        <div id="payment-section">
-        <div class="form-group">
-          <label>Método de pago *</label>
-          <div class="method-grid" id="method-grid"></div>
-          <input type="hidden" id="inp-method" value="">
-        </div>
-
-        <!-- Instrucciones del método seleccionado -->
-        <div id="method-instructions" style="display:none;padding:10px 14px;
-             background:var(--card);border-radius:10px;font-size:.82rem;
-             color:var(--muted);margin-bottom:12px;line-height:1.6"></div>
-
-        <!-- Número de operación (solo pagos digitales) -->
-        <div class="form-group" id="ref-group" style="display:none">
-          <label>N° de operación *</label>
-          <input type="text" id="inp-ref" placeholder="Número exacto de tu Yape/Plin/transferencia" maxlength="60">
-          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-            ⚠️ Ingresa el número exacto que aparece en tu app de pago
-          </div>
-        </div>
-
-        <!-- Nota para efectivo -->
-        <div id="efectivo-nota" style="display:none;padding:10px 14px;
-             background:rgba(246,195,67,.08);border:1px solid rgba(246,195,67,.25);
-             border-radius:10px;font-size:.82rem;color:var(--warning);margin-bottom:12px">
-          💵 Para pago en efectivo, el organizador aprobará tu solicitud
-          cuando reciba el dinero presencialmente.
-        </div>
-        </div><!-- end payment-section -->
-
-        <!-- Terminos y condiciones -->
-        <div style="background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);
-                    border-radius:10px;padding:14px;margin-bottom:14px">
-          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0">
-            <input type="checkbox" id="inp-terms" style="margin-top:3px;accent-color:var(--accent);
-                   width:16px;height:16px;flex-shrink:0">
-            <span style="font-size:.8rem;color:var(--muted);line-height:1.5">
-              Declaro que el numero de Yape/Plin que ingrese es correcto y es de mi propiedad.
-              Entiendo que el premio sera enviado <strong style="color:var(--warning)">unicamente a ese numero</strong>
-              y que no podre reclamar el premio a otro numero diferente al registrado.
-              Al participar acepto que el resultado del juego es definitivo e inapelable.
-            </span>
-          </label>
-        </div>
-
-        <button class="btn btn-primary btn-full" id="btn-solicitar" onclick="enviarSolicitud()">
-          📤 Enviar solicitud de participación
+        <button class="btn btn-primary btn-full" onclick="openModal()"
+                style="font-size:1rem;padding:14px">
+          📝 Registrarme para jugar
         </button>
       </div>
 
@@ -428,6 +363,181 @@
   </div>
 </div>
 
+<!-- ══ WIZARD MODAL DE REGISTRO ══ -->
+<div id="wizard-modal" class="modal-back" onclick="handleModalBackdrop(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;
+                  color:var(--accent);letter-spacing:2px">
+        📝 Solicitud de participación
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- Indicador de pasos del wizard -->
+    <div class="wiz-steps">
+      <div class="wiz-step active" id="wstep1">
+        <div class="wiz-dot">1</div>
+        <div class="wiz-label">Tus datos</div>
+      </div>
+      <div class="wiz-step" id="wstep2">
+        <div class="wiz-dot">2</div>
+        <div class="wiz-label">Tu Bingo</div>
+      </div>
+      <div class="wiz-step" id="wstep3">
+        <div class="wiz-dot">3</div>
+        <div class="wiz-label">Confirmar</div>
+      </div>
+    </div>
+
+    <!-- ── PASO 1: Datos personales ── -->
+    <div id="wiz-step1">
+      <div class="form-group">
+        <label>Nombres *</label>
+        <input type="text" id="inp-nombres" placeholder="Ej: Ana María" maxlength="40">
+      </div>
+      <div class="form-group">
+        <label>Apellidos</label>
+        <input type="text" id="inp-apellidos" placeholder="Ej: García López" maxlength="40">
+      </div>
+      <div class="form-group">
+        <label>Email * <span style="color:var(--muted);font-weight:400">(recibirás tu código aquí)</span></label>
+        <input type="email" id="inp-email" placeholder="tu@email.com" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label>Celular / WhatsApp * <span style="color:var(--muted);font-weight:400">(para premio y anuncios)</span></label>
+        <div style="display:flex;gap:6px;align-items:stretch;width:100%;box-sizing:border-box">
+          <select id="inp-country-code"
+                  style="width:110px;min-width:0;flex-shrink:0;padding:10px 6px;border-radius:10px;
+                         border:1px solid rgba(0,229,180,.4);background:var(--card);color:var(--text);
+                         font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;cursor:pointer;
+                         box-sizing:border-box">
+            <option value="+51">🇵🇪 +51</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+52">🇲🇽 +52</option>
+            <option value="+54">🇦🇷 +54</option>
+            <option value="+56">🇨🇱 +56</option>
+            <option value="+57">🇨🇴 +57</option>
+            <option value="+58">🇻🇪 +58</option>
+            <option value="+593">🇪🇨 +593</option>
+            <option value="+595">🇵🇾 +595</option>
+            <option value="+598">🇺🇾 +598</option>
+            <option value="+591">🇧🇴 +591</option>
+            <option value="+34">🇪🇸 +34</option>
+          </select>
+          <input type="tel" id="inp-yape-plin" placeholder="987654321" maxlength="15"
+                 style="flex:1;min-width:0;border-color:rgba(0,229,180,.4);box-sizing:border-box"
+                 oninput="this.value=this.value.replace(/[^\d]/g,'')">
+        </div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
+          Número local sin 0 inicial. Ej: 987654321 → se guarda como +51987654321
+        </div>
+      </div>
+      <div class="wiz-nav">
+        <button class="btn btn-primary btn-full" onclick="wizNext(1)">
+          Siguiente →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── PASO 2: Selección de Bingo y pago ── -->
+    <div id="wiz-step2" style="display:none">
+      <!-- Tipo de bingo -->
+      <div class="form-group">
+        <label>Tipo de Bingo *</label>
+        <div id="btype-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px"></div>
+      </div>
+
+      <!-- Sesión -->
+      <div class="form-group" id="session-group">
+        <label id="session-label">
+          📅 ¿En qué Bingo quieres jugar? <span id="session-req" style="color:var(--accent);display:none">*</span>
+        </label>
+        <select id="inp-session" onchange="onSessionChange()"
+                style="border-color:var(--border);transition:border-color .2s">
+          <option value="">— Elige el Bingo en que quieres jugar —</option>
+        </select>
+        <div id="session-hint" style="font-size:.72rem;margin-top:4px;display:none;color:var(--accent)">
+          ⚠️ Debes elegir un Bingo para participar.
+        </div>
+        <div id="session-no-sessions" style="font-size:.75rem;margin-top:4px;color:var(--danger);display:none">
+          ❌ No hay Bingos disponibles. El administrador debe crear un Bingo antes de poder comprar cartillas.
+        </div>
+      </div>
+
+      <hr class="section-sep">
+
+      <!-- Método de pago (oculto para bingo gratis) -->
+      <div id="payment-section">
+        <div class="form-group">
+          <label>Método de pago *</label>
+          <div class="method-grid" id="method-grid"></div>
+          <input type="hidden" id="inp-method" value="">
+        </div>
+        <div id="method-instructions" style="display:none;padding:10px 14px;
+             background:var(--card);border-radius:10px;font-size:.82rem;
+             color:var(--muted);margin-bottom:12px;line-height:1.6"></div>
+        <div class="form-group" id="ref-group" style="display:none">
+          <label>N° de operación *</label>
+          <input type="text" id="inp-ref" placeholder="Número exacto de tu Yape/Plin/transferencia" maxlength="60">
+          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
+            ⚠️ Ingresa el número exacto que aparece en tu app de pago
+          </div>
+        </div>
+        <div id="efectivo-nota" style="display:none;padding:10px 14px;
+             background:rgba(246,195,67,.08);border:1px solid rgba(246,195,67,.25);
+             border-radius:10px;font-size:.82rem;color:var(--warning);margin-bottom:12px">
+          💵 Para pago en efectivo, el organizador aprobará tu solicitud
+          cuando reciba el dinero presencialmente.
+        </div>
+      </div><!-- end payment-section -->
+
+      <div class="wiz-nav">
+        <button class="btn btn-ghost" onclick="wizBack(2)" style="white-space:nowrap">
+          ← Atrás
+        </button>
+        <button class="btn btn-primary" style="flex:1" onclick="wizNext(2)">
+          Siguiente →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── PASO 3: Términos y confirmación ── -->
+    <div id="wiz-step3" style="display:none">
+      <!-- Resumen de la solicitud -->
+      <div id="wiz-step3-summary"
+           style="background:var(--card);border:1px solid var(--border);
+                  border-radius:12px;padding:14px;margin-bottom:16px;
+                  font-size:.85rem;line-height:1.6"></div>
+
+      <!-- Términos y condiciones -->
+      <div style="background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);
+                  border-radius:10px;padding:14px;margin-bottom:14px">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0">
+          <input type="checkbox" id="inp-terms" style="margin-top:3px;accent-color:var(--accent);
+                 width:16px;height:16px;flex-shrink:0">
+          <span style="font-size:.8rem;color:var(--muted);line-height:1.5">
+            Declaro que el numero de Yape/Plin que ingrese es correcto y es de mi propiedad.
+            Entiendo que el premio sera enviado <strong style="color:var(--warning)">unicamente a ese numero</strong>
+            y que no podre reclamar el premio a otro numero diferente al registrado.
+            Al participar acepto que el resultado del juego es definitivo e inapelable.
+          </span>
+        </label>
+      </div>
+
+      <div class="wiz-nav">
+        <button class="btn btn-ghost" onclick="wizBack(3)" style="white-space:nowrap">
+          ← Atrás
+        </button>
+        <button class="btn btn-primary" style="flex:1" id="btn-solicitar" onclick="enviarSolicitud()">
+          📤 Enviar solicitud de participación
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- Overlay juego iniciado -->
 <div id="started-overlay">
   <h1>⛔ ¡Juego en Curso!</h1>
@@ -478,7 +588,7 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── Pasos visuales ─────────────────────────────────────
+// ── Pasos visuales (barra superior) ────────────────────
 function setStep(n) {
   for (let i = 1; i <= 4; i++) {
     const s = document.getElementById(`step${i}`);
@@ -486,6 +596,118 @@ function setStep(n) {
     if (i < n) s.classList.add('done');
     else if (i === n) s.classList.add('active');
   }
+}
+
+// ── Modal Wizard ───────────────────────────────────────
+function openModal() {
+  document.getElementById('wizard-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setWizStep(1);
+}
+
+function closeModal() {
+  document.getElementById('wizard-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleModalBackdrop(e) {
+  if (e.target === document.getElementById('wizard-modal')) closeModal();
+}
+
+function setWizStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const dot     = document.getElementById(`wstep${i}`);
+    const content = document.getElementById(`wiz-step${i}`);
+    dot.classList.remove('active','done');
+    if (i < n) dot.classList.add('done');
+    else if (i === n) dot.classList.add('active');
+    content.style.display = (i === n) ? '' : 'none';
+  }
+}
+
+function wizNext(from) {
+  if (from === 1) {
+    if (!validateWizStep1()) return;
+    setWizStep(2);
+  } else if (from === 2) {
+    if (!validateWizStep2()) return;
+    updateWizSummary();
+    setWizStep(3);
+  }
+}
+
+function wizBack(from) {
+  setWizStep(from - 1);
+}
+
+function validateWizStep1() {
+  const nombres  = document.getElementById('inp-nombres').value.trim();
+  const email    = document.getElementById('inp-email').value.trim();
+  const rawPhone = document.getElementById('inp-yape-plin').value.replace(/\D/g,'').replace(/^0+/,'');
+  if (!nombres)                      { showToast('⚠️ Ingresa tu nombre'); return false; }
+  if (!email || !email.includes('@')) { showToast('⚠️ Ingresa un email válido'); return false; }
+  if (!rawPhone)                      { showToast('⚠️ Ingresa tu número de celular/WhatsApp'); return false; }
+  return true;
+}
+
+function validateWizStep2() {
+  const btypes       = window._btypesCache || [];
+  const selBtypeData = btypes.find(b => b.id === selBtype);
+  const isFree       = selBtypeData && selBtypeData.precio === 0;
+  const session_id   = document.getElementById('inp-session').value;
+  const method       = document.getElementById('inp-method').value;
+  const ref          = document.getElementById('inp-ref').value.trim();
+
+  if (allSessions.length === 0) {
+    showToast('❌ No hay Bingos disponibles. El admin debe crear un Bingo primero.');
+    return false;
+  }
+  if (!session_id) {
+    const hint = document.getElementById('session-hint');
+    const sel  = document.getElementById('inp-session');
+    if (hint) hint.style.display = 'block';
+    if (sel)  sel.style.borderColor = 'var(--danger)';
+    showToast('⚠️ Debes elegir el Bingo en que quieres jugar');
+    return false;
+  }
+  if (!isFree && !method)                     { showToast('⚠️ Elige un método de pago'); return false; }
+  if (!isFree && method !== 'efectivo' && !ref){ showToast('⚠️ Ingresa el número de operación'); return false; }
+  return true;
+}
+
+function updateWizSummary() {
+  const nombres   = document.getElementById('inp-nombres').value.trim();
+  const apellidos = document.getElementById('inp-apellidos').value.trim();
+  const email     = document.getElementById('inp-email').value.trim();
+  const cc        = document.getElementById('inp-country-code').value;
+  const rawPhone  = document.getElementById('inp-yape-plin').value.replace(/\D/g,'').replace(/^0+/,'');
+  const sel       = document.getElementById('inp-session');
+  const sessionName = sel.options[sel.selectedIndex]?.text || '—';
+  const btypes    = window._btypesCache || [];
+  const bt        = btypes.find(b => b.id === selBtype);
+  const btLabel   = bt ? `${bt.emoji} ${bt.nombre} — S/. ${bt.precio.toFixed(0)}` : selBtype;
+  const methodId  = document.getElementById('inp-method').value;
+  const mData     = methodsData.find(m => m.id === methodId);
+  const isFree    = bt && bt.precio === 0;
+
+  const el = document.getElementById('wiz-step3-summary');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;
+                letter-spacing:1px;margin-bottom:8px">Resumen de tu solicitud</div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px">
+      <span style="color:var(--muted)">Nombre</span>
+      <strong>${esc(nombres)} ${esc(apellidos)}</strong>
+      <span style="color:var(--muted)">Email</span>
+      <span>${esc(email)}</span>
+      <span style="color:var(--muted)">Celular</span>
+      <span>${esc(cc)}${esc(rawPhone)}</span>
+      <span style="color:var(--muted)">Bingo</span>
+      <span>${esc(sessionName)}</span>
+      <span style="color:var(--muted)">Tipo</span>
+      <span>${esc(btLabel)}</span>
+      ${!isFree && mData ? `<span style="color:var(--muted)">Pago</span><span>${mData.emoji||''} ${esc(mData.nombre)}</span>` : ''}
+    </div>`;
 }
 
 // ── Tab switch ──────────────────────────────────────────
@@ -757,7 +979,8 @@ async function enviarSolicitud() {
       return;
     }
 
-    // Éxito: ocultar formulario, mostrar panel de estado
+    // Éxito: cerrar modal, ocultar CTA, mostrar panel de estado
+    closeModal();
     document.getElementById('panel-solicitud').style.display = 'none';
     document.getElementById('panel-estado').style.display    = 'block';
     setStep(3);
