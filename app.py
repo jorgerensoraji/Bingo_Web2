@@ -2871,9 +2871,8 @@ def api_generate():
         if code:
             mark_voucher_cartilla(code, c["id"])
 
-    # Send email with cartilla PNG(s) attached (skip if admin-generated or no email)
-    _log_email_event("DEBUG", f"api_generate: por_admin={por_admin} vinfo={'OK' if vinfo else 'None'} email={vinfo.get('email') if vinfo else 'N/A'} code={code!r}")
-    if not por_admin and vinfo and vinfo.get("email"):
+    # Send email with cartilla PNG(s) attached whenever there's a voucher with an email
+    if vinfo and vinfo.get("email"):
         _send_cartilla_email_async(vinfo, results, request.host_url.rstrip("/"))
 
     return jsonify({"status": "ok", "cartillas": results})
@@ -2906,8 +2905,8 @@ def api_save_manual():
     if code:
         mark_voucher_cartilla(code, c["id"])
 
-    # Send email with cartilla PNG attached (skip if admin-generated or no email)
-    if not is_admin() and vinfo and vinfo.get("email"):
+    # Send email with cartilla PNG attached whenever there's a voucher with an email
+    if vinfo and vinfo.get("email"):
         _send_cartilla_email_async(vinfo, [c], request.host_url.rstrip("/"))
 
     return jsonify({"status": "ok", "cartilla": c})
