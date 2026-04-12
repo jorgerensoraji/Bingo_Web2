@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ayuda &amp; Contacto — {{ cfg.nombre_organizador }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+.page-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+  position: relative; z-index: 1;
+}
+.page-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.4rem;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.page-sub {
+  font-size: .88rem;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+/* ── Cards ── */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+.card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .icon { font-size: 1.25rem; }
+
+/* ── FAQ accordion ── */
+.faq-item {
+  border-bottom: 1px solid var(--border);
+}
+.faq-item:last-child { border-bottom: none; }
+.faq-q {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: .9rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 14px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.faq-q:hover { color: var(--accent); }
+.faq-arrow {
+  font-size: .75rem;
+  color: var(--muted);
+  transition: transform .25s;
+  flex-shrink: 0;
+}
+.faq-item.open .faq-arrow { transform: rotate(180deg); color: var(--accent); }
+.faq-a {
+  font-size: .84rem;
+  color: var(--muted);
+  line-height: 1.65;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease, padding .3s ease;
+}
+.faq-item.open .faq-a { max-height: 400px; padding-bottom: 14px; }
+.faq-a ol, .faq-a ul { padding-left: 18px; margin-top: 6px; }
+.faq-a li { margin-bottom: 4px; }
+.faq-a strong { color: var(--text); }
+
+/* ── Contact buttons ── */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.contact-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: .87rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .2s, background .2s, color .2s;
+}
+.contact-btn:hover { border-color: var(--accent); background: rgba(0,229,180,.06); color: var(--accent); }
+.contact-btn .cb-icon { font-size: 1.4rem; flex-shrink: 0; }
+.contact-btn .cb-label { display: flex; flex-direction: column; line-height: 1.3; }
+.contact-btn .cb-sub { font-size: .72rem; color: var(--muted); font-weight: 400; }
+
+/* ── Steps list ── */
+.steps-list {
+  counter-reset: step;
+  list-style: none;
+  padding: 0;
+}
+.steps-list li {
+  counter-increment: step;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: .87rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.steps-list li::before {
+  content: counter(step);
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0,229,180,.12);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: .8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.steps-list li strong { color: var(--text); }
+
+/* ── Back link ── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .83rem;
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+.back-link:hover { color: var(--accent); }
+
+/* ── Status badge ── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: .72rem;
+  font-weight: 700;
+  background: rgba(0,229,180,.12);
+  color: var(--accent);
+  vertical-align: middle;
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <a href="/" class="back-link">&#8592; Volver al juego</a>
+
+  <div class="page-title">Ayuda &amp; Contacto</div>
+  <p class="page-sub">Resolvemos tus dudas para que disfrutes el bingo sin problemas.</p>
+
+  <!-- ── Contacto directo ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📞</span> Contáctanos directamente</div>
+    <div class="contact-grid">
+      {% if cfg.whatsapp %}
+      <a class="contact-btn"
+         href="https://wa.me/{{ cfg.whatsapp | replace('+','') | replace(' ','') }}?text={{ cfg.mensaje_contacto | urlencode }}"
+         target="_blank" rel="noopener">
+        <span class="cb-icon">💬</span>
+        <span class="cb-label">
+          WhatsApp
+          <span class="cb-sub">{{ cfg.whatsapp }}</span>
+        </span>
+      </a>
+      {% endif %}
+      {% if cfg.telefono_extra %}
+      <a class="contact-btn" href="tel:{{ cfg.telefono_extra }}">
+        <span class="cb-icon">📱</span>
+        <span class="cb-label">
+          Llamar
+          <span class="cb-sub">{{ cfg.telefono_extra }}</span>
+        </span>
+      </a>
+      {% endif %}
+      {% if cfg.facebook %}
+      <a class="contact-btn" href="{{ cfg.facebook }}" target="_blank" rel="noopener">
+        <span class="cb-icon">📘</span>
+        <span class="cb-label">
+          Facebook
+          <span class="cb-sub">{{ cfg.nombre_organizador }}</span>
+        </span>
+      </a>
+      {% endif %}
+      {% if cfg.instagram %}
+      <a class="contact-btn" href="{{ cfg.instagram }}" target="_blank" rel="noopener">
+        <span class="cb-icon">📸</span>
+        <span class="cb-label">
+          Instagram
+          <span class="cb-sub">{{ cfg.nombre_organizador }}</span>
+        </span>
+      </a>
+      {% endif %}
+      {% if not cfg.whatsapp and not cfg.telefono_extra and not cfg.facebook and not cfg.instagram %}
+      <p style="color:var(--muted);font-size:.85rem;">
+        El organizador no ha configurado medios de contacto todavía.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Cómo participar ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> ¿Cómo participo?</div>
+    <ol class="steps-list">
+      <li><strong>Regístrate</strong> — Ve a <a href="/cartillas" style="color:var(--accent)">Mis Cartillas</a>, ingresa tus datos y elige el tipo de bingo.</li>
+      <li><strong>Elige tu método de pago</strong> — Yape, Plin, transferencia u otro disponible.</li>
+      <li><strong>Realiza el pago</strong> — Envía el monto exacto y anota el número de operación.</li>
+      <li><strong>Envía tu comprobante</strong> — Ingresa el número de operación en el formulario de solicitud.</li>
+      <li><strong>Espera la aprobación</strong> — El organizador revisará tu pago. Recibirás un email con tu código de voucher y PIN.</li>
+      <li><strong>Únete al juego</strong> — Ingresa tu código y PIN en la pantalla principal cuando empiece la sesión.</li>
+    </ol>
+  </div>
+
+  <!-- ── FAQ ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">❓</span> Preguntas frecuentes</div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        No recibí mi email con el código de voucher
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        <ol>
+          <li>Revisa la carpeta de <strong>Spam / Correo no deseado</strong>.</li>
+          <li>Asegúrate de haber escrito bien tu dirección de email al registrarte.</li>
+          <li>Si tu pago ya fue aprobado y aún no llega, ve a <a href="/cartillas" style="color:var(--accent)">Mis Cartillas</a> y usa la opción <strong>Reenviar email</strong>.</li>
+          <li>Si el problema persiste, contáctanos directamente por WhatsApp.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        Mi pago está en estado "En revisión" hace mucho tiempo
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Los pagos se revisan manualmente. Si lleva más de <strong>30 minutos</strong> sin respuesta, escríbenos por WhatsApp con tu nombre completo y número de operación para que lo revisemos de inmediato.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        Mi pago fue rechazado, ¿qué hago?
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Lee el motivo del rechazo en tu email o en <a href="/cartillas" style="color:var(--accent)">Mis Cartillas</a>. Los motivos más comunes son:
+        <ul>
+          <li>Número de operación incorrecto o ya usado.</li>
+          <li>El monto enviado no coincide con el precio del bingo.</li>
+          <li>El pago fue enviado a un número equivocado.</li>
+        </ul>
+        Corrígelo y envía una nueva solicitud o contáctanos.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        Olvidé mi PIN de acceso
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Tu PIN de 4 dígitos fue enviado en el email de aprobación. Revisa ese email.<br>
+        Si no lo encuentras, contáctanos con tu código de voucher y te ayudamos a recuperarlo.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        No puedo ver mis cartillas durante el juego
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        <ol>
+          <li>Asegúrate de haber ingresado el <strong>código de voucher</strong> y el <strong>PIN</strong> correctamente en la pantalla principal.</li>
+          <li>La sesión debe estar <strong>activa o en preparación</strong> para que aparezcan tus cartillas.</li>
+          <li>Prueba recargar la página (<strong>F5</strong> o deslizar hacia abajo en móvil).</li>
+          <li>Si usas celular, verifica que tengas buena conexión a internet.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        ¿Cómo reclamo mi premio si gané?
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Cuando el sistema detecte que tu cartilla ganó, aparecerá un botón <strong>"¡Reclamar premio!"</strong> en tu pantalla. Presionalo inmediatamente. El organizador verificará tu cartilla y coordinará el pago del premio contigo.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        La página no carga o se desconecta durante el juego
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        <ol>
+          <li>Recarga la página — el juego se reconecta automáticamente.</li>
+          <li>Revisa tu conexión a Wi-Fi o datos móviles.</li>
+          <li>Si el problema continúa, cierra otras aplicaciones y pestañas abiertas.</li>
+          <li>Las bolillas ya sorteadas siempre estarán visibles al reconectarte, no perderás el progreso.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        ¿Cuándo se realiza el próximo bingo?
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Las fechas y horarios de las próximas sesiones se publican en nuestra página principal y en nuestras redes sociales. También puedes preguntarnos directamente por WhatsApp.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Instrucciones de pago del organizador ── -->
+  {% if cfg.instrucciones_pago %}
+  <div class="card">
+    <div class="card-title"><span class="icon">💳</span> Instrucciones de pago</div>
+    <p style="font-size:.87rem;color:var(--muted);line-height:1.65;white-space:pre-line;">{{ cfg.instrucciones_pago }}</p>
+  </div>
+  {% endif %}
+
+  <!-- ── Footer ── -->
+  <p style="text-align:center;color:var(--muted);font-size:.75rem;margin-top:32px;">
+    {{ cfg.nombre_organizador }} &mdash; Bingo Pro
+  </p>
+
+</div>
+
+<script>
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+</script>
+</body>
+</html>

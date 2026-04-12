@@ -1197,6 +1197,10 @@ def index():
 def cartillas_player_page():
     return render_template("cartillas_player.html")
 
+@app.route("/ayuda")
+def ayuda_page():
+    return render_template("ayuda.html", cfg=_load_config())
+
 @app.route("/admin/login")
 def admin_login_page():
     if is_admin(): return redirect("/admin")
