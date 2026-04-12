@@ -13,7 +13,7 @@
   --danger:  #e74c3c;
   --success: #27ae60;
   --text:    #ddeeff;
-  --muted:   #6a9ab8;
+  --muted:   #8dbdd6;
   --sub:     #1e3a50;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -44,7 +44,7 @@ nav {
 /* LAYOUT */
 .container { max-width:1400px; margin:0 auto; padding:20px; position:relative; z-index:1; }
 h1 { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:var(--accent); letter-spacing:3px; margin-bottom:4px; }
-.subtitle { color:#8ab8cc; font-size:.9rem; margin-bottom:24px; }
+.subtitle { color:#a8d0e4; font-size:.9rem; margin-bottom:24px; }
 
 .top-row { display:grid; grid-template-columns:380px 1fr; gap:16px; margin-bottom:20px; }
 @media(max-width:900px){ .top-row{grid-template-columns:1fr;} }
@@ -52,13 +52,13 @@ h1 { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:var(--accent);
 /* PANEL */
 .panel { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:20px; }
 .panel-title {
-  font-size:.65rem; letter-spacing:3px; color:#90c4d8; text-transform:uppercase;
+  font-size:.65rem; letter-spacing:3px; color:#aed8ea; text-transform:uppercase;
   font-weight:700; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:16px;
 }
 
 /* FORM */
 .form-group { margin-bottom:14px; }
-label { display:block; font-size:.8rem; color:#a8cce0; margin-bottom:5px; font-weight:500; }
+label { display:block; font-size:.8rem; color:#c2dff0; margin-bottom:5px; font-weight:500; }
 input[type=text],input[type=number],select,textarea {
   width:100%; background:var(--card); color:var(--text);
   border:1px solid var(--border); border-radius:8px;
