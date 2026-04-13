@@ -442,9 +442,9 @@
 
     <!-- ── PASO 2: Selección de Bingo y pago ── -->
     <div id="wiz-step2" style="display:none">
-      <!-- Tipo de bingo -->
-      <div class="form-group">
-        <label>Tipo de Bingo *</label>
+      <!-- Tipo de bingo (se muestra tras elegir sesión) -->
+      <div class="form-group" id="btype-group" style="display:none">
+        <label>Tipo de Bingo</label>
         <div id="btype-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px"></div>
       </div>
 
@@ -891,10 +891,14 @@ function renderSessions() {
 function onSessionChange() {
   const sel  = document.getElementById('inp-session');
   const hint = document.getElementById('session-hint');
+  const btypeGroup = document.getElementById('btype-group');
   // Limpiar error visual cuando elige una sesión
   if (sel.value) {
     sel.style.borderColor = 'rgba(0,229,180,.5)';
     if (hint) hint.style.display = 'none';
+    if (btypeGroup) btypeGroup.style.display = '';
+  } else {
+    if (btypeGroup) btypeGroup.style.display = 'none';
   }
   const opt = sel.options[sel.selectedIndex];
   const btype = opt ? opt.getAttribute('data-btype') : null;
