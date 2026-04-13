@@ -2934,10 +2934,20 @@ def api_caja():
         winners_by_sid = {}
         for wr in all_winners:
             winners_by_sid.setdefault(wr.session_id, []).append(wr)
+        # Build paid reimbursements map: session_id → total paid amount
+        all_reimbs = db.query(Reimbursement).all()
+        reimbs_paid_by_sid: dict[str, float] = {}
+        for r in all_reimbs:
+            if r.status == "paid":
+                reimbs_paid_by_sid[r.session_id] = \
+                    reimbs_paid_by_sid.get(r.session_id, 0.0) + (r.amount or 0.0)
+        total_reimbs_paid = sum(reimbs_paid_by_sid.values())
         for s in sessions:
             sw = winners_by_sid.get(s.id, [])
-            premios   = sum(wr.prize_amount or 0 for wr in sw)
+            # Only count winners whose prize has been paid out
+            premios   = sum(wr.prize_amount or 0 for wr in sw if wr.paid)
             total_prem += premios
+            reimbs    = reimbs_paid_by_sid.get(s.id, 0.0)
             sid_vs    = [v for v in vouchers
                          if v.session_id == s.id
                          and v.payment_status in ("approved", "manual_approved")]
@@ -2948,18 +2958,19 @@ def api_caja():
                 "status": s.status, "jugadores": len(sid_vs),
                 "recaudado": round(recaudado, 2),
                 "premios_paid": round(premios, 2),
-                "ganancia": round(recaudado - premios, 2),
+                "ganancia": round(recaudado - premios - reimbs, 2),
                 "ganadores": [wr.to_dict() for wr in sw],
             })
         total_vouchers = len(vouchers)
 
     return jsonify({
         "resumen": {
-            "total_recaudado": round(total_rec, 2),
-            "total_premios":   round(total_prem, 2),
-            "ganancia_bruta":  round(total_rec - total_prem, 2),
-            "total_sesiones":  len(sesiones),
-            "total_vouchers":  total_vouchers,
+            "total_recaudado":  round(total_rec, 2),
+            "total_premios":    round(total_prem, 2),
+            "total_reembolsos": round(total_reimbs_paid, 2),
+            "ganancia_bruta":   round(total_rec - total_prem - total_reimbs_paid, 2),
+            "total_sesiones":   len(sesiones),
+            "total_vouchers":   total_vouchers,
         },
         "sesiones": sesiones,
     })
