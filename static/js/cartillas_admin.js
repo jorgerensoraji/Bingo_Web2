@@ -29,15 +29,15 @@ let selectedNums = new Set();
 // ── CARGAR CARTILLAS ──────────────────────────────
 async function loadCartillas() {
   try {
-    const [cRes, sRes] = await Promise.all([
-      fetch('/api/cartilla/list'),
-      fetch('/api/state'),
-    ]);
-    const cData = await cRes.json();
+    const sRes = await fetch('/api/state');
     const sData = await sRes.json();
+    drawnNums = sData.drawn || [];
+    document.getElementById('st-drawn').textContent = drawnNums.length;
+    const sid = sData.session_id || '';
+    const url = sid ? `/api/cartilla/list?session_id=${encodeURIComponent(sid)}` : '/api/cartilla/list';
+    const cRes = await fetch(url);
+    const cData = await cRes.json();
     allCartillas = cData.cartillas || [];
-    drawnNums    = sData.drawn     || [];
-    document.getElementById('st-drawn').textContent     = drawnNums.length;
     document.getElementById('st-cartillas').textContent = allCartillas.length;
     renderTable(allCartillas);
   } catch(e) {
