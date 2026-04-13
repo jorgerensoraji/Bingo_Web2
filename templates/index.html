@@ -894,28 +894,28 @@
       </div>
 
       <!-- Ya tienes código -->
-      <div id="panel-ya-codigo" style="margin-bottom:8px;background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.35);border-radius:11px;overflow:hidden">
+      <div id="panel-ya-codigo" style="margin-bottom:8px;background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.35);border-radius:11px;overflow:hidden;width:100%;box-sizing:border-box">
         <div style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between"
              onclick="toggleYaCodigo()">
           <span style="font-size:.78rem;font-weight:700;color:var(--accent)">🔑 ¿Ya tienes tu código?</span>
-          <span id="yc-arrow" style="color:var(--muted);font-size:.7rem">▼ Ver</span>
+          <span id="yc-arrow" style="color:var(--muted);font-size:.7rem;flex-shrink:0">▼ Ver</span>
         </div>
         <div id="yc-body" style="display:none;padding:0 12px 12px">
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">
             Ingresa el código que recibiste por email para cargar tus cartillas.
           </div>
-          <div style="display:flex;gap:6px">
-            <input id="yc-input" type="text" placeholder="Ej: AB3K9Z" maxlength="6"
+          <div style="display:flex;gap:6px;width:100%;box-sizing:border-box">
+            <input id="yc-input" type="text" placeholder="AB3K9Z" maxlength="6"
                    oninput="this.value=this.value.toUpperCase()"
                    onkeydown="if(event.key==='Enter') cargarPorCodigo()"
-                   style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
-                          padding:8px 12px;color:var(--text);font-family:Outfit,sans-serif;
-                          font-size:.92rem;font-weight:900;text-align:center;letter-spacing:3px;outline:none;
-                          text-transform:uppercase">
+                   style="flex:1;min-width:0;background:var(--sub);border:1px solid var(--border);border-radius:8px;
+                          padding:8px 10px;color:var(--text);font-family:Outfit,sans-serif;
+                          font-size:.9rem;font-weight:900;text-align:center;letter-spacing:3px;outline:none;
+                          text-transform:uppercase;box-sizing:border-box">
             <button onclick="cargarPorCodigo()"
-                    style="padding:8px 14px;border:none;border-radius:8px;
+                    style="flex-shrink:0;padding:8px 12px;border:none;border-radius:8px;
                            background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);
-                           color:var(--accent);font-family:Outfit,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap">
+                           color:var(--accent);font-family:Outfit,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer">
               🔍 Verificar
             </button>
           </div>
