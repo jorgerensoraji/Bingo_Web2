@@ -1042,15 +1042,41 @@
 </div>
 
 <style>
-/* Fullscreen overlay responsive */
+/* ── Fullscreen overlay ── */
+/* Cards: constrain width so aspect-ratio cells don't go huge */
+#fs-cards-pane #mis-cartillas-wrap {
+  max-width: 440px;
+  margin: 0 auto;
+}
+/* Chat: make panel fill pane height as flex column */
+#fs-chat-pane #chat-panel {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+#fs-chat-pane #chat-messages {
+  height: auto !important;
+  flex: 1;
+  overflow-y: auto !important;
+}
+/* Mobile: stack cards on top, chat below */
 @media(max-width:700px){
   #fs-body { flex-direction:column !important; }
-  #fs-chat-pane { width:auto !important; border-left:none !important;
-                  border-top:1px solid var(--border);flex:1; }
-  #fs-cards-pane { flex:none !important; overflow-y:auto; }
+  #fs-cards-pane { flex: none !important; }
+  #fs-chat-pane {
+    width: auto !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+    flex: 1;
+    min-height: 0;
+  }
+  #fs-cards-pane #mis-cartillas-wrap { max-width: 100%; }
 }
-/* Chat messages fill available height inside fullscreen */
-#fs-chat-pane #chat-messages { height:auto !important; flex:1; }
 </style>
 
 <!-- ══ Modal Guía del Jugador ══ -->
