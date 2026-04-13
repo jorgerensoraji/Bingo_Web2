@@ -771,7 +771,7 @@ async function loadBingoTypes() {
     window._btypesCache = data.bingo_types || [];
     const cont = document.getElementById('btype-selector');
     if (!cont) return;
-    cont.innerHTML = (data.bingo_types || []).map(bt => `
+    cont.innerHTML = (data.bingo_types || []).filter(bt => !selBtype || bt.id === selBtype).map(bt => `
       <div onclick="selectBtype('${bt.id}')" id="bcard-${bt.id}"
            style="border:2px solid ${selBtype===bt.id?bt.color:'var(--border)'};
                   background:${selBtype===bt.id?bt.color+'18':'var(--card)'};
