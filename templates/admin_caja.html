@@ -328,6 +328,7 @@ td{padding:10px 12px;vertical-align:middle}
               <th>Ganancia</th>
               <th>Margen</th>
               <th>Estado</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="tb-sessions">
@@ -343,6 +344,11 @@ td{padding:10px 12px;vertical-align:middle}
   <div class="tab-pane" id="tab-aprobaciones">
 
     <div id="email-status-bar" class="email-status-bar" style="display:none"></div>
+
+    <div id="session-filter-bar" style="display:none;background:rgba(0,229,180,.1);border:1px solid var(--accent);border-radius:10px;padding:10px 16px;margin-bottom:12px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <span style="font-size:.87rem;color:var(--accent);font-weight:700">🔍 Filtrando sesión: <span id="session-filter-name" style="color:var(--text)"></span></span>
+      <button class="btn btn-ghost btn-sm" onclick="clearSessionFilter()">✕ Ver todos</button>
+    </div>
 
     <!-- Stats -->
     <div class="stats-row">
@@ -613,6 +619,18 @@ function switchTab(name,btn){
   if(name==='ganadores')    loadGanadores();
 }
 
+function goToSession(sid, nombre){
+  _sessionDetailFilter={id:sid, nombre};
+  const btn=document.getElementById('tab-aprobaciones-btn');
+  switchTab('aprobaciones', btn);
+}
+
+function clearSessionFilter(){
+  _sessionDetailFilter=null;
+  document.getElementById('session-filter-bar').style.display='none';
+  filterTable();
+}
+
 // ═══════════════════════════════════════════════════
 //  TAB RESUMEN
 // ═══════════════════════════════════════════════════
@@ -673,8 +691,14 @@ async function loadResumen(){
 }
 
 function renderResumenKPIs(sesiones, vouchers, reimbs){
-  const recaudado=sesiones.reduce((a,s)=>a+(s.recaudado||0),0);
-  const premios=sesiones.reduce((a,s)=>a+(s.premios_paid||0),0);
+  // When no period filter, use backend totals (includes vouchers not linked to any session)
+  const allPeriod = _periodFilter==='all';
+  const recaudado = allPeriod && _resumenData?.resumen?.total_recaudado != null
+    ? _resumenData.resumen.total_recaudado
+    : sesiones.reduce((a,s)=>a+(s.recaudado||0),0);
+  const premios = allPeriod && _resumenData?.resumen?.total_premios != null
+    ? _resumenData.resumen.total_premios
+    : sesiones.reduce((a,s)=>a+(s.premios_paid||0),0);
   const reimbTotal=reimbs.filter(r=>r.status==='paid').reduce((a,r)=>a+(r.amount||0),0);
   const ganancia=recaudado-premios-reimbTotal;
   const margen=recaudado>0?Math.round((ganancia/recaudado)*100):0;
@@ -735,7 +759,7 @@ function renderByType(sesiones){
 function renderResumenTable(sesiones){
   const tb=document.getElementById('tb-sessions');
   if(!sesiones||!sesiones.length){
-    tb.innerHTML='<tr><td colspan="10" class="empty">Sin bingos en este período</td></tr>'; return;
+    tb.innerHTML='<tr><td colspan="11" class="empty">Sin bingos en este período</td></tr>'; return;
   }
   const statusPill={
     finished:'<span class="pill pill-green">✅ Finalizada</span>',
@@ -764,6 +788,7 @@ function renderResumenTable(sesiones){
         <div class="bar-wrap"><div class="bar-fill" style="width:${Math.max(0,Math.min(100,margen))}%"></div></div>
       </td>
       <td>${statusPill[s.status]||esc(s.status)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="goToSession('${esc(s.id)}','${esc(s.bingo_nombre||s.id)}')" style="white-space:nowrap">👁 Ver</button></td>
     </tr>`;
   }).join('');
 }
@@ -800,6 +825,7 @@ function exportCSV(){
 let allVouchers=[];
 let dupRefs=new Set();
 let pendingApprove=null;
+let _sessionDetailFilter=null; // set from Resumen "Ver" button
 const METHOD_ICON={yape:'💜',plin:'💙',transferencia:'🏦',interbank:'🏦',efectivo:'💵',manual:'✍️'};
 
 async function checkEmailStatus(){
@@ -844,6 +870,14 @@ function detectDuplicates(vouchers){
 
 async function refreshVouchers(){
   try{
+    // Show/hide session filter bar
+    const sfBar=document.getElementById('session-filter-bar');
+    if(_sessionDetailFilter){
+      document.getElementById('session-filter-name').textContent=_sessionDetailFilter.nombre||_sessionDetailFilter.id;
+      sfBar.style.display='flex';
+    } else {
+      sfBar.style.display='none';
+    }
     const [vRes]=await Promise.all([fetch('/api/admin/vouchers')]);
     allVouchers=(await vRes.json()).vouchers||[];
     const paid=allVouchers.filter(v=>['approved','manual_approved'].includes(v.payment_status)).length;
@@ -922,6 +956,7 @@ function filterTable(){
   const q=document.getElementById('search').value.toLowerCase();
   const fst=document.getElementById('f-status').value;
   let list=allVouchers;
+  if(_sessionDetailFilter) list=list.filter(v=>v.session_id===_sessionDetailFilter.id);
   if(fst!=='all') list=list.filter(v=>v.payment_status===fst);
   if(q) list=list.filter(v=>
     v.code?.toLowerCase().includes(q)||
