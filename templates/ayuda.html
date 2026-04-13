@@ -310,12 +310,7 @@
       </button>
       <div class="faq-a">
         Hay 4 premios durante el juego:
-        <ul>
-          <li><strong>⭐ Formar Letra I — Col. B</strong> — Completa los 5 números de la columna B.</li>
-          <li><strong>🔷 Formar Letra U</strong> — Completa las columnas de los extremos más la fila inferior.</li>
-          <li><strong>⭕ Formar Letra O</strong> — Completa todo el borde exterior de la cartilla.</li>
-          <li><strong>🎉 Bingo / Apagón</strong> — Completa todos los números de la cartilla.</li>
-        </ul>
+        <div id="ayuda-prizes" style="margin:12px 0;display:flex;flex-direction:column;gap:10px;"></div>
         Cuando el sistema detecte que completaste un patrón, aparecerá el botón para reclamarlo. ¡Presiónalo de inmediato, solo el primero gana!
       </div>
     </div>
@@ -387,6 +382,40 @@
       if (!wasOpen) item.classList.add('open');
     });
   });
+
+  // Mini pattern grids for prizes FAQ
+  (function(){
+    function miniGridHTML(fn, color){
+      var cells='';
+      for(var r=0;r<5;r++) for(var c=0;c<5;c++){
+        var lit=fn(r,c);
+        var isC=r===2&&c===2;
+        var bg=lit?color:'rgba(255,255,255,.07)';
+        var op=isC&&!lit?'opacity:.5;':'';
+        cells+='<div style="width:14px;height:14px;border-radius:2px;background:'+bg+';'+op+'"></div>';
+      }
+      return '<div style="display:grid;grid-template-columns:repeat(5,14px);gap:2px;flex-shrink:0;">'+cells+'</div>';
+    }
+    var prizes = [
+      [function(r,c){return c===0;},                                            '#f6c343', '⭐ Formar Letra I — Col. B', 'Completa los 5 números de la columna B'],
+      [function(r,c){return c===0||c===4||(r===4&&c>=1&&c<=3);},                '#3b82f6', '🔷 Formar Letra U',          'Columnas de los extremos + fila inferior'],
+      [function(r,c){return r===0||r===4||c===0||c===4;},                        '#ec4899', '⭕ Formar Letra O',          'Todo el borde exterior de la cartilla'],
+      [function(r,c){return true;},                                              '#00e5b4', '🎉 Bingo / Apagón',          'Completa todos los números de la cartilla']
+    ];
+    var container = document.getElementById('ayuda-prizes');
+    if(container){
+      prizes.forEach(function(p){
+        var row = document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:12px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.08);';
+        row.innerHTML = miniGridHTML(p[0],p[1]) +
+          '<div style="flex:1;">' +
+            '<div style="font-size:.85rem;font-weight:700;color:'+p[1]+'">'+p[2]+'</div>' +
+            '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">'+p[3]+'</div>' +
+          '</div>';
+        container.appendChild(row);
+      });
+    }
+  })();
 </script>
 </body>
 </html>
