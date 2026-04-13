@@ -2124,6 +2124,28 @@ def api_state():
         ao    = la is None or (time.time() - la) < 300
         bt_id = game.bingo_type
         bt_info = BINGO_TYPES.get(bt_id, BINGO_TYPES["1sol"])
+        prize_pool  = game.prize_pool
+        linea_pool  = game.linea_pool
+        u_pool      = game.u_pool
+        o_pool      = game.o_pool
+        preparing   = game.preparing
+        prepare_sid = game.prepare_sid
+        sid         = game.session_id
+
+    # During preparing, pools are still 0 — compute estimated prizes from vouchers
+    if preparing and (prize_pool == 0):
+        est_sid = prepare_sid or sid
+        if est_sid:
+            try:
+                est = compute_prize_pool(est_sid, bt_id)
+                prize_pool = est["prize_amount"]
+                linea_pool = est["linea_amount"]
+                u_pool     = est["u_amount"]
+                o_pool     = est["o_amount"]
+            except Exception:
+                pass
+
+    with game_lock:
         return jsonify({
             "drawn":          game.drawn,
             "remaining":      len(game.available),
@@ -2151,14 +2173,14 @@ def api_state():
             "bingo_precio":   bt_info["precio"],
             "bingo_balls":    bt_info.get("balls", 75),
             "bingo_grid":     bt_info.get("grid_type", "75"),
-            "prize_pool":     game.prize_pool,
-            "linea_pool":     game.linea_pool,
-            "u_pool":         game.u_pool,
-            "o_pool":         game.o_pool,
-            "preparing":        game.preparing,
+            "prize_pool":     prize_pool,
+            "linea_pool":     linea_pool,
+            "u_pool":         u_pool,
+            "o_pool":         o_pool,
+            "preparing":        preparing,
             "prepare_at":       game.prepare_at,
             "prepare_secs":     game.prepare_secs,
-            "prepare_sid":      game.prepare_sid,
+            "prepare_sid":      prepare_sid,
             "session_finished": game.session_finished,
             "admin_whatsapp":   _load_config().get("whatsapp", ""),
         })
