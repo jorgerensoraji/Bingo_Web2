@@ -28,7 +28,14 @@
       "Bash(grep -v \"^\\\\s*//\")",
       "Bash(ls templates/admin_*)",
       "Bash(python -c \"from security import totp_new_secret; print\\(totp_new_secret\\(\\)\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import app\")",
+      "Bash(sed -i 's/>📅 Sesiones</>📅 Bingos</g' templates/admin.html)",
+      "Bash(sed -i 's/Todas las sesiones/Todos los bingos/g' templates/admin.html)",
+      "Bash(sed -i 's/>📅 Sesiones</>📅 Bingos</g' templates/admin_bingo_types.html)",
+      "Bash(sed -i 's/visible para jugadores y sesiones/visible para jugadores y bingos/g' templates/admin_bingo_types.html)",
+      "Bash(sed -i 's/Si hay sesiones que usaron este tipo/Si hay bingos que usaron este tipo/g' templates/admin_bingo_types.html)",
+      "Bash(sed:*)"
     ]
   }
 }

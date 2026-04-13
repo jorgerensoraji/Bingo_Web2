@@ -483,7 +483,7 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
     elif linea:
         result_banner = ('<div style="background:rgba(246,195,67,.12);border:2px solid #f6c343;'
                          'border-radius:12px;padding:14px;text-align:center;margin-bottom:16px">'
-                         '<div style="font-size:1.4rem;font-weight:900;color:#f6c343">⭐ ¡Completaste la Letra I — Col. B!</div>'
+                         '<div style="font-size:1.4rem;font-weight:900;color:#f6c343">⭐ ¡Completaste la Letra I!</div>'
                          '</div>')
     else:
         result_banner = ('<div style="background:rgba(26,49,72,.5);border:1px solid #1a3148;'
@@ -597,7 +597,7 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
         pattern_label = "⭕ Formar Letra O"
     elif pattern == "linea":
         prize = winner.get("linea_prize", winner.get("prize", 0))
-        pattern_label = "⭐ Formar Letra I — Col. B"
+        pattern_label = "⭐ Formar Letra I"
     else:
         prize = winner.get("prize", 0)
         pattern_label = "🎉 Bingo / Apagón"
@@ -1205,7 +1205,7 @@ def _check_winner_75(grid: list, drawn: list) -> dict:
         "u_pattern": False, "o_pattern": False,
         "almost": False, "almost_num": None,
     }
-    # Formar Letra I — Col. B: all 5 cells in column B (col 0, numbers 1-15)
+    # Formar Letra I: all 5 cells in column B (col 0, numbers 1-15)
     if all(marked(r, 0) for r in range(5)):
         result["linea"] = True; result["linea_row"] = 0; result["linea_type"] = "col"
     # U-pattern: left column (col 0) + right column (col 4) + bottom row (row 4)

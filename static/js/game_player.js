@@ -988,7 +988,7 @@ function updatePrizeDisplay(data) {
     '🎉 BINGO: <strong style="color:var(--accent)">S/. ' + pool.toFixed(2) + '</strong>' + splitNote + ' &nbsp;' +
     '⭕ O: <strong style="color:#ec4899">S/. ' + oPool.toFixed(2) + '</strong> &nbsp;' +
     '🔷 U: <strong style="color:#3b82f6">S/. ' + uPool.toFixed(2) + '</strong> &nbsp;' +
-    '⭐ Letra I — Col. B: <strong style="color:var(--warning)">S/. ' + linea.toFixed(2) + '</strong>';
+    '⭐ Letra I: <strong style="color:var(--warning)">S/. ' + linea.toFixed(2) + '</strong>';
 }
 
 // ── v6: Mostrar ganadores en vivo ─────────────────────
@@ -1189,7 +1189,7 @@ function updateMyCartillaAutoMark(force) {
     const marked  = nums.filter(function(n) { return drawnSet.has(n); }).length;
     function cellOk(r, c) { return cart.grid[r][c] === null || drawnSet.has(cart.grid[r][c]); }
     const isBingo = [0,1,2,3,4].every(function(r){ return [0,1,2,3,4].every(function(c){ return cellOk(r,c); }); });
-    // Formar Letra I — Col. B: all 5 cells in column B (col 0, numbers 1-15)
+    // Formar Letra I: all 5 cells in column B (col 0, numbers 1-15)
     var isLinea = !isBingo && [0,1,2,3,4].every(function(r){return cellOk(r,0);});
     // U-pattern: left col (col 0) + right col (col 4) + bottom row (row 4)
     const isU = !isBingo && (
@@ -1342,7 +1342,7 @@ function updateMyCartillaAutoMark(force) {
     } else if (isU && state.claimingU) {
       statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando U…</span>';
     } else if (isLinea && state.claimedLinea) {
-      statusDiv.innerHTML = '<span style="color:#f6c343">⭐ Letra I — Col. B registrada — sigue jugando</span>';
+      statusDiv.innerHTML = '<span style="color:#f6c343">⭐ Letra I registrada — sigue jugando</span>';
     } else if (isLinea && state.claimingLinea) {
       statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando línea…</span>';
     } else {
