@@ -1199,7 +1199,7 @@
       cdType.textContent = state.bingo_nombre + ' — ¡Ten tu cartilla lista!';
     }
 
-    // Prize breakdown
+    // Prize breakdown with mini pattern grids
     const cdPrizes     = document.getElementById('cd-prizes');
     const cdPrizesRows = document.getElementById('cd-prizes-rows');
     if(cdPrizes && cdPrizesRows){
@@ -1208,23 +1208,43 @@
       const u     = state.u_pool      || 0;
       const linea = state.linea_pool  || 0;
       if(bingo > 0 || o > 0 || u > 0 || linea > 0){
-        const row = (emoji, name, desc, amt, color) =>
-          `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+
+        // Mini 5x5 pattern grid: highlightFn(r,c) → true if cell is lit
+        function miniGrid(highlightFn, color) {
+          let cells = '';
+          for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+            const isCenter = r===2 && c===2;
+            const lit = highlightFn(r,c);
+            const bg  = lit ? color : 'rgba(255,255,255,.07)';
+            const extra = isCenter && !lit ? 'opacity:.5;' : '';
+            cells += `<div style="width:10px;height:10px;border-radius:2px;background:${bg};${extra}"></div>`;
+          }
+          return `<div style="display:grid;grid-template-columns:repeat(5,10px);gap:2px;flex-shrink:0;">${cells}</div>`;
+        }
+
+        const gridI     = miniGrid((r,c) => c===0,                                              '#f6c343');
+        const gridU     = miniGrid((r,c) => c===0||c===4||(r===4&&c>=1&&c<=3),                  '#3b82f6');
+        const gridO     = miniGrid((r,c) => r===0||r===4||c===0||c===4,                          '#ec4899');
+        const gridBingo = miniGrid((r,c) => true,                                                '#00e5b4');
+
+        const row = (grid, emoji, name, desc, amt, color) =>
+          `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;
                        border-bottom:1px solid rgba(255,255,255,.06);">
-            <span style="font-size:1.3rem;width:28px;text-align:center;">${emoji}</span>
+            ${grid}
             <div style="flex:1;min-width:0;">
-              <div style="font-size:.82rem;font-weight:700;color:${color}">${name}</div>
-              <div style="font-size:.7rem;color:var(--muted);margin-top:1px">${desc}</div>
+              <div style="font-size:.82rem;font-weight:700;color:${color}">${emoji} ${name}</div>
+              <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${desc}</div>
             </div>
             <div style="font-size:.95rem;font-weight:900;color:${color};white-space:nowrap;">
               S/. ${amt.toFixed(2)}
             </div>
           </div>`;
+
         cdPrizesRows.innerHTML =
-          row('🎉','Bingo / Apagón',    'Completa toda la cartilla',            bingo, 'var(--accent)') +
-          row('⭕','Formar Letra O',     'Borde exterior completo',              o,     '#ec4899') +
-          row('🔷','Formar Letra U',     'Columnas extremas + fila inferior',    u,     '#3b82f6') +
-          row('⭐','Letra I — Col. B',   'Los 5 números de la columna B',        linea, '#f6c343');
+          row(gridBingo, '🎉', 'Bingo / Apagón',   'Completa toda la cartilla',            bingo, '#00e5b4') +
+          row(gridO,     '⭕', 'Formar Letra O',    'Borde exterior completo',              o,     '#ec4899') +
+          row(gridU,     '🔷', 'Formar Letra U',    'Columnas extremas + fila inferior',    u,     '#3b82f6') +
+          row(gridI,     '⭐', 'Letra I — Col. B',  'Los 5 números de la columna B',        linea, '#f6c343');
         cdPrizes.style.display = 'block';
       }
     }
