@@ -893,6 +893,35 @@
         <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar mis cartillas</button>
       </div>
 
+      <!-- Ya tienes código -->
+      <div id="panel-ya-codigo" style="margin-bottom:8px;background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.35);border-radius:11px;overflow:hidden">
+        <div style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between"
+             onclick="toggleYaCodigo()">
+          <span style="font-size:.78rem;font-weight:700;color:var(--accent)">🔑 ¿Ya tienes tu código?</span>
+          <span id="yc-arrow" style="color:var(--muted);font-size:.7rem">▼ Ver</span>
+        </div>
+        <div id="yc-body" style="display:none;padding:0 12px 12px">
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">
+            Ingresa el código que recibiste por email para cargar tus cartillas.
+          </div>
+          <div style="display:flex;gap:6px">
+            <input id="yc-input" type="text" placeholder="Ej: AB3K9Z" maxlength="6"
+                   oninput="this.value=this.value.toUpperCase()"
+                   onkeydown="if(event.key==='Enter') cargarPorCodigo()"
+                   style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
+                          padding:8px 12px;color:var(--text);font-family:Outfit,sans-serif;
+                          font-size:.92rem;font-weight:900;text-align:center;letter-spacing:3px;outline:none;
+                          text-transform:uppercase">
+            <button onclick="cargarPorCodigo()"
+                    style="padding:8px 14px;border:none;border-radius:8px;
+                           background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);
+                           color:var(--accent);font-family:Outfit,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap">
+              🔍 Verificar
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Banner comprar cartilla -->
       <div id="banner-comprar">
         <span class="banner-badge">⚡ ACCIÓN REQUERIDA</span>
@@ -1041,7 +1070,7 @@
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🎫</span>
-            <div class="guia-step-text">Ve a <strong>Mis Cartillas</strong> e ingresa tu <strong>código de voucher</strong> (ej: <code style="background:rgba(0,229,180,.1);padding:1px 5px;border-radius:4px">ABC123</code>) para cargar tus cartillas en ese dispositivo.</div>
+            <div class="guia-step-text">En el panel <strong>"🔑 ¿Ya tienes tu código?"</strong> ingresa tu código de voucher (ej: <code style="background:rgba(0,229,180,.1);padding:1px 5px;border-radius:4px">ABC123</code>) y toca <strong>Verificar</strong>.</div>
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🎴</span>
@@ -1208,6 +1237,34 @@ document.getElementById('modal-guia').addEventListener('click', function(e){
   if (e.target === this) this.classList.remove('open');
 });
 
+function toggleYaCodigo() {
+  const body  = document.getElementById('yc-body');
+  const arrow = document.getElementById('yc-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  arrow.textContent  = open ? '▲ Ocultar' : '▼ Ver';
+  if (open) document.getElementById('yc-input').focus();
+}
+
+async function cargarPorCodigo() {
+  const code = (document.getElementById('yc-input').value || '').trim().toUpperCase();
+  if (!code) { alert('Ingresa tu código'); return; }
+  try {
+    const res  = await fetch('/api/cartillas/by_access', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Código no encontrado o pago no aprobado.'); return; }
+    const ids = data.cartillas || [];
+    if (!ids.length) { alert('No se encontraron cartillas para ese código.'); return; }
+    try { localStorage.setItem('my_cartillas', JSON.stringify(ids)); } catch(e) {}
+    document.getElementById('yc-body').style.display = 'none';
+    document.getElementById('yc-arrow').textContent  = '▼ Ver';
+    if (typeof loadAllCartillas === 'function') loadAllCartillas();
+  } catch(e) { alert('Error de conexión. Intenta nuevamente.'); }
+}
 
 </script>
 <script src="/static/js/game_player.js"></script>
