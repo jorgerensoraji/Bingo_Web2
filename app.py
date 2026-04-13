@@ -3740,6 +3740,17 @@ def api_pay_reimbursement(rid):
         r.paid_note = (data.get("note") or "").strip()[:200]
     return jsonify({"status": "ok"})
 
+@app.route("/api/admin/reimbursements/<int:rid>/delete", methods=["DELETE"])
+def api_delete_reimbursement(rid):
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        r = db.query(Reimbursement).filter_by(id=rid).first()
+        if not r:
+            return jsonify({"error": "not found"}), 404
+        db.delete(r)
+    return jsonify({"status": "ok"})
+
 @app.route("/api/admin/contacts", methods=["GET"])
 def api_contacts_list():
     chk = admin_required()

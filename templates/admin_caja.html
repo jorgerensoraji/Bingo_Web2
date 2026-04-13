@@ -1114,6 +1114,13 @@ async function loadReimbursements(){
   }catch(e){ console.error(e) }
 }
 
+async function deleteReimb(rid){
+  if(!confirm('¿Eliminar este reembolso?')) return;
+  const res=await fetch(`/api/admin/reimbursements/${rid}/delete`,{method:'DELETE'});
+  if(res.ok){ showToast('🗑 Reembolso eliminado'); loadReimbursements(); }
+  else showToast('❌ Error al eliminar');
+}
+
 function renderReimbursements(){
   const tb=document.getElementById('tb-reimb');
   if(!reimbData.length){
@@ -1131,9 +1138,11 @@ function renderReimbursements(){
         ?`<span style="color:#27ae60;font-weight:700">✅ Pagado</span><br><span style="font-size:.72rem;color:var(--muted)">${esc(r.paid_at||'')}</span>`
         :`<span style="color:var(--warning);font-weight:700">⏳ Pendiente</span>`
       }</td>
-      <td>${isPaid?'':
-        `<button class="btn btn-ok btn-sm" onclick="openReimbModal(${r.id})">💸 Marcar pagado</button>`
-      }</td>
+      <td style="white-space:nowrap;display:flex;gap:6px;align-items:center">
+        ${isPaid?'':`<button class="btn btn-ok btn-sm" onclick="openReimbModal(${r.id})">💸 Marcar pagado</button>`}
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:var(--danger)"
+                onclick="deleteReimb(${r.id})">🗑</button>
+      </td>
     </tr>`;
   }).join('');
 }
