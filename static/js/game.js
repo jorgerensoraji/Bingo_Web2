@@ -661,7 +661,7 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
     const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
     return '<div style="margin:6px 0;padding:12px;background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.2);border-radius:10px;text-align:left">' +
       '<div style="font-size:.95rem;color:var(--text);font-weight:700">⭐ ' + nombre + prize + '</div>' +
-      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Línea · Cartilla: <strong>' + w.id + '</strong>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Letra I — Col. B · Cartilla: <strong>' + w.id + '</strong>' +
         (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
       contactBlock(w, 'var(--warning)') +
       '</div>';
@@ -707,7 +707,7 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
         ${uCards}
       </div>` : ''}
       ${lineaCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(246,195,67,.2);padding-top:10px;">
-        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭐ Formar Línea</div>
+        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭐ Formar Letra I — Col. B</div>
         ${lineaCards}
       </div>` : ''}
       <div style="color:var(--muted);font-size:.9rem;margin-bottom:20px;">

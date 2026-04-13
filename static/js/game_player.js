@@ -375,7 +375,7 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused, uWinners, oWinn
     html += '<div style="background:linear-gradient(90deg,#7a5800,#c49200,#7a5800);' +
       'color:#fff8e0;padding:10px 20px;text-align:center;font-family:\'Outfit\',sans-serif;' +
       'font-size:.92rem;font-weight:700;border-bottom:2px solid #f6c343;">' +
-      '⭐ <strong>' + esc(lnames) + '</strong> ganó la LÍNEA — Premio: S/. ' + lp +
+      '⭐ <strong>' + esc(lnames) + '</strong> ganó la LETRA I — Premio: S/. ' + lp +
       ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">El juego continúa ▶</span>' +
       '</div>';
   }
@@ -988,7 +988,7 @@ function updatePrizeDisplay(data) {
     '🎉 BINGO: <strong style="color:var(--accent)">S/. ' + pool.toFixed(2) + '</strong>' + splitNote + ' &nbsp;' +
     '⭕ O: <strong style="color:#ec4899">S/. ' + oPool.toFixed(2) + '</strong> &nbsp;' +
     '🔷 U: <strong style="color:#3b82f6">S/. ' + uPool.toFixed(2) + '</strong> &nbsp;' +
-    '⭐ Línea: <strong style="color:var(--warning)">S/. ' + linea.toFixed(2) + '</strong>';
+    '⭐ Letra I — Col. B: <strong style="color:var(--warning)">S/. ' + linea.toFixed(2) + '</strong>';
 }
 
 // ── v6: Mostrar ganadores en vivo ─────────────────────
@@ -1017,7 +1017,7 @@ function updateWinnersDisplay(winners, lineaWinners, uWinners, oWinners) {
       return '<span style="color:#3b82f6">' + (w.nombre||w.id) + '</span> (S/. ' + Number(w.u_prize||0).toFixed(2) + ')';
     }).join(', '));
   if (lineaWinners && lineaWinners.length)
-    rows.push('⭐ <strong>LÍNEA:</strong> ' + lineaWinners.map(function(w){
+    rows.push('⭐ <strong>LETRA I:</strong> ' + lineaWinners.map(function(w){
       return '<span style="color:var(--warning)">' + (w.nombre||w.id) + '</span> (S/. ' + Number(w.linea_prize||0).toFixed(2) + ')';
     }).join(', '));
   wEl.innerHTML = rows.join('<br>');
@@ -1188,12 +1188,9 @@ function updateMyCartillaAutoMark(force) {
     for (const row of cart.grid) for (const n of row) if (n !== null && n !== undefined) nums.push(n);
     const marked  = nums.filter(function(n) { return drawnSet.has(n); }).length;
     function cellOk(r, c) { return cart.grid[r][c] === null || drawnSet.has(cart.grid[r][c]); }
-    var isLinea = false, lineaType = null, lineaIdx = null;
     const isBingo = [0,1,2,3,4].every(function(r){ return [0,1,2,3,4].every(function(c){ return cellOk(r,c); }); });
-    for (var r=0;r<5&&!isLinea;r++) if ([0,1,2,3,4].every(function(c){return cellOk(r,c);})) { isLinea=true; lineaType='row'; lineaIdx=r; }
-    for (var c=0;c<5&&!isLinea;c++) if ([0,1,2,3,4].every(function(r){return cellOk(r,c);})) { isLinea=true; lineaType='col'; lineaIdx=c; }
-    if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,i);}))   { isLinea=true; lineaType='diag_main'; }
-    if (!isLinea && [0,1,2,3,4].every(function(i){return cellOk(i,4-i);})) { isLinea=true; lineaType='diag_anti'; }
+    // Formar Letra I — Col. B: all 5 cells in column B (col 0, numbers 1-15)
+    var isLinea = !isBingo && [0,1,2,3,4].every(function(r){return cellOk(r,0);});
     // U-pattern: left col (col 0) + right col (col 4) + bottom row (row 4)
     const isU = !isBingo && (
       [0,1,2,3,4].every(function(r){return cellOk(r,0);}) &&
@@ -1240,7 +1237,7 @@ function updateMyCartillaAutoMark(force) {
     const badge = isBingo  ? '<span class="mc-badge mc-badge-bingo">🎉 BINGO</span>'
                 : isO      ? '<span class="mc-badge mc-badge-o">⭕ O</span>'
                 : isU      ? '<span class="mc-badge mc-badge-u">🔷 U</span>'
-                : isLinea  ? '<span class="mc-badge mc-badge-linea">⭐ LÍNEA</span>'
+                : isLinea  ? '<span class="mc-badge mc-badge-linea">⭐ LETRA I</span>'
                 : isAlmost ? '<span class="mc-badge mc-badge-almost">🔥 FALTA 1</span>'
                 : '';
     let header = panel.querySelector('.mc-header');
@@ -1345,7 +1342,7 @@ function updateMyCartillaAutoMark(force) {
     } else if (isU && state.claimingU) {
       statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando U…</span>';
     } else if (isLinea && state.claimedLinea) {
-      statusDiv.innerHTML = '<span style="color:#f6c343">⭐ Línea registrada — sigue jugando</span>';
+      statusDiv.innerHTML = '<span style="color:#f6c343">⭐ Letra I — Col. B registrada — sigue jugando</span>';
     } else if (isLinea && state.claimingLinea) {
       statusDiv.innerHTML = '<span style="color:var(--muted)">⏳ Registrando línea…</span>';
     } else {

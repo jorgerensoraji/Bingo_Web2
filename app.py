@@ -483,7 +483,7 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
     elif linea:
         result_banner = ('<div style="background:rgba(246,195,67,.12);border:2px solid #f6c343;'
                          'border-radius:12px;padding:14px;text-align:center;margin-bottom:16px">'
-                         '<div style="font-size:1.4rem;font-weight:900;color:#f6c343">⭐ ¡Completaste una línea!</div>'
+                         '<div style="font-size:1.4rem;font-weight:900;color:#f6c343">⭐ ¡Completaste la Letra I — Col. B!</div>'
                          '</div>')
     else:
         result_banner = ('<div style="background:rgba(26,49,72,.5);border:1px solid #1a3148;'
@@ -557,8 +557,16 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str) -> None:
                 nombre = vinfo.get("nombres","Jugador")
                 bingo_nombre = vinfo.get("bingo_nombre","Bingo")
                 attachments = []
-                # Use first cartilla's result for result banner; attach all
-                first_result = check_winner(clist[0]["grid"], drawn)
+                # Use best cartilla result for banner (bingo > linea > nothing)
+                best_result = None
+                for c_chk in clist:
+                    r = check_winner(c_chk["grid"], drawn)
+                    if r.get("bingo"):
+                        best_result = r
+                        break
+                    if best_result is None or (r.get("linea") and not best_result.get("linea")):
+                        best_result = r
+                first_result = best_result or check_winner(clist[0]["grid"], drawn)
                 for c in clist:
                     buf = cartilla_to_png(c, drawn)
                     b64 = base64.b64encode(buf.read()).decode()
@@ -589,7 +597,7 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
         pattern_label = "⭕ Formar Letra O"
     elif pattern == "linea":
         prize = winner.get("linea_prize", winner.get("prize", 0))
-        pattern_label = "⭐ Formar Línea"
+        pattern_label = "⭐ Formar Letra I — Col. B"
     else:
         prize = winner.get("prize", 0)
         pattern_label = "🎉 Bingo / Apagón"
@@ -956,7 +964,7 @@ class GameState:
         self.last_voice        = "es-PE-CamilaNeural"
         self.last_activity     = None
         self.paused            = False
-        self.winners_limit     = 1
+        self.winners_limit     = 99
         self.session_id        = None
         self.bingo_type        = "1sol"
         self.prize_pool        = 0.0
@@ -1057,7 +1065,7 @@ class GameState:
             self.last_voice        = data.get("last_voice", "es-PE-CamilaNeural")
             self.last_activity     = data.get("last_activity")
             self.paused            = data.get("paused", False)
-            self.winners_limit     = data.get("winners_limit", 1)
+            self.winners_limit     = data.get("winners_limit", 99)
             self.session_id        = saved_sid
             self.bingo_type        = data.get("bingo_type", "1sol")
             self.prize_pool        = data.get("prize_pool", 0.0)
@@ -1197,21 +1205,9 @@ def _check_winner_75(grid: list, drawn: list) -> dict:
         "u_pattern": False, "o_pattern": False,
         "almost": False, "almost_num": None,
     }
-    # Rows
-    for r in range(5):
-        if all(marked(r, c) for c in range(5)):
-            result["linea"] = True; result["linea_row"] = r; result["linea_type"] = "row"; break
-    # Columns
-    if not result["linea"]:
-        for c in range(5):
-            if all(marked(r, c) for r in range(5)):
-                result["linea"] = True; result["linea_row"] = c; result["linea_type"] = "col"; break
-    # Diagonals
-    if not result["linea"]:
-        if all(marked(i, i) for i in range(5)):
-            result["linea"] = True; result["linea_type"] = "diag_main"
-        elif all(marked(i, 4 - i) for i in range(5)):
-            result["linea"] = True; result["linea_type"] = "diag_anti"
+    # Formar Letra I — Col. B: all 5 cells in column B (col 0, numbers 1-15)
+    if all(marked(r, 0) for r in range(5)):
+        result["linea"] = True; result["linea_row"] = 0; result["linea_type"] = "col"
     # U-pattern: left column (col 0) + right column (col 4) + bottom row (row 4)
     # Forms the letter U — 13 unique cells, none of which is the FREE center
     u_cells = [(r, 0) for r in range(5)] + [(r, 4) for r in range(5)] + [(4, c) for c in range(1, 4)]
@@ -2050,8 +2046,7 @@ def api_draw():
             phrase = f"{letter_phrase}"
         game.last_phrase   = phrase
         game.last_activity = time.time()
-        wc = len(game.claimed_winners)
-        if wc >= game.winners_limit and not game.paused:
+        if game.claimed_winners and not game.paused:
             game.paused = True
         result = {
             "status": "ok", "number": num, "words": words, "phrase": phrase,
@@ -2264,7 +2259,7 @@ def api_admin_winners_limit():
     chk = admin_required()
     if chk: return chk
     data  = request.get_json() or {}
-    limit = max(1, min(int(data.get("limit", 1)), 10))
+    limit = max(1, min(int(data.get("limit", 99)), 99))
     with game_lock:
         game.winners_limit = limit
     return jsonify({"status": "ok", "winners_limit": limit})
@@ -3227,11 +3222,14 @@ def api_winner_claim():
 
         prize_each = round(game.prize_pool / n_winners, 2)
 
+        # Capture previous winners that need corrected emails (tie scenario)
+        prev_winners_to_notify = []
         for prev in game.winners_log:
             if prev.get("game_id") == gid:
                 prev["prize"]     = prize_each
                 prev["n_winners"] = n_winners
                 prev["split"]     = n_winners > 1
+                prev_winners_to_notify.append(dict(prev))  # snapshot after update
 
         winner = {
             "id":           cid,
@@ -3252,9 +3250,19 @@ def api_winner_claim():
             "merged_u":     merged_u,
         }
         game.winners_log.append(winner)
-        if n_winners >= game.winners_limit:
-            game.paused = True
+        game.paused = True  # always pause on bingo/apagón
         game.save_to_db()
+
+    # If this is a tie (n_winners > 1), re-send corrected emails to previous winners
+    # (they already received an email with the full/wrong prize amount)
+    if n_winners > 1:
+        for prev_w in prev_winners_to_notify:
+            prev_email = prev_w.get("email", "")
+            if prev_email:
+                prev_asunto = f"Actualización: Premio compartido — Ganaste S/. {prize_each:.2f} — {btype['nombre']}"
+                ok, err = enviar_email(prev_email, prev_asunto, _email_ganador(prev_w, btype))
+                if not ok:
+                    print(f"[WARN] Email corrección ganador no enviado a {prev_email}: {err}")
 
     # Send winner email notification (outside lock)
     if winner_email:
@@ -4280,7 +4288,7 @@ def api_autodraw_start(sid):
     if s.get("status") != "active":
         return jsonify({"error": "session_not_active"}), 400
     interval      = int(data.get("interval", AUTO_DRAW_INTERVAL))
-    winners_limit = int(data.get("winners_limit", 1))
+    winners_limit = int(data.get("winners_limit", 99))
     with game_lock:
         game.winners_limit = winners_limit
     autodraw.configure_session(

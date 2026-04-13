@@ -424,7 +424,7 @@
           <div class="pct-input-wrap"><input id="tf-o" type="number" min="0" max="100" step="1" value="15" oninput="recalcTHouse()"></div></div>
         <div><label style="font-size:.72rem;color:#3b82f6">🔷 U</label>
           <div class="pct-input-wrap"><input id="tf-u" type="number" min="0" max="100" step="1" value="13" oninput="recalcTHouse()"></div></div>
-        <div><label style="font-size:.72rem;color:#f6c343">⭐ LÍNEA</label>
+        <div><label style="font-size:.72rem;color:#f6c343">⭐ LETRA I</label>
           <div class="pct-input-wrap"><input id="tf-linea" type="number" min="0" max="100" step="1" value="4" oninput="recalcTHouse()"></div></div>
       </div>
     </div>
@@ -548,7 +548,7 @@ function updatePreview() {
       <span style="color:#3b82f6">S/. ${uAmt.toFixed(2)}</span>
     </div>
     <div class="prize-row">
-      <span>⭐ Formar Línea (${(bt.linea_pct*100).toFixed(0)}%)</span>
+      <span>⭐ Formar Letra I — Col. B (${(bt.linea_pct*100).toFixed(0)}%)</span>
       <span style="color:var(--warning)">S/. ${linea.toFixed(2)}</span>
     </div>
     <div class="prize-row">
@@ -624,7 +624,7 @@ function renderSessions() {
           <span style="color:#3b82f6">S/. ${(prize.u_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
-          <span>⭐ Formar Línea (${((prize.linea_pct||0)*100).toFixed(0)}%)</span>
+          <span>⭐ Formar Letra I — Col. B (${((prize.linea_pct||0)*100).toFixed(0)}%)</span>
           <span style="color:var(--warning)">S/. ${(prize.linea_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
@@ -917,7 +917,7 @@ async function showPrize(sid) {
       `🎉 BINGO (${((data.prize_pct||0)*100).toFixed(0)}%): S/. ${data.prize_amount?.toFixed(2)}\n` +
       `⭕ O (${((data.o_pct||0)*100).toFixed(0)}%): S/. ${data.o_amount?.toFixed(2)}\n` +
       `🔷 U (${((data.u_pct||0)*100).toFixed(0)}%): S/. ${data.u_amount?.toFixed(2)}\n` +
-      `⭐ LÍNEA (${((data.linea_pct||0)*100).toFixed(0)}%): S/. ${data.linea_amount?.toFixed(2)}\n` +
+      `⭐ LETRA I (${((data.linea_pct||0)*100).toFixed(0)}%): S/. ${data.linea_amount?.toFixed(2)}\n` +
       `💼 Casa (13%): S/. ${data.house_cut?.toFixed(2)}`
     );
   } catch(e) {
@@ -1144,7 +1144,7 @@ function renderTypes(types) {
         <div class="prize-row-t"><span class="pr-label">🎉 BINGO</span><span class="pr-val" style="color:#00e5b4">${bingo.toFixed(0)}%</span></div>
         <div class="prize-row-t"><span class="pr-label">⭕ O</span><span class="pr-val" style="color:#ec4899">${o.toFixed(0)}%</span></div>
         <div class="prize-row-t"><span class="pr-label">🔷 U</span><span class="pr-val" style="color:#3b82f6">${u.toFixed(0)}%</span></div>
-        <div class="prize-row-t"><span class="pr-label">⭐ LÍNEA</span><span class="pr-val" style="color:#f6c343">${linea.toFixed(0)}%</span></div>
+        <div class="prize-row-t"><span class="pr-label">⭐ LETRA I</span><span class="pr-val" style="color:#f6c343">${linea.toFixed(0)}%</span></div>
         <div class="prize-row-t house"><span class="pr-label">💼 Tu ganancia</span>
           <span class="pr-val" style="color:${house<5?'var(--danger)':house<10?'#f6c343':'#27ae60'}">${house.toFixed(0)}%</span></div>
       </div>

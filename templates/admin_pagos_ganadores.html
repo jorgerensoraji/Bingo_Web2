@@ -257,7 +257,7 @@ function payRowHTML(p, isPaid) {
   const prize   = isBingo ? (p.prize || 0) : (p.linea_prize || 0);
   const tipoBadge = isBingo
     ? '<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(0,229,180,.15);color:var(--accent);margin-left:6px;vertical-align:middle">🏆 BINGO</span>'
-    : '<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px;vertical-align:middle">⭐ LÍNEA</span>';
+    : '<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px;vertical-align:middle">⭐ LETRA I</span>';
 
   const contactLine = [
     p.celular   ? `📞 ${esc(p.celular)}`                     : '',
@@ -305,7 +305,7 @@ function openModal(p) {
   _pendingTarget = p;
   const isBingo   = (p.tipo || 'bingo') === 'bingo';
   const prizeShow = isBingo ? (p.prize||0) : (p.linea_prize||0);
-  const tipoLabel = isBingo ? '🏆 BINGO' : '⭐ LÍNEA';
+  const tipoLabel = isBingo ? '🏆 BINGO' : '⭐ LETRA I';
   document.getElementById('modal-pay-sub').innerHTML =
     `<strong>${esc(p.nombre)} ${esc(p.apellidos||'')}</strong> · Cartilla <strong>${esc(p.cartilla_id)}</strong><br>` +
     `${tipoLabel} · Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeShow)}</span>` +

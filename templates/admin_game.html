@@ -87,17 +87,10 @@
       <button class="btn btn-new" onclick="newGame()">🔄 Nuevo Juego [N]</button>
 
       <div style="margin-top:10px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-        <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">⏸ Pausa automática</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <label style="font-size:.82rem;color:var(--muted);white-space:nowrap;">Parar al llegar a</label>
-          <select id="winners-limit-select" onchange="setWinnersLimit(this.value)"
-                  style="flex:1;background:var(--sub);color:var(--text);border:1px solid var(--border);
-                         border-radius:7px;padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;">
-            <option value="1">1 ganador</option>
-            <option value="2">2 ganadores</option>
-            <option value="3">3 ganadores</option>
-            <option value="5">5 ganadores</option>
-          </select>
+        <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">⏸ Pausa automática</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">
+          El juego se pausa automáticamente cuando hay un ganador de <strong style="color:var(--text)">Bingo / Apagón</strong>.<br>
+          Línea, U y O <strong style="color:var(--text)">no</strong> pausan el juego.
         </div>
         <button id="btn-resume" onclick="resumeGame()" style="
           display:none;width:100%;margin-top:8px;padding:9px;border:none;border-radius:8px;
@@ -286,9 +279,6 @@ setInterval(async function() {
       showPausedBanner(data.winners || [], data.linea_winners || [], data.u_winners || [], data.o_winners || []);
     }
 
-    // Sincronizar winners_limit select
-    const sel = document.getElementById('winners-limit-select');
-    if (sel && data.winners_limit) sel.value = String(data.winners_limit);
 
     // Actualizar info de sesión activa
     const sid       = data.session_id;
@@ -310,7 +300,7 @@ setInterval(async function() {
         `🎉 Bingo / Apagón: <strong style="color:var(--accent)">S/. ${pool}</strong><br>` +
         `⭕ Formar Letra O: <strong style="color:#ec4899">S/. ${oPool}</strong><br>` +
         `🔷 Formar Letra U: <strong style="color:#3b82f6">S/. ${uPool}</strong><br>` +
-        `⭐ Formar Línea: <strong style="color:var(--warning)">S/. ${linea}</strong>`;
+        `⭐ Formar Letra I — Col. B: <strong style="color:var(--warning)">S/. ${linea}</strong>`;
       if (panelSes) panelSes.style.display = 'block';
       // Hay sesión activa — ocultar botón limpiar
       const btnLimpiar = document.getElementById('btn-limpiar-wrap');

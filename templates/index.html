@@ -745,6 +745,19 @@
     <div class="cd-bar" id="cd-bar" style="width:100%"></div>
   </div>
   <div class="cd-entry">segundos para el inicio</div>
+
+  <!-- Prize breakdown panel -->
+  <div id="cd-prizes" style="
+    display:none;width:100%;max-width:420px;
+    background:rgba(4,16,21,.7);border:1px solid rgba(0,229,180,.2);
+    border-radius:12px;padding:14px 16px;margin:14px 0;text-align:left;">
+    <div style="font-size:.65rem;letter-spacing:2px;text-transform:uppercase;
+                color:var(--accent);font-weight:700;margin-bottom:10px;text-align:center;">
+      🏆 Premios de esta sesión
+    </div>
+    <div id="cd-prizes-rows"></div>
+  </div>
+
   <a href="/cartillas" style="
     display:inline-block;padding:12px 28px;
     background:var(--accent);color:#041015;
@@ -791,7 +804,7 @@
     <span style="color:var(--muted);white-space:nowrap">🔷 U:</span>
     <span id="gst-prize-u" style="color:#3b82f6;font-weight:900">—</span>
     <span style="color:rgba(255,255,255,.2)">|</span>
-    <span style="color:var(--muted);white-space:nowrap">⭐ Línea:</span>
+    <span style="color:var(--muted);white-space:nowrap">⭐ Letra I — Col. B:</span>
     <span id="gst-prize-linea" style="color:#f6c343;font-weight:900">—</span>
   </div>
 </div>
@@ -1087,7 +1100,7 @@
         <div class="guia-steps">
           <div class="guia-step">
             <span class="guia-step-icon">⭐</span>
-            <div class="guia-step-text"><strong>Formar Línea:</strong> Completa una fila horizontal completa. Aparecerá el botón <strong>"¡Tengo Línea!"</strong> — presiónalo de inmediato.</div>
+            <div class="guia-step-text"><strong>Formar Letra I — Col. B:</strong> Completa los 5 números de la columna B. Aparecerá el botón <strong>"¡Tengo Letra I!"</strong> — presiónalo de inmediato.</div>
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🔷</span>
@@ -1124,7 +1137,7 @@
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🎴</span>
-            <div class="guia-step-text">Podrás ver si completaste algún patrón (Línea, U, O o Bingo) y cuántos números tuviste marcados.</div>
+            <div class="guia-step-text">Podrás ver si completaste algún patrón (Letra I — Col. B, U, O o Bingo) y cuántos números tuviste marcados.</div>
           </div>
         </div>
       </div>
@@ -1184,6 +1197,36 @@
     // Info del tipo de bingo
     if(state.bingo_nombre){
       cdType.textContent = state.bingo_nombre + ' — ¡Ten tu cartilla lista!';
+    }
+
+    // Prize breakdown
+    const cdPrizes     = document.getElementById('cd-prizes');
+    const cdPrizesRows = document.getElementById('cd-prizes-rows');
+    if(cdPrizes && cdPrizesRows){
+      const bingo = state.prize_pool  || 0;
+      const o     = state.o_pool      || 0;
+      const u     = state.u_pool      || 0;
+      const linea = state.linea_pool  || 0;
+      if(bingo > 0 || o > 0 || u > 0 || linea > 0){
+        const row = (emoji, name, desc, amt, color) =>
+          `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+                       border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="font-size:1.3rem;width:28px;text-align:center;">${emoji}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:.82rem;font-weight:700;color:${color}">${name}</div>
+              <div style="font-size:.7rem;color:var(--muted);margin-top:1px">${desc}</div>
+            </div>
+            <div style="font-size:.95rem;font-weight:900;color:${color};white-space:nowrap;">
+              S/. ${amt.toFixed(2)}
+            </div>
+          </div>`;
+        cdPrizesRows.innerHTML =
+          row('🎉','Bingo / Apagón',    'Completa toda la cartilla',            bingo, 'var(--accent)') +
+          row('⭕','Formar Letra O',     'Borde exterior completo',              o,     '#ec4899') +
+          row('🔷','Formar Letra U',     'Columnas extremas + fila inferior',    u,     '#3b82f6') +
+          row('⭐','Letra I — Col. B',   'Los 5 números de la columna B',        linea, '#f6c343');
+        cdPrizes.style.display = 'block';
+      }
     }
 
     // Calcular tiempo restante

@@ -269,7 +269,7 @@ td{padding:10px 12px;vertical-align:middle}
            onclick="switchTab('ganadores',document.getElementById('tab-ganadores-btn'))">
         <div class="v" id="k-premios">S/.0</div>
         <div class="l">Premios Pagados</div>
-        <div class="sub" id="k-premios-sub">bingo + línea</div>
+        <div class="sub" id="k-premios-sub">bingo + letra I</div>
       </div>
       <div class="kpi" style="--kpi-color:var(--danger);cursor:pointer"
            onclick="switchTab('reembolsos',document.getElementById('tab-reembolsos-btn'))">
@@ -723,7 +723,7 @@ function renderResumenKPIs(sesiones, vouchers, reimbs){
   document.getElementById('k-ganancia').textContent=fmt(ganancia);
   document.getElementById('k-total-sub').textContent=`${sesiones.length} bingo(s)`;
   document.getElementById('k-margen-sub').textContent=`${margen}% margen promedio`;
-  document.getElementById('k-premios-sub').textContent='bingo + línea';
+  document.getElementById('k-premios-sub').textContent='bingo + letra I';
   document.getElementById('k-reimb-sub').textContent=`${reimbs.filter(r=>r.status==='pending').length} pendiente(s)`;
   document.getElementById('k-jugadores').textContent=jugadores;
   document.getElementById('k-aprobados').textContent=aprobados;
@@ -1208,7 +1208,7 @@ function payRowHTML(p,isPaid){
   const prize=p.prize_amount||p.prize||p.u_prize||p.o_prize||p.linea_prize||0;
   const TIPO_BADGE={
     bingo:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(0,229,180,.15);color:var(--accent);margin-left:6px">🏆 BINGO</span>',
-    linea:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px">⭐ LÍNEA</span>',
+    linea:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px">⭐ LETRA I</span>',
     u:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(55,178,214,.15);color:#37b2d6;margin-left:6px">🔷 LETRA U</span>',
     o:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(255,107,107,.15);color:#ff6b6b;margin-left:6px">⭕ LETRA O</span>',
   };
@@ -1250,7 +1250,7 @@ function openPayModal(p){
   _pendingTarget=p;
   const isBingo=(p.tipo||'bingo')==='bingo';
   const prizeShow=isBingo?(p.prize||0):(p.linea_prize||0);
-  const tipoLabel=isBingo?'🏆 BINGO':'⭐ LÍNEA';
+  const tipoLabel=isBingo?'🏆 BINGO':'⭐ LETRA I';
   document.getElementById('modal-pay-sub').innerHTML=
     `<strong>${esc(p.nombre)} ${esc(p.apellidos||'')}</strong> · Cartilla <strong>${esc(p.cartilla_id)}</strong><br>`+
     `${tipoLabel} · Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeShow)}</span>`+
