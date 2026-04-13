@@ -21,6 +21,12 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+_PERU_TZ = ZoneInfo("America/Lima")
+
+def now_peru() -> datetime:
+    return datetime.now(_PERU_TZ).replace(tzinfo=None)
 
 from num2words import num2words
 
@@ -60,7 +66,7 @@ _audit_lock = threading.Lock()
 
 def _log(event: str, detail: dict = None):
     entry = {
-        "ts":     datetime.now().isoformat(),
+        "ts":     now_peru().isoformat(),
         "event":  event,
         "detail": detail or {},
     }
@@ -213,7 +219,7 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
             entry = {
                 "id":           w["id"],
                 "nombre":       w["nombre"],
-                "claimed_at":   datetime.now().isoformat(),
+                "claimed_at":   now_peru().isoformat(),
                 "drawn_count":  len(game.drawn),
                 "game_id":      game.game_id,
                 "prize":        prize_each,
@@ -311,7 +317,7 @@ def _auto_finish_session(session_id: str):
         for s in ss:
             if s.get("id") == session_id and s.get("status") == "active":
                 s["status"]       = "finished"
-                s["finished_at"]  = datetime.now().isoformat()
+                s["finished_at"]  = now_peru().isoformat()
                 s["winners_final"]= winners_final
                 s["auto_finished"]= True
                 break
@@ -402,7 +408,7 @@ def _tick_auto_start():
     if not all([game, game_lock, load_ss, save_ss]):
         return
 
-    now_iso = datetime.now().isoformat()
+    now_iso = now_peru().isoformat()
 
     with ss_lock:
         ss = load_ss()

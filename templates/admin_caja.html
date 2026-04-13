@@ -654,14 +654,17 @@ function filterByPeriod(sesiones){
   const now=new Date();
   return sesiones.filter(s=>{
     if(!s.fecha) return true;
-    const d=new Date(s.fecha);
+    // Parse as local time (appending T00:00:00 avoids UTC-midnight shift)
+    const d=new Date(s.fecha+'T00:00:00');
     if(_periodFilter==='today'){
       return d.toDateString()===now.toDateString();
     }
     if(_periodFilter==='week'){
-      const start=new Date(now); start.setDate(now.getDate()-now.getDay());
+      const start=new Date(now);
+      start.setDate(now.getDate()-now.getDay()+1); // Monday start
       start.setHours(0,0,0,0);
-      return d>=start;
+      const end=new Date(start); end.setDate(start.getDate()+7);
+      return d>=start && d<end;
     }
     if(_periodFilter==='month'){
       return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();

@@ -48,6 +48,13 @@ except ModuleNotFoundError:
 from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+_PERU_TZ = ZoneInfo("America/Lima")
+
+def now_peru() -> datetime:
+    """Current naive datetime in Peru time (UTC-5, no DST)."""
+    return datetime.now(_PERU_TZ).replace(tzinfo=None)
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
@@ -192,7 +199,7 @@ _EMAIL_LOG_MAX   = 100
 _EMAIL_LOG_FILE = os.path.join(os.path.dirname(__file__), "email_log.txt")
 
 def _log_email_event(level: str, msg: str) -> None:
-    ts    = datetime.now().isoformat(timespec="seconds")
+    ts    = now_peru().isoformat(timespec="seconds")
     entry = {"ts": ts, "level": level, "msg": msg}
     line  = f"[{ts}] [{level}] {msg}"
     print(line, flush=True)
@@ -716,7 +723,7 @@ def _seed_bingo_types() -> None:
                 u_pct=bt["u_pct"], o_pct=bt["o_pct"],
                 max_cartillas=bt["max_cartillas"],
                 is_active=True, sort_order=i,
-                created_at=datetime.now().isoformat(),
+                created_at=now_peru().isoformat(),
             ))
 
 def _reload_bingo_types() -> None:
@@ -1003,7 +1010,7 @@ class GameState:
                 "prepare_at":      self.prepare_at,
                 "prepare_secs":    self.prepare_secs,
                 "prepare_sid":     self.prepare_sid,
-                "saved_at":        datetime.now().isoformat(),
+                "saved_at":        now_peru().isoformat(),
             }
             value = json.dumps(data, ensure_ascii=False)
             with db_session() as db:
@@ -1150,7 +1157,7 @@ def save_cartilla(nombre: str, grid: list, telefono: str = "",
             session_id=session_id or "",
             bingo_type=bingo_type or "1sol",
             grid=json.dumps(grid, ensure_ascii=False),
-            created=datetime.now().isoformat(),
+            created=now_peru().isoformat(),
             generada_por_admin=generada_por_admin,
         )
         db.add(row)
@@ -1158,7 +1165,7 @@ def save_cartilla(nombre: str, grid: list, telefono: str = "",
         "id": cid, "nombre": nombre, "telefono": telefono,
         "voucher_code": voucher_code, "session_id": session_id,
         "bingo_type": bingo_type, "grid": grid,
-        "created": datetime.now().isoformat(),
+        "created": now_peru().isoformat(),
         "generada_por_admin": generada_por_admin,
     }
 
@@ -1525,7 +1532,7 @@ def api_admin_login():
             session["totp_setup_pending"] = True
             session["admin_user"] = username
             session["login_ip"]   = ip
-            session["login_at"]   = datetime.now().isoformat()
+            session["login_at"]   = now_peru().isoformat()
             return jsonify({"status": "ok", "setup_2fa": True})
         if not totp_code:
             return jsonify({
@@ -1542,7 +1549,7 @@ def api_admin_login():
     session["is_admin"]   = True
     session["admin_user"] = username
     session["login_ip"]   = ip
-    session["login_at"]   = datetime.now().isoformat()
+    session["login_at"]   = now_peru().isoformat()
     return jsonify({"status": "ok"})
 
 @app.route("/api/admin/logout", methods=["POST"])
@@ -1614,7 +1621,7 @@ def api_player_solicitar():
 
     btype = BINGO_TYPES[bingo_type]
     v_dict = {}
-    now = datetime.now().isoformat()
+    now = now_peru().isoformat()
     with db_session() as db:
         code = _unique_code(db)
         v = Voucher(
@@ -1713,9 +1720,9 @@ def api_admin_create_voucher():
             session_id=data.get("session_id", ""),
             payment_method=data.get("payment_method", "efectivo"),
             payment_status="manual_approved",
-            approved_at=datetime.now().isoformat(),
+            approved_at=now_peru().isoformat(),
             payment_ref=data.get("payment_ref", ""),
-            created=datetime.now().isoformat(),
+            created=now_peru().isoformat(),
             creado_por="admin",
         )
         db.add(v)
@@ -1747,7 +1754,7 @@ def api_approve_voucher(code):
         if not v:
             return jsonify({"error": "not found"}), 404
         v.payment_status = "manual_approved"
-        v.approved_at    = datetime.now().isoformat()
+        v.approved_at    = now_peru().isoformat()
         v.approved_note  = data.get("note", "")
         db.flush()
         v_dict = v.to_dict()
@@ -1764,7 +1771,7 @@ def api_approve_voucher(code):
                 v2 = db.query(Voucher).filter_by(code=code).first()
                 if v2:
                     v2.email_codigo_enviado = True
-                    v2.email_enviado_at     = datetime.now().isoformat()
+                    v2.email_enviado_at     = now_peru().isoformat()
         else:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
@@ -1781,7 +1788,7 @@ def api_reject_voucher(code):
         if not v:
             return jsonify({"error": "not found"}), 404
         v.payment_status  = "rejected"
-        v.rejected_at     = datetime.now().isoformat()
+        v.rejected_at     = now_peru().isoformat()
         v.rejected_reason = data.get("reason", "")
     return jsonify({"status": "ok"})
 
@@ -1799,7 +1806,7 @@ def quick_approve(code):
         if v.payment_status in ("manual_approved", "approved"):
             return _quick_result("already", f"El voucher {code} ya estaba aprobado.", code)
         v.payment_status = "manual_approved"
-        v.approved_at    = datetime.now().isoformat()
+        v.approved_at    = now_peru().isoformat()
         db.flush()
         v_dict = v.to_dict()
     # Send approval email to player
@@ -1813,7 +1820,7 @@ def quick_approve(code):
                 v2 = db2.query(Voucher).filter_by(code=code).first()
                 if v2:
                     v2.email_codigo_enviado = True
-                    v2.email_enviado_at     = datetime.now().isoformat()
+                    v2.email_enviado_at     = now_peru().isoformat()
         else:
             print(f"[WARN] Email aprobación no enviado: {err}")
     return _quick_result("approved", f"Voucher {code} aprobado correctamente.", code)
@@ -1833,7 +1840,7 @@ def quick_reject(code):
             if v.payment_status == "rejected":
                 return _quick_result("already", f"El voucher {code} ya estaba rechazado.", code)
             v.payment_status  = "rejected"
-            v.rejected_at     = datetime.now().isoformat()
+            v.rejected_at     = now_peru().isoformat()
             v.rejected_reason = reason
         return _quick_result("rejected", f"Voucher {code} rechazado.", code)
     # GET — show a small form to enter reason
@@ -1919,7 +1926,7 @@ def api_resend_email(code):
             v = db.query(Voucher).filter_by(code=code).first()
             if v:
                 v.email_codigo_enviado = True
-                v.email_reenviado_at   = datetime.now().isoformat()
+                v.email_reenviado_at   = now_peru().isoformat()
         return jsonify({"status": "ok", "message": f"Email reenviado a {email}"})
     return jsonify({"status": "error", "message": err}), 500
 
@@ -2014,7 +2021,7 @@ def api_register_payment():
         v.apellidos            = apellidos or v.apellidos
         if email:
             v.email            = email
-        v.payment_submitted_at = datetime.now().isoformat()
+        v.payment_submitted_at = now_peru().isoformat()
         if v.payment_status not in ("approved", "manual_approved"):
             v.payment_status   = "pending_review"
         status = v.payment_status
@@ -2224,7 +2231,7 @@ def api_chat_send():
             "id":    _chat_next_id,
             "name":  name,
             "msg":   msg,
-            "ts":    datetime.now().strftime("%H:%M"),
+            "ts":    now_peru().strftime("%H:%M"),
             "color": _chat_color(name),
         }
         _chat_msgs.append(entry)
@@ -2394,7 +2401,7 @@ def api_create_session():
             descripcion=data.get("descripcion", ""),
             max_players=int(data.get("max_players", 0)),
             status="scheduled",
-            created=datetime.now().isoformat(),
+            created=now_peru().isoformat(),
         )
         db.add(s)
         db.flush()
@@ -2469,7 +2476,7 @@ def api_start_session(sid):
             return jsonify({"error": "invalid_status",
                             "message": "La sesión no está en estado válido para iniciar."}), 400
         s.status     = "active"
-        s.started_at = datetime.now().isoformat()
+        s.started_at = now_peru().isoformat()
         db.flush()
         prize = compute_prize_pool(sid, s.bingo_type)
         s.prize_info = json.dumps(prize, ensure_ascii=False)
@@ -2509,7 +2516,7 @@ def api_prepare_session(sid):
         sx = db.query(BingoSession).filter_by(id=sid).first()
         if sx:
             sx.status       = "preparing"
-            sx.prepare_at   = datetime.now().isoformat()
+            sx.prepare_at   = now_peru().isoformat()
             sx.prepare_secs = segundos
 
     with game_lock:
@@ -2589,10 +2596,10 @@ def api_finish_session(sid):
         if not sx:
             return jsonify({"error": "not found"}), 404
         sx.status       = "finished"
-        sx.finished_at  = datetime.now().isoformat()
+        sx.finished_at  = now_peru().isoformat()
         sx.winners_final= json.dumps(wf, ensure_ascii=False)
         # Write permanent Winner rows (INSERT OR IGNORE via merge-style)
-        now_iso = datetime.now().isoformat(timespec="seconds")
+        now_iso = now_peru().isoformat(timespec="seconds")
         for w in wf:
             cid  = w.get("id", "") or w.get("cartilla_id", "")
             tipo = w.get("tipo", "bingo")
@@ -2691,7 +2698,7 @@ def _cancel_session_cleanup(db, sid: str):
             yape_plin=v.yape_plin or "",
             amount=amount,
             status="pending",
-            created=datetime.now().isoformat(timespec="seconds"),
+            created=now_peru().isoformat(timespec="seconds"),
         )
         db.add(r)
         # Send email notification
@@ -2869,7 +2876,7 @@ def api_pay_winner():
     if not session_id or not cartilla_id:
         return jsonify({"error": "session_id y cartilla_id requeridos"}), 400
 
-    paid_at_iso = datetime.now().isoformat()
+    paid_at_iso = now_peru().isoformat()
     updated = False
 
     # Update permanent winners table (all tipos for this cartilla in that session)
@@ -3233,7 +3240,7 @@ def api_winner_claim():
             "yape_plin":    yape_plin,
             "email":        winner_email,
             "celular":      celular,
-            "claimed_at":   datetime.now().isoformat(),
+            "claimed_at":   now_peru().isoformat(),
             "drawn_count":  len(drawn2),
             "game_id":      gid,
             "prize":        prize_each,
@@ -3333,7 +3340,7 @@ def api_winner_claim_linea():
             "yape_plin":    yape_plin,
             "email":        winner_email,
             "celular":      celular,
-            "claimed_at":   datetime.now().isoformat(),
+            "claimed_at":   now_peru().isoformat(),
             "drawn_count":  len(drawn2),
             "game_id":      gid,
             "linea_row":    chk.get("linea_row"),
@@ -3406,7 +3413,7 @@ def api_winner_claim_u():
         u_winner = {
             "id": cid, "nombre": c.get("nombre"), "apellidos": apellidos,
             "yape_plin": yape_plin, "email": winner_email, "celular": celular,
-            "claimed_at": datetime.now().isoformat(), "drawn_count": len(drawn2),
+            "claimed_at": now_peru().isoformat(), "drawn_count": len(drawn2),
             "game_id": gid, "u_prize": u_each, "n_winners": n_u, "split": n_u > 1,
             "puede_reclamar_bingo": True,
         }
@@ -3481,7 +3488,7 @@ def api_winner_claim_o():
         o_winner = {
             "id": cid, "nombre": c.get("nombre"), "apellidos": apellidos,
             "yape_plin": yape_plin, "email": winner_email, "celular": celular,
-            "claimed_at": datetime.now().isoformat(), "drawn_count": len(drawn2),
+            "claimed_at": now_peru().isoformat(), "drawn_count": len(drawn2),
             "game_id": gid, "o_prize": o_each, "n_winners": n_o, "split": n_o > 1,
             "puede_reclamar_bingo": True,
         }
@@ -3735,7 +3742,7 @@ def api_pay_reimbursement(rid):
         if not r:
             return jsonify({"error": "not found"}), 404
         r.status   = "paid"
-        r.paid_at  = datetime.now().isoformat(timespec="seconds")
+        r.paid_at  = now_peru().isoformat(timespec="seconds")
         r.paid_ref  = (data.get("ref") or "").strip()[:80]
         r.paid_note = (data.get("note") or "").strip()[:200]
     return jsonify({"status": "ok"})
@@ -3774,7 +3781,7 @@ def api_contact_create():
     with db_session() as db:
         c = Contact(
             nombre=nombre, email=email, phone=phone,
-            created=datetime.now().isoformat(timespec="seconds"),
+            created=now_peru().isoformat(timespec="seconds"),
         )
         db.add(c)
         db.commit()
@@ -3846,7 +3853,7 @@ def api_contacts_import():
                 phone = _normalize_phone(phone, TWILIO_COUNTRY)
             db.add(Contact(
                 nombre=nombre, email=email, phone=phone,
-                created=datetime.now().isoformat(timespec="seconds"),
+                created=now_peru().isoformat(timespec="seconds"),
             ))
             added += 1
         db.commit()
@@ -4143,7 +4150,7 @@ def api_admin_create_bingo_type():
             is_special=bool(data.get("is_special", False)),
             special_label=sanitize_text(data.get("special_label", "")),
             sort_order=max_order + 1,
-            created_at=datetime.now().isoformat(),
+            created_at=now_peru().isoformat(),
         ))
     _reload_bingo_types()
     return jsonify({"status": "ok", "id": bid})
