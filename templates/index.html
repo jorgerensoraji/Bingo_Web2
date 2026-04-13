@@ -1019,63 +1019,76 @@
 
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;
-              padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
-    <span style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;
-                 color:var(--accent);letter-spacing:2px;">🎴 MI CARTILLA — EN VIVO</span>
+              padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;">
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;
+                 color:var(--accent);letter-spacing:2px;white-space:nowrap;">🎴 EN VIVO</span>
+
+    <!-- Mobile tabs (hidden on desktop) -->
+    <div id="fs-tabs" style="display:none;gap:4px;">
+      <button id="fs-tab-cards" onclick="fsSwitchTab('cards')" style="
+        padding:6px 14px;border-radius:8px;border:1.5px solid var(--accent);
+        background:var(--accent);color:#041015;
+        font-family:Outfit,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;">
+        🎴 Cartilla
+      </button>
+      <button id="fs-tab-chat" onclick="fsSwitchTab('chat')" style="
+        padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);
+        background:transparent;color:var(--muted);
+        font-family:Outfit,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;">
+        💬 Chat
+      </button>
+    </div>
+
     <button onclick="closeFsOverlay()" style="
-      display:flex;align-items:center;gap:6px;padding:7px 14px;
+      display:flex;align-items:center;gap:5px;padding:7px 13px;
       border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.06);
-      color:var(--text);font-family:Outfit,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;">
+      color:var(--text);font-family:Outfit,sans-serif;font-weight:700;font-size:.8rem;
+      cursor:pointer;flex-shrink:0;">
       ✕ Cerrar
     </button>
   </div>
 
   <!-- Body -->
-  <div id="fs-body" style="display:flex;flex:1;overflow:hidden;">
-    <!-- Cards pane -->
-    <div id="fs-cards-pane" style="flex:1;overflow-y:auto;padding:14px;"></div>
-    <!-- Chat pane -->
+  <div id="fs-body" style="display:flex;flex:1;overflow:hidden;min-height:0;">
+    <div id="fs-cards-pane" style="flex:1;overflow-y:auto;padding:14px;min-height:0;"></div>
     <div id="fs-chat-pane" style="
       width:300px;border-left:1px solid var(--border);
-      display:flex;flex-direction:column;overflow:hidden;padding:12px;flex-shrink:0;"></div>
+      display:flex;flex-direction:column;overflow:hidden;padding:12px;flex-shrink:0;min-height:0;"></div>
   </div>
 </div>
 
 <style>
 /* ── Fullscreen overlay ── */
-/* Cards: constrain width so aspect-ratio cells don't go huge */
-#fs-cards-pane #mis-cartillas-wrap {
-  max-width: 440px;
-  margin: 0 auto;
-}
-/* Chat: make panel fill pane height as flex column */
+#fs-cards-pane #mis-cartillas-wrap { max-width:440px; margin:0 auto; }
+
+/* Chat panel fills pane as flex column */
 #fs-chat-pane #chat-panel {
-  display: flex !important;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  margin: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  padding: 0 !important;
+  display:flex !important; flex-direction:column;
+  height:100%; overflow:hidden;
+  margin:0 !important; border:none !important;
+  background:transparent !important; padding:0 !important;
 }
-#fs-chat-pane #chat-messages {
-  height: auto !important;
-  flex: 1;
-  overflow-y: auto !important;
-}
-/* Mobile: stack cards on top, chat below */
+#fs-chat-pane #chat-messages { height:auto !important; flex:1; overflow-y:auto !important; }
+
+/* ── Mobile: tab-based layout ── */
 @media(max-width:700px){
-  #fs-body { flex-direction:column !important; }
-  #fs-cards-pane { flex: none !important; }
-  #fs-chat-pane {
-    width: auto !important;
-    border-left: none !important;
-    border-top: 1px solid var(--border);
-    flex: 1;
-    min-height: 0;
+  #fs-tabs { display:flex !important; }
+  #fs-body { position:relative; }
+
+  /* Both panes fill the body; toggled via .fs-hidden */
+  #fs-cards-pane, #fs-chat-pane {
+    position:absolute; inset:0;
+    width:100% !important; border:none !important;
+    padding:10px !important;
   }
-  #fs-cards-pane #mis-cartillas-wrap { max-width: 100%; }
+  #fs-cards-pane #mis-cartillas-wrap { max-width:100%; }
+
+  /* Active tab shows, inactive hides */
+  #fs-cards-pane.fs-hidden, #fs-chat-pane.fs-hidden { display:none !important; }
+
+  /* Chat pane: push input to bottom so keyboard doesn't bury it */
+  #fs-chat-pane #chat-panel { justify-content:flex-end; }
+  #fs-chat-pane #chat-messages { max-height:55vh; }
 }
 </style>
 
@@ -1372,6 +1385,36 @@ document.getElementById('modal-guia').addEventListener('click', function(e){
 var _fsCardsPlaceholder = null;
 var _fsChatPlaceholder  = null;
 
+function fsSwitchTab(tab){
+  var cardsPane = document.getElementById('fs-cards-pane');
+  var chatPane  = document.getElementById('fs-chat-pane');
+  var tabCards  = document.getElementById('fs-tab-cards');
+  var tabChat   = document.getElementById('fs-tab-chat');
+  var isMobile  = window.innerWidth <= 700;
+  if(!isMobile) return;
+
+  if(tab === 'cards'){
+    cardsPane.classList.remove('fs-hidden');
+    chatPane.classList.add('fs-hidden');
+    tabCards.style.background = 'var(--accent)'; tabCards.style.color = '#041015';
+    tabCards.style.borderColor = 'var(--accent)';
+    tabChat.style.background  = 'transparent';   tabChat.style.color  = 'var(--muted)';
+    tabChat.style.borderColor = 'var(--border)';
+  } else {
+    chatPane.classList.remove('fs-hidden');
+    cardsPane.classList.add('fs-hidden');
+    tabChat.style.background  = 'var(--accent)'; tabChat.style.color  = '#041015';
+    tabChat.style.borderColor = 'var(--accent)';
+    tabCards.style.background = 'transparent';   tabCards.style.color = 'var(--muted)';
+    tabCards.style.borderColor = 'var(--border)';
+    // Scroll chat to bottom
+    var msgs = document.getElementById('chat-messages');
+    if(msgs) setTimeout(function(){ msgs.scrollTop = msgs.scrollHeight; }, 50);
+    // Focus input
+    setTimeout(function(){ var i=document.getElementById('chat-msg'); if(i) i.focus(); }, 100);
+  }
+}
+
 function openFsOverlay(){
   var overlay    = document.getElementById('fs-overlay');
   var cardsPane  = document.getElementById('fs-cards-pane');
@@ -1397,6 +1440,13 @@ function openFsOverlay(){
 
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // On mobile start on cartilla tab
+  if(window.innerWidth <= 700){
+    chatPane.classList.add('fs-hidden');
+    cardsPane.classList.remove('fs-hidden');
+    fsSwitchTab('cards');
+  }
 
   // Scroll chat to bottom
   var msgs = document.getElementById('chat-messages');
