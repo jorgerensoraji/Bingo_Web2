@@ -465,6 +465,9 @@
         </div>
       </div>
 
+      <!-- Preview card for selected session -->
+      <div id="session-preview" style="display:none;margin-bottom:14px;"></div>
+
       <hr class="section-sep">
 
       <!-- Método de pago (oculto para bingo gratis) -->
@@ -839,6 +842,9 @@ function renderSessions() {
       return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
     }).join('');
 
+  // Refresh preview in case session was pre-selected
+  renderSessionPreview(sel.value);
+
   // Bloquear el botón solo si no hay ninguna sesión
   const btnSolicitar = document.getElementById('btn-solicitar');
   if (ssAll.length > 0) {
@@ -896,6 +902,87 @@ function onSessionChange() {
     selBtype = btype;
     loadBingoTypes(); // re-render tipo con el correcto seleccionado
   }
+  renderSessionPreview(sel.value);
+}
+
+function renderSessionPreview(sid) {
+  const preview = document.getElementById('session-preview');
+  if (!preview) return;
+  if (!sid) { preview.style.display = 'none'; return; }
+
+  const session = allSessions.find(s => String(s.id) === String(sid));
+  const btypes  = window._btypesCache || [];
+  const bt      = btypes.find(b => b.id === (session ? session.bingo_type : null));
+  if (!session && !bt) { preview.style.display = 'none'; return; }
+
+  const color   = (bt && bt.color)  || (session && session.bingo_color) || '#00e5b4';
+  const emoji   = (bt && bt.emoji)  || '🎱';
+  const nombre  = (session && session.bingo_nombre) || (bt && bt.nombre) || '—';
+  const precio  = session ? session.bingo_precio : (bt ? bt.precio : 0);
+  const desc    = (bt && bt.descripcion) || (session && session.descripcion) || '';
+
+  // Prize percentages
+  let prizesHtml = '';
+  if (bt) {
+    const toP = v => Math.round((v||0)*100);
+    prizesHtml = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(0,229,180,.12);color:#00e5b4;font-weight:700;">
+          🎉 Bingo ${toP(bt.prize_pct)}%
+        </span>
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(236,72,153,.12);color:#ec4899;font-weight:700;">
+          ⭕ Letra O ${toP(bt.o_pct)}%
+        </span>
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(59,130,246,.12);color:#3b82f6;font-weight:700;">
+          🔷 Letra U ${toP(bt.u_pct)}%
+        </span>
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(246,195,67,.12);color:#f6c343;font-weight:700;">
+          ⭐ Letra I ${toP(bt.linea_pct)}%
+        </span>
+      </div>`;
+  }
+
+  // Session date
+  let dateHtml = '';
+  if (session && session.datetime_iso) {
+    const dt = new Date(session.datetime_iso);
+    if (!isNaN(dt)) {
+      dateHtml = `<div style="font-size:.76rem;color:var(--muted);margin-top:6px;">
+        📅 ${dt.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'})}
+        · ${dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}
+      </div>`;
+    }
+  }
+
+  preview.innerHTML = `
+    <div style="border:2px solid ${color};border-radius:14px;
+                background:${color}0f;padding:16px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-10px;right:10px;font-size:4rem;opacity:.08;
+                  line-height:1;pointer-events:none;">${emoji}</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:2.6rem;line-height:1;flex-shrink:0;">${emoji}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;
+                      color:${color};letter-spacing:1px;line-height:1.1;">${esc(nombre)}</div>
+          <div style="font-size:1.5rem;font-weight:900;color:${color};margin-top:2px;">
+            S/. ${Number(precio).toFixed(2)}
+          </div>
+          ${desc ? `<div style="font-size:.75rem;color:var(--muted);margin-top:3px;">${esc(desc)}</div>` : ''}
+        </div>
+        <div style="background:${color};color:#041015;font-family:'Bebas Neue',sans-serif;
+                    font-size:.8rem;padding:4px 10px;border-radius:8px;white-space:nowrap;
+                    letter-spacing:1px;align-self:flex-start;flex-shrink:0;">
+          ✓ SELECCIONADO
+        </div>
+      </div>
+      ${dateHtml}
+      ${prizesHtml}
+    </div>`;
+  preview.style.display = 'block';
 }
 
 // ── Enviar solicitud de participación ──────────────────
