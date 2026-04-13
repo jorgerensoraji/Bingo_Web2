@@ -282,8 +282,8 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
       <strong style="color:#00e5b4;display:block;margin-bottom:8px">💰 Distribución de premios</strong>
       <table style="width:100%;border-collapse:collapse;color:#4a6b85">
         <tr><td style="padding:3px 0">⭐ LÍNEA</td><td style="text-align:right;color:#f6c343">{round(bt.get('linea_pct',0.04)*100,0):.0f}% del pozo</td></tr>
-        <tr><td style="padding:3px 0">🔷 ¿Quién hace letra U?</td><td style="text-align:right;color:#3b82f6">{round(bt.get('u_pct',0.13)*100,0):.0f}% del pozo</td></tr>
-        <tr><td style="padding:3px 0">⭕ ¿Quién hace letra O?</td><td style="text-align:right;color:#ec4899">{round(bt.get('o_pct',0.15)*100,0):.0f}% del pozo</td></tr>
+        <tr><td style="padding:3px 0">🔷 Formar Letra U</td><td style="text-align:right;color:#3b82f6">{round(bt.get('u_pct',0.13)*100,0):.0f}% del pozo</td></tr>
+        <tr><td style="padding:3px 0">⭕ Formar Letra O</td><td style="text-align:right;color:#ec4899">{round(bt.get('o_pct',0.15)*100,0):.0f}% del pozo</td></tr>
         <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 Cartón lleno o Bingo</td><td style="text-align:right;color:#00e5b4;font-weight:700">{round(bt.get('prize_pct',0.55)*100,0):.0f}% mínimo</td></tr>
       </table>
       <div style="margin-top:8px;font-size:.76rem;color:#3a5568;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">
@@ -576,16 +576,16 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     # Resolve prize amount by pattern
     if pattern == "u":
         prize = winner.get("u_prize", winner.get("prize", 0))
-        pattern_label = "🔷 ¿Quién hace letra U?"
+        pattern_label = "🔷 Formar Letra U"
     elif pattern == "o":
         prize = winner.get("o_prize", winner.get("prize", 0))
-        pattern_label = "⭕ ¿Quién hace letra O?"
+        pattern_label = "⭕ Formar Letra O"
     elif pattern == "linea":
         prize = winner.get("linea_prize", winner.get("prize", 0))
-        pattern_label = "⭐ ¿Quién hace Línea?"
+        pattern_label = "⭐ Formar Línea"
     else:
         prize = winner.get("prize", 0)
-        pattern_label = "🎉 Cartón lleno o Bingo"
+        pattern_label = "🎉 Bingo / Apagón"
     yape_plin  = winner.get("yape_plin", "")
     drawn      = winner.get("drawn_count", 0)
     split      = winner.get("split", False)
@@ -599,11 +599,11 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     merge_rows = ""
     if pattern == "bingo" and (merged_o > 0 or merged_u > 0):
         base = prize - merged_o - merged_u
-        rows = [f"<tr><td style='padding:4px 8px;color:#4a6b85'>Premio BINGO base</td><td style='padding:4px 8px;color:#ddeeff;text-align:right'>S/. {base:.2f}</td></tr>"]
+        rows = [f"<tr><td style='padding:4px 8px;color:#4a6b85'>Bingo / Apagón base</td><td style='padding:4px 8px;color:#ddeeff;text-align:right'>S/. {base:.2f}</td></tr>"]
         if merged_u > 0:
-            rows.append(f"<tr><td style='padding:4px 8px;color:#3b82f6'>+ Premio U (nadie ganó)</td><td style='padding:4px 8px;color:#3b82f6;text-align:right'>S/. {merged_u:.2f}</td></tr>")
+            rows.append(f"<tr><td style='padding:4px 8px;color:#3b82f6'>+ Formar Letra U (nadie ganó)</td><td style='padding:4px 8px;color:#3b82f6;text-align:right'>S/. {merged_u:.2f}</td></tr>")
         if merged_o > 0:
-            rows.append(f"<tr><td style='padding:4px 8px;color:#ec4899'>+ Premio O (nadie ganó)</td><td style='padding:4px 8px;color:#ec4899;text-align:right'>S/. {merged_o:.2f}</td></tr>")
+            rows.append(f"<tr><td style='padding:4px 8px;color:#ec4899'>+ Formar Letra O (nadie ganó)</td><td style='padding:4px 8px;color:#ec4899;text-align:right'>S/. {merged_o:.2f}</td></tr>")
         merge_rows = (f"<div style='background:#0a1520;border:1px solid rgba(0,229,180,.2);border-radius:8px;padding:10px;margin:12px 0;font-size:.82rem'>"
                       f"<div style='color:#00e5b4;font-weight:700;margin-bottom:6px'>🎁 Premio acumulado</div>"
                       f"<table style='width:100%;border-collapse:collapse'>{''.join(rows)}"
@@ -3571,11 +3571,11 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
           <td style="padding:7px 10px;text-align:right;color:#00e5b4;font-weight:900">{prize_pct*100:.0f}% mínimo</td>
         </tr>
         <tr>
-          <td style="padding:7px 10px">⭕ ¿Quién hace letra O?</td>
+          <td style="padding:7px 10px">⭕ Formar Letra O</td>
           <td style="padding:7px 10px;text-align:right;color:#ec4899">{o_pct*100:.0f}%</td>
         </tr>
         <tr style="background:rgba(0,229,180,.03)">
-          <td style="padding:7px 10px">🔷 ¿Quién hace letra U?</td>
+          <td style="padding:7px 10px">🔷 Formar Letra U</td>
           <td style="padding:7px 10px;text-align:right;color:#3b82f6">{u_pct*100:.0f}%</td>
         </tr>
         <tr>
@@ -3875,8 +3875,8 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
         f"",
         f"💰 *Distribución de premios:*",
         f"  🎉 Cartón lleno o Bingo → {prize_pct*100:.0f}% mín.",
-        f"  ⭕ ¿Quién hace letra O? → {o_pct*100:.0f}%",
-        f"  🔷 ¿Quién hace letra U? → {u_pct*100:.0f}%",
+        f"  ⭕ Formar Letra O → {o_pct*100:.0f}%",
+        f"  🔷 Formar Letra U → {u_pct*100:.0f}%",
         f"  ⭐ LÍNEA → {linea_pct*100:.0f}%",
         f"",
         f"🎴 *Compra tu cartilla aquí:*",

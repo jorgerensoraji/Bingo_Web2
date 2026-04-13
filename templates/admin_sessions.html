@@ -536,19 +536,19 @@ function updatePreview() {
       <span style="font-weight:700">S/. ${gross.toFixed(2)}</span>
     </div>
     <div class="prize-row">
-      <span>🎉 Premio BINGO (${(bt.prize_pct*100).toFixed(0)}%)</span>
+      <span>🎉 Bingo / Apagón (${(bt.prize_pct*100).toFixed(0)}%)</span>
       <span style="color:var(--accent)">S/. ${bingo.toFixed(2)}</span>
     </div>
     <div class="prize-row">
-      <span>⭕ Premio O (${((bt.o_pct||0.15)*100).toFixed(0)}%)</span>
+      <span>⭕ Formar Letra O (${((bt.o_pct||0.15)*100).toFixed(0)}%)</span>
       <span style="color:#ec4899">S/. ${oAmt.toFixed(2)}</span>
     </div>
     <div class="prize-row">
-      <span>🔷 Premio U (${((bt.u_pct||0.13)*100).toFixed(0)}%)</span>
+      <span>🔷 Formar Letra U (${((bt.u_pct||0.13)*100).toFixed(0)}%)</span>
       <span style="color:#3b82f6">S/. ${uAmt.toFixed(2)}</span>
     </div>
     <div class="prize-row">
-      <span>⭐ Premio LÍNEA (${(bt.linea_pct*100).toFixed(0)}%)</span>
+      <span>⭐ Formar Línea (${(bt.linea_pct*100).toFixed(0)}%)</span>
       <span style="color:var(--warning)">S/. ${linea.toFixed(2)}</span>
     </div>
     <div class="prize-row">
@@ -612,19 +612,19 @@ function renderSessions() {
           <span><strong>S/. ${(prize.gross||0).toFixed(2)}</strong></span>
         </div>
         <div class="prize-row">
-          <span>🎉 Premio BINGO (${((prize.prize_pct||0)*100).toFixed(0)}%)</span>
+          <span>🎉 Bingo / Apagón (${((prize.prize_pct||0)*100).toFixed(0)}%)</span>
           <span style="color:var(--accent)">S/. ${(prize.prize_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
-          <span>⭕ Premio O (${((prize.o_pct||0)*100).toFixed(0)}%)</span>
+          <span>⭕ Formar Letra O (${((prize.o_pct||0)*100).toFixed(0)}%)</span>
           <span style="color:#ec4899">S/. ${(prize.o_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
-          <span>🔷 Premio U (${((prize.u_pct||0)*100).toFixed(0)}%)</span>
+          <span>🔷 Formar Letra U (${((prize.u_pct||0)*100).toFixed(0)}%)</span>
           <span style="color:#3b82f6">S/. ${(prize.u_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">
-          <span>⭐ Premio LÍNEA (${((prize.linea_pct||0)*100).toFixed(0)}%)</span>
+          <span>⭐ Formar Línea (${((prize.linea_pct||0)*100).toFixed(0)}%)</span>
           <span style="color:var(--warning)">S/. ${(prize.linea_amount||0).toFixed(2)}</span>
         </div>
         <div class="prize-row">

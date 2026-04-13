@@ -672,7 +672,7 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
     const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
     return '<div style="margin:6px 0;padding:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;text-align:left">' +
       '<div style="font-size:.95rem;color:var(--text);font-weight:700">🔷 ' + nombre + prize + '</div>' +
-      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">¿Quién hace letra U? · Cartilla: <strong>' + w.id + '</strong>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Formar Letra U · Cartilla: <strong>' + w.id + '</strong>' +
         (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
       contactBlock(w, '#3b82f6') +
       '</div>';
@@ -683,7 +683,7 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
     const nombre = escHtml((w.nombre || '') + (w.apellidos ? ' ' + w.apellidos : '') || w.id);
     return '<div style="margin:6px 0;padding:12px;background:rgba(236,72,153,.06);border:1px solid rgba(236,72,153,.2);border-radius:10px;text-align:left">' +
       '<div style="font-size:.95rem;color:var(--text);font-weight:700">⭕ ' + nombre + prize + '</div>' +
-      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">¿Quién hace letra O? · Cartilla: <strong>' + w.id + '</strong>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Formar Letra O · Cartilla: <strong>' + w.id + '</strong>' +
         (w.drawn_count ? '  ·  Bolilla #' + w.drawn_count : '') + '</div>' +
       contactBlock(w, '#ec4899') +
       '</div>';
@@ -699,15 +699,15 @@ function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
       ${mergeNote}
       <div style="margin-bottom:12px;">${bingoCards || '<div style="color:var(--muted);">Verificando ganador…</div>'}</div>
       ${oCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(236,72,153,.2);padding-top:10px;">
-        <div style="font-size:.72rem;color:#ec4899;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭕ Premio — ¿Quién hace letra O?</div>
+        <div style="font-size:.72rem;color:#ec4899;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭕ Premio — Formar Letra O</div>
         ${oCards}
       </div>` : ''}
       ${uCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(59,130,246,.2);padding-top:10px;">
-        <div style="font-size:.72rem;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🔷 Premio — ¿Quién hace letra U?</div>
+        <div style="font-size:.72rem;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🔷 Premio — Formar Letra U</div>
         ${uCards}
       </div>` : ''}
       ${lineaCards ? `<div style="margin-bottom:12px;border-top:1px solid rgba(246,195,67,.2);padding-top:10px;">
-        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭐ Premio Línea</div>
+        <div style="font-size:.72rem;color:var(--warning);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⭐ Formar Línea</div>
         ${lineaCards}
       </div>` : ''}
       <div style="color:var(--muted);font-size:.9rem;margin-bottom:20px;">
