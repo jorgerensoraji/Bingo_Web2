@@ -889,10 +889,6 @@
     <div class="panel" id="cartilla-panel">
       <div class="section-title">Mi Cartilla</div>
 
-      <div class="c-btns">
-        <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar mis cartillas</button>
-      </div>
-
       <!-- Ya tienes código -->
       <div id="panel-ya-codigo" style="margin-bottom:8px;background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.35);border-radius:11px;overflow:hidden;width:100%;box-sizing:border-box">
         <div style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between"
@@ -916,7 +912,7 @@
                     style="flex-shrink:0;padding:8px 12px;border:none;border-radius:8px;
                            background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);
                            color:var(--accent);font-family:Outfit,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer">
-              🔍 Verificar
+              → Verificar
             </button>
           </div>
         </div>
@@ -1246,24 +1242,10 @@ function toggleYaCodigo() {
   if (open) document.getElementById('yc-input').focus();
 }
 
-async function cargarPorCodigo() {
+function cargarPorCodigo() {
   const code = (document.getElementById('yc-input').value || '').trim().toUpperCase();
-  if (!code) { alert('Ingresa tu código'); return; }
-  try {
-    const res  = await fetch('/api/cartillas/by_access', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json();
-    if (!res.ok) { alert(data.error || 'Código no encontrado o pago no aprobado.'); return; }
-    const ids = data.cartillas || [];
-    if (!ids.length) { alert('No se encontraron cartillas para ese código.'); return; }
-    try { localStorage.setItem('my_cartillas', JSON.stringify(ids)); } catch(e) {}
-    document.getElementById('yc-body').style.display = 'none';
-    document.getElementById('yc-arrow').textContent  = '▼ Ver';
-    if (typeof loadAllCartillas === 'function') loadAllCartillas();
-  } catch(e) { alert('Error de conexión. Intenta nuevamente.'); }
+  if (!code) { document.getElementById('yc-input').focus(); return; }
+  window.location.href = '/cartillas?code=' + encodeURIComponent(code);
 }
 
 </script>
