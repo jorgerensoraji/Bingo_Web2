@@ -900,7 +900,16 @@
 
     <!-- Mi Cartilla -->
     <div class="panel" id="cartilla-panel">
-      <div class="section-title">Mi Cartilla</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-title" style="margin:0">Mi Cartilla</div>
+        <button id="btn-fs-open" onclick="openFsOverlay()" title="Pantalla completa" style="
+          display:none;align-items:center;gap:5px;padding:5px 10px;
+          border:1px solid rgba(0,229,180,.35);border-radius:8px;
+          background:rgba(0,229,180,.07);color:var(--accent);
+          font-family:Outfit,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;">
+          ⛶ Ver pantalla completa
+        </button>
+      </div>
 
       <!-- Ya tienes código -->
       <div id="panel-ya-codigo" style="margin-bottom:8px;background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.35);border-radius:11px;overflow:hidden;width:100%;box-sizing:border-box">
@@ -1002,6 +1011,47 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- ══ Fullscreen cartilla + chat overlay ══ -->
+<div id="fs-overlay" style="
+  display:none;position:fixed;inset:0;z-index:700;
+  background:var(--bg);flex-direction:column;overflow:hidden;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;
+              padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;
+                 color:var(--accent);letter-spacing:2px;">🎴 MI CARTILLA — EN VIVO</span>
+    <button onclick="closeFsOverlay()" style="
+      display:flex;align-items:center;gap:6px;padding:7px 14px;
+      border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.06);
+      color:var(--text);font-family:Outfit,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;">
+      ✕ Cerrar
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div id="fs-body" style="display:flex;flex:1;overflow:hidden;">
+    <!-- Cards pane -->
+    <div id="fs-cards-pane" style="flex:1;overflow-y:auto;padding:14px;"></div>
+    <!-- Chat pane -->
+    <div id="fs-chat-pane" style="
+      width:300px;border-left:1px solid var(--border);
+      display:flex;flex-direction:column;overflow:hidden;padding:12px;flex-shrink:0;"></div>
+  </div>
+</div>
+
+<style>
+/* Fullscreen overlay responsive */
+@media(max-width:700px){
+  #fs-body { flex-direction:column !important; }
+  #fs-chat-pane { width:auto !important; border-left:none !important;
+                  border-top:1px solid var(--border);flex:1; }
+  #fs-cards-pane { flex:none !important; overflow-y:auto; }
+}
+/* Chat messages fill available height inside fullscreen */
+#fs-chat-pane #chat-messages { height:auto !important; flex:1; }
+</style>
 
 <!-- ══ Modal Guía del Jugador ══ -->
 <div id="modal-guia">
@@ -1291,6 +1341,77 @@
 document.getElementById('modal-guia').addEventListener('click', function(e){
   if (e.target === this) this.classList.remove('open');
 });
+
+// ── Fullscreen cartilla + chat ──
+var _fsCardsPlaceholder = null;
+var _fsChatPlaceholder  = null;
+
+function openFsOverlay(){
+  var overlay    = document.getElementById('fs-overlay');
+  var cardsPane  = document.getElementById('fs-cards-pane');
+  var chatPane   = document.getElementById('fs-chat-pane');
+  var cardsWrap  = document.getElementById('mis-cartillas-wrap');
+  var statusDiv  = document.getElementById('my-cartilla-status');
+  var chatPanel  = document.getElementById('chat-panel');
+
+  // Insert placeholders so we know where to put things back
+  _fsCardsPlaceholder = document.createElement('div');
+  _fsCardsPlaceholder.id = 'fs-cards-ph';
+  cardsWrap.parentNode.insertBefore(_fsCardsPlaceholder, cardsWrap);
+  if(statusDiv) statusDiv.parentNode.insertBefore(_fsCardsPlaceholder, statusDiv);
+
+  _fsChatPlaceholder = document.createElement('div');
+  _fsChatPlaceholder.id = 'fs-chat-ph';
+  chatPanel.parentNode.insertBefore(_fsChatPlaceholder, chatPanel);
+
+  // Move elements into overlay
+  if(statusDiv) cardsPane.appendChild(statusDiv);
+  cardsPane.appendChild(cardsWrap);
+  chatPane.appendChild(chatPanel);
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Scroll chat to bottom
+  var msgs = document.getElementById('chat-messages');
+  if(msgs) setTimeout(function(){ msgs.scrollTop = msgs.scrollHeight; }, 50);
+}
+
+function closeFsOverlay(){
+  var cardsPane  = document.getElementById('fs-cards-pane');
+  var chatPane   = document.getElementById('fs-chat-pane');
+  var cardsWrap  = document.getElementById('mis-cartillas-wrap');
+  var statusDiv  = document.getElementById('my-cartilla-status');
+  var chatPanel  = document.getElementById('chat-panel');
+
+  // Restore elements to original positions using placeholders
+  var cardsPh = document.getElementById('fs-cards-ph');
+  var chatPh  = document.getElementById('fs-chat-ph');
+
+  if(cardsPh){
+    if(statusDiv) cardsPh.parentNode.insertBefore(statusDiv, cardsPh);
+    cardsPh.parentNode.insertBefore(cardsWrap, cardsPh);
+    cardsPh.remove();
+  }
+  if(chatPh){
+    chatPh.parentNode.insertBefore(chatPanel, chatPh);
+    chatPh.remove();
+  }
+
+  document.getElementById('fs-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Show/hide the fullscreen button once cartillas are loaded
+(function(){
+  var observer = new MutationObserver(function(){
+    var wrap = document.getElementById('mis-cartillas-wrap');
+    var btn  = document.getElementById('btn-fs-open');
+    if(btn) btn.style.display = (wrap && wrap.children.length > 0) ? 'flex' : 'none';
+  });
+  var wrap = document.getElementById('mis-cartillas-wrap');
+  if(wrap) observer.observe(wrap, {childList:true});
+})();
 
 // Mini pattern grids for the player guide
 (function(){
