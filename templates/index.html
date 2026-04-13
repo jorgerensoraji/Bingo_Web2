@@ -893,32 +893,6 @@
         <button class="btn-p primary" id="btn-load-cartilla">✅ Cargar mis cartillas</button>
       </div>
 
-      <!-- Acceso por código de voucher -->
-      <div id="pin-access-form" style="margin-bottom:8px;background:var(--card);border:1px solid var(--border);border-radius:11px;overflow:hidden">
-        <div style="padding:8px 12px;background:rgba(246,195,67,.06);border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between"
-             onclick="togglePinForm()">
-          <span style="font-size:.78rem;font-weight:700;color:var(--muted)">🎫 ¿Compraste desde otro dispositivo?</span>
-          <span id="pin-form-arrow" style="color:var(--muted);font-size:.7rem">▼</span>
-        </div>
-        <div id="pin-form-body" style="display:none;padding:10px 12px">
-          <input id="voucher-code-input" type="text" placeholder="Tu código de voucher (ej: ABC123)"
-                 maxlength="10"
-                 style="width:100%;box-sizing:border-box;background:var(--sub);border:1px solid var(--border);
-                        border-radius:8px;padding:8px 12px;color:var(--text);font-family:Outfit,sans-serif;
-                        font-size:.95rem;font-weight:900;text-align:center;letter-spacing:3px;outline:none;
-                        margin-bottom:6px;text-transform:uppercase">
-          <button onclick="loadCartillasByCode()"
-                  style="width:100%;padding:8px;border:none;border-radius:8px;
-                         background:rgba(246,195,67,.15);border:1px solid rgba(246,195,67,.4);
-                         color:#f6c343;font-family:Outfit,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">
-            🔓 Cargar mis cartillas
-          </button>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:5px;text-align:center">
-            Encuentra tu código en el email de aprobación que recibiste.
-          </div>
-        </div>
-      </div>
-
       <!-- Banner comprar cartilla -->
       <div id="banner-comprar">
         <span class="banner-badge">⚡ ACCIÓN REQUERIDA</span>
@@ -1067,11 +1041,11 @@
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🎫</span>
-            <div class="guia-step-text">En el panel <strong>"Mi Cartilla"</strong> toca <strong>"¿Compraste desde otro dispositivo?"</strong> e ingresa tu <strong>código de voucher</strong> (ej: <code style="background:rgba(0,229,180,.1);padding:1px 5px;border-radius:4px">ABC123</code>).</div>
+            <div class="guia-step-text">Ve a <strong>Mis Cartillas</strong> e ingresa tu <strong>código de voucher</strong> (ej: <code style="background:rgba(0,229,180,.1);padding:1px 5px;border-radius:4px">ABC123</code>) para cargar tus cartillas en ese dispositivo.</div>
           </div>
           <div class="guia-step">
             <span class="guia-step-icon">🎴</span>
-            <div class="guia-step-text">Toca <strong>"Cargar mis cartillas"</strong> — tus cartillas aparecerán y se marcarán en tiempo real.</div>
+            <div class="guia-step-text">Tus cartillas aparecerán y se marcarán en tiempo real durante el juego.</div>
           </div>
         </div>
         <div class="guia-tip">
@@ -1234,40 +1208,7 @@ document.getElementById('modal-guia').addEventListener('click', function(e){
   if (e.target === this) this.classList.remove('open');
 });
 
-// ── Acceso por código de voucher ──
-function togglePinForm() {
-  const body  = document.getElementById('pin-form-body');
-  const arrow = document.getElementById('pin-form-arrow');
-  const open  = body.style.display === 'none';
-  body.style.display  = open ? 'block' : 'none';
-  arrow.textContent   = open ? '▲' : '▼';
-}
 
-async function loadCartillasByCode() {
-  const code = (document.getElementById('voucher-code-input').value || '').trim().toUpperCase();
-  if (!code) { alert('Ingresa tu código de voucher'); return; }
-
-  try {
-    const res  = await fetch('/api/cartillas/by_access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json();
-    if (!res.ok) { alert(data.error || 'Código no encontrado o pago no aprobado.'); return; }
-
-    const ids = data.cartillas || [];
-    if (!ids.length) { alert('No se encontraron cartillas para ese código.'); return; }
-
-    try { localStorage.setItem('my_cartillas', JSON.stringify(ids)); } catch(e) {}
-    if (typeof loadAllCartillas === 'function') loadAllCartillas();
-
-    document.getElementById('pin-form-body').style.display = 'none';
-    document.getElementById('pin-form-arrow').textContent  = '▼';
-  } catch(e) {
-    alert('Error de conexión. Intenta nuevamente.');
-  }
-}
 </script>
 <script src="/static/js/game_player.js"></script>
 
