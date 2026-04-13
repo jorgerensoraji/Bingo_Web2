@@ -2798,6 +2798,7 @@ def api_winner_payments():
                 "celular":        w.celular      or "",
                 "yape_plin":      w.yape_plin   or "",
                 "email":          w.email       or "",
+                "prize_amount":   w.prize_amount or 0,
                 "prize":          w.prize_amount if tipo == "bingo" else 0,
                 "linea_prize":    w.prize_amount if tipo == "linea" else 0,
                 "u_prize":        w.prize_amount if tipo == "u"     else 0,

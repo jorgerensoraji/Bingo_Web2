@@ -259,17 +259,20 @@ td{padding:10px 12px;vertical-align:middle}
 
     <!-- KPIs resumen -->
     <div class="kpi-grid">
-      <div class="kpi" style="--kpi-color:var(--accent)">
+      <div class="kpi" style="--kpi-color:var(--accent);cursor:pointer"
+           onclick="switchTab('aprobaciones',document.getElementById('tab-aprobaciones-btn'))">
         <div class="v" id="k-total">S/.0</div>
         <div class="l">Total Recaudado</div>
         <div class="sub" id="k-total-sub">0 bingos</div>
       </div>
-      <div class="kpi" style="--kpi-color:var(--warning)">
+      <div class="kpi" style="--kpi-color:var(--warning);cursor:pointer"
+           onclick="switchTab('ganadores',document.getElementById('tab-ganadores-btn'))">
         <div class="v" id="k-premios">S/.0</div>
         <div class="l">Premios Pagados</div>
         <div class="sub" id="k-premios-sub">bingo + línea</div>
       </div>
-      <div class="kpi" style="--kpi-color:var(--danger)">
+      <div class="kpi" style="--kpi-color:var(--danger);cursor:pointer"
+           onclick="switchTab('reembolsos',document.getElementById('tab-reembolsos-btn'))">
         <div class="v" id="k-reimb-total">S/.0</div>
         <div class="l">Reembolsos</div>
         <div class="sub" id="k-reimb-sub">cancelaciones</div>
@@ -1178,7 +1181,7 @@ async function loadGanadores(){
 function renderGanadores(payments){
   const pending=payments.filter(p=>!p.paid);
   const paid=payments.filter(p=>p.paid);
-  const entryPrize=p=>(p.tipo||'bingo')==='bingo'?(p.prize||0):(p.linea_prize||0);
+  const entryPrize=p=>p.prize_amount||p.prize||p.u_prize||p.o_prize||p.linea_prize||0;
   document.getElementById('k-pendiente').textContent=fmt(pending.reduce((s,p)=>s+entryPrize(p),0));
   document.getElementById('k-pagado').textContent=fmt(paid.reduce((s,p)=>s+entryPrize(p),0));
   document.getElementById('k-total-w').textContent=payments.length;
@@ -1190,10 +1193,14 @@ function renderGanadores(payments){
 
 function payRowHTML(p,isPaid){
   const isBingo=(p.tipo||'bingo')==='bingo';
-  const prize=isBingo?(p.prize||0):(p.linea_prize||0);
-  const tipoBadge=isBingo
-    ?'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(0,229,180,.15);color:var(--accent);margin-left:6px">🏆 BINGO</span>'
-    :'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px">⭐ LÍNEA</span>';
+  const prize=p.prize_amount||p.prize||p.u_prize||p.o_prize||p.linea_prize||0;
+  const TIPO_BADGE={
+    bingo:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(0,229,180,.15);color:var(--accent);margin-left:6px">🏆 BINGO</span>',
+    linea:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(246,195,67,.15);color:#f6c343;margin-left:6px">⭐ LÍNEA</span>',
+    u:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(55,178,214,.15);color:#37b2d6;margin-left:6px">🔷 LETRA U</span>',
+    o:'<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:.65rem;font-weight:900;background:rgba(255,107,107,.15);color:#ff6b6b;margin-left:6px">⭕ LETRA O</span>',
+  };
+  const tipoBadge=TIPO_BADGE[p.tipo||'bingo']||TIPO_BADGE.bingo;
   const contactLine=[
     p.celular  ?`📞 ${esc(p.celular)}`:'',
     p.yape_plin?`💰 Yape/Plin: ${esc(p.yape_plin)}`:'',
