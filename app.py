@@ -282,9 +282,9 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
       <strong style="color:#00e5b4;display:block;margin-bottom:8px">💰 Distribución de premios</strong>
       <table style="width:100%;border-collapse:collapse;color:#4a6b85">
         <tr><td style="padding:3px 0">⭐ LÍNEA</td><td style="text-align:right;color:#f6c343">{round(bt.get('linea_pct',0.04)*100,0):.0f}% del pozo</td></tr>
-        <tr><td style="padding:3px 0">🔷 U-Pattern</td><td style="text-align:right;color:#3b82f6">{round(bt.get('u_pct',0.13)*100,0):.0f}% del pozo</td></tr>
-        <tr><td style="padding:3px 0">⭕ O-Pattern</td><td style="text-align:right;color:#ec4899">{round(bt.get('o_pct',0.15)*100,0):.0f}% del pozo</td></tr>
-        <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 BINGO</td><td style="text-align:right;color:#00e5b4;font-weight:700">{round(bt.get('prize_pct',0.55)*100,0):.0f}% mínimo</td></tr>
+        <tr><td style="padding:3px 0">🔷 ¿Quién hace letra U?</td><td style="text-align:right;color:#3b82f6">{round(bt.get('u_pct',0.13)*100,0):.0f}% del pozo</td></tr>
+        <tr><td style="padding:3px 0">⭕ ¿Quién hace letra O?</td><td style="text-align:right;color:#ec4899">{round(bt.get('o_pct',0.15)*100,0):.0f}% del pozo</td></tr>
+        <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 Cartón lleno o Bingo</td><td style="text-align:right;color:#00e5b4;font-weight:700">{round(bt.get('prize_pct',0.55)*100,0):.0f}% mínimo</td></tr>
       </table>
       <div style="margin-top:8px;font-size:.76rem;color:#3a5568;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">
         💡 Si nadie gana U o O, esos premios se acumulan al BINGO. <strong style="color:#ddeeff">El 100% vuelve a los jugadores.</strong>
@@ -576,16 +576,16 @@ def _email_ganador(winner: dict, btype: dict, pattern: str = "bingo") -> str:
     # Resolve prize amount by pattern
     if pattern == "u":
         prize = winner.get("u_prize", winner.get("prize", 0))
-        pattern_label = "🔷 U-Pattern"
+        pattern_label = "🔷 ¿Quién hace letra U?"
     elif pattern == "o":
         prize = winner.get("o_prize", winner.get("prize", 0))
-        pattern_label = "⭕ O-Pattern"
+        pattern_label = "⭕ ¿Quién hace letra O?"
     elif pattern == "linea":
         prize = winner.get("linea_prize", winner.get("prize", 0))
-        pattern_label = "⭐ LÍNEA"
+        pattern_label = "⭐ ¿Quién hace Línea?"
     else:
         prize = winner.get("prize", 0)
-        pattern_label = "🎉 BINGO"
+        pattern_label = "🎉 Cartón lleno o Bingo"
     yape_plin  = winner.get("yape_plin", "")
     drawn      = winner.get("drawn_count", 0)
     split      = winner.get("split", False)
@@ -3567,15 +3567,15 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
       <div style="font-size:.72rem;color:#4a6b85;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">💰 Distribución de premios</div>
       <table style="width:100%;border-collapse:collapse;font-size:.85rem">
         <tr style="background:rgba(0,229,180,.06)">
-          <td style="padding:7px 10px">🎉 BINGO</td>
+          <td style="padding:7px 10px">🎉 Cartón lleno o Bingo</td>
           <td style="padding:7px 10px;text-align:right;color:#00e5b4;font-weight:900">{prize_pct*100:.0f}% mínimo</td>
         </tr>
         <tr>
-          <td style="padding:7px 10px">⭕ O-Pattern</td>
+          <td style="padding:7px 10px">⭕ ¿Quién hace letra O?</td>
           <td style="padding:7px 10px;text-align:right;color:#ec4899">{o_pct*100:.0f}%</td>
         </tr>
         <tr style="background:rgba(0,229,180,.03)">
-          <td style="padding:7px 10px">🔷 U-Pattern</td>
+          <td style="padding:7px 10px">🔷 ¿Quién hace letra U?</td>
           <td style="padding:7px 10px;text-align:right;color:#3b82f6">{u_pct*100:.0f}%</td>
         </tr>
         <tr>
@@ -3874,9 +3874,9 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     lines += [
         f"",
         f"💰 *Distribución de premios:*",
-        f"  🎉 BINGO → {prize_pct*100:.0f}% mín.",
-        f"  ⭕ O-Pattern → {o_pct*100:.0f}%",
-        f"  🔷 U-Pattern → {u_pct*100:.0f}%",
+        f"  🎉 Cartón lleno o Bingo → {prize_pct*100:.0f}% mín.",
+        f"  ⭕ ¿Quién hace letra O? → {o_pct*100:.0f}%",
+        f"  🔷 ¿Quién hace letra U? → {u_pct*100:.0f}%",
         f"  ⭐ LÍNEA → {linea_pct*100:.0f}%",
         f"",
         f"🎴 *Compra tu cartilla aquí:*",
