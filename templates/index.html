@@ -1176,7 +1176,7 @@
         <div class="guia-steps">
           <div class="guia-step">
             <div id="gg-i" style="flex-shrink:0;margin-top:2px;"></div>
-            <div class="guia-step-text"><strong style="color:#f6c343">⭐ Formar Letra I:</strong> Completa los 5 números de la columna B. Aparecerá el botón <strong>"¡Tengo Letra I!"</strong> — presiónalo de inmediato.</div>
+            <div class="guia-step-text"><strong style="color:#f6c343">⭐ Formar Letra I:</strong> Completa los 5 números de la columna I. Aparecerá el botón <strong>"¡Tengo Letra I!"</strong> — presiónalo de inmediato.</div>
           </div>
           <div class="guia-step">
             <div id="gg-u" style="flex-shrink:0;margin-top:2px;"></div>
@@ -1297,7 +1297,7 @@
         return `<div style="display:grid;grid-template-columns:repeat(5,10px);gap:2px;flex-shrink:0;">${cells}</div>`;
       }
 
-      const gridI     = miniGrid((r,c) => c===0,                                            '#f6c343');
+      const gridI     = miniGrid((r,c) => c===1,                                            '#f6c343');
       const gridU     = miniGrid((r,c) => c===0||c===4||(r===4&&c>=1&&c<=3),                '#3b82f6');
       const gridO     = miniGrid((r,c) => r===0||r===4||c===0||c===4,                        '#ec4899');
       const gridBingo = miniGrid((r,c) => true,                                              '#00e5b4');
@@ -1317,7 +1317,7 @@
         row(gridBingo, '🎉', 'Bingo / Apagón',   'Completa toda la cartilla',            bingo, '#00e5b4') +
         row(gridO,     '⭕', 'Formar Letra O',    'Borde exterior completo',              o,     '#ec4899') +
         row(gridU,     '🔷', 'Formar Letra U',    'Columnas extremas + fila inferior',    u,     '#3b82f6') +
-        row(gridI,     '⭐', 'Letra I',  'Los 5 números de la columna B',        linea, '#f6c343');
+        row(gridI,     '⭐', 'Letra I',  'Los 5 números de la columna I',        linea, '#f6c343');
       cdPrizes.style.display = 'block';
     }
 
@@ -1453,7 +1453,7 @@ function closeFsOverlay(){
     return '<div style="display:grid;grid-template-columns:repeat(5,14px);gap:2px;">'+cells+'</div>';
   }
   var defs = [
-    ['gg-i', function(r,c){return c===0;},                                            '#f6c343'],
+    ['gg-i', function(r,c){return c===1;},                                            '#f6c343'],
     ['gg-u', function(r,c){return c===0||c===4||(r===4&&c>=1&&c<=3);},                '#3b82f6'],
     ['gg-o', function(r,c){return r===0||r===4||c===0||c===4;},                        '#ec4899'],
     ['gg-b', function(r,c){return true;},                                              '#00e5b4']

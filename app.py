@@ -1205,9 +1205,9 @@ def _check_winner_75(grid: list, drawn: list) -> dict:
         "u_pattern": False, "o_pattern": False,
         "almost": False, "almost_num": None,
     }
-    # Formar Letra I: all 5 cells in column B (col 0, numbers 1-15)
-    if all(marked(r, 0) for r in range(5)):
-        result["linea"] = True; result["linea_row"] = 0; result["linea_type"] = "col"
+    # Formar Letra I: all 5 cells in column I (col 1, numbers 16-30)
+    if all(marked(r, 1) for r in range(5)):
+        result["linea"] = True; result["linea_row"] = 1; result["linea_type"] = "col"
     # U-pattern: left column (col 0) + right column (col 4) + bottom row (row 4)
     # Forms the letter U — 13 unique cells, none of which is the FREE center
     u_cells = [(r, 0) for r in range(5)] + [(r, 4) for r in range(5)] + [(4, c) for c in range(1, 4)]

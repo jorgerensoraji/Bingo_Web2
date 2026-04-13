@@ -1189,8 +1189,8 @@ function updateMyCartillaAutoMark(force) {
     const marked  = nums.filter(function(n) { return drawnSet.has(n); }).length;
     function cellOk(r, c) { return cart.grid[r][c] === null || drawnSet.has(cart.grid[r][c]); }
     const isBingo = [0,1,2,3,4].every(function(r){ return [0,1,2,3,4].every(function(c){ return cellOk(r,c); }); });
-    // Formar Letra I: all 5 cells in column B (col 0, numbers 1-15)
-    var isLinea = !isBingo && [0,1,2,3,4].every(function(r){return cellOk(r,0);});
+    // Formar Letra I: all 5 cells in column I (col 1, numbers 16-30)
+    var isLinea = !isBingo && [0,1,2,3,4].every(function(r){return cellOk(r,1);});
     // U-pattern: left col (col 0) + right col (col 4) + bottom row (row 4)
     const isU = !isBingo && (
       [0,1,2,3,4].every(function(r){return cellOk(r,0);}) &&

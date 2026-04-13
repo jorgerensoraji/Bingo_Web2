@@ -397,7 +397,7 @@
       return '<div style="display:grid;grid-template-columns:repeat(5,14px);gap:2px;flex-shrink:0;">'+cells+'</div>';
     }
     var prizes = [
-      [function(r,c){return c===0;},                                            '#f6c343', '⭐ Formar Letra I', 'Completa los 5 números de la columna B'],
+      [function(r,c){return c===1;},                                            '#f6c343', '⭐ Formar Letra I', 'Completa los 5 números de la columna I'],
       [function(r,c){return c===0||c===4||(r===4&&c>=1&&c<=3);},                '#3b82f6', '🔷 Formar Letra U',          'Columnas de los extremos + fila inferior'],
       [function(r,c){return r===0||r===4||c===0||c===4;},                        '#ec4899', '⭕ Formar Letra O',          'Todo el borde exterior de la cartilla'],
       [function(r,c){return true;},                                              '#00e5b4', '🎉 Bingo / Apagón',          'Completa todos los números de la cartilla']
