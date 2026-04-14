@@ -142,6 +142,10 @@ function removeMyCartilla(cid) {
 async function generateAuto() {
   const code = getCode();
   if (!code) { showToast('🔑 Ingresa el código del administrador'); return; }
+
+  // ✅ SAVE CODE FOR JUEGO PAGE
+  localStorage.setItem('bingo_access_code', code);
+
   const nombre = getName();
   showToast('⏳ Generando tu cartilla…');
 
@@ -151,24 +155,30 @@ async function generateAuto() {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ nombre, count: 1, code }),
     });
+
     const data = await res.json();
+
     if (!res.ok) {
       const msgs = {
         bad_code:        '❌ Código inválido. Pide uno al administrador.',
         used_code:       '⚠️ Ese código ya fue usado.',
-        game_started:    '⛔ El juego ya empezó. No se pueden crear más cartillas.',
-        session_mismatch:'⛔ Este código es de otra sesión. Solicita un código nuevo.',
+        game_started:    '⛔ El juego ya empezó.',
+        session_mismatch:'⛔ Código de otra sesión.',
       };
-      showToast(msgs[data.error] || '❌ ' + (data.error || 'Error'));
+      showToast(msgs[data.error] || '❌ Error');
       return;
     }
+
     const cid = data.cartillas[0].id;
     const sid = data.cartillas[0].session_id || '';
+
     saveMyCartilla(cid, sid);
+
     showToast(`✅ ¡Cartilla ${cid} creada!`);
     loadMyCartillas();
-    // Clear the code so it can't be reused in the UI
+
     document.getElementById('inp-code').value = '';
+
   } catch(e) {
     showToast('❌ Error de conexión');
   }

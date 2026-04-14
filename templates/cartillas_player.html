@@ -1193,6 +1193,9 @@ async function verificarCodigoRapido() {
     // Copiar el código al input interno y mostrar estado
     document.getElementById('inp-code-check').value = code;
     activeCode = code;
+    localStorage.setItem('bingo_access_code', code);
+    localStorage.setItem('bingo_access_code', code);
+    localStorage.setItem('bingo_access_code', code);
     lastStatus = data.payment_status;
     renderEstado(data);
     if (['pending','pending_review'].includes(data.payment_status)) {
@@ -1324,6 +1327,7 @@ async function generateAuto() {
   const nombre = document.getElementById('inp-name-cartilla')?.value.trim() || 'Jugador';
   const count  = parseInt(document.getElementById('inp-count')?.value) || 1;
   if (!code) { showToast('🔑 Ingresa tu código primero'); return; }
+  localStorage.setItem('bingo_access_code', code);
   showToast('⏳ Generando tu cartilla…');
   try {
     const res  = await fetch('/api/cartilla/generate', {
