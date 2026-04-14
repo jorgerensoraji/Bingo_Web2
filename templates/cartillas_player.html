@@ -1308,11 +1308,27 @@ async function generateAuto() {
     });
     const data = await res.json();
     if (!res.ok) {
+      if (data.error === 'max_cartillas_reached') {
+        // Cartilla already generated — load it into localStorage so the player can play
+        try {
+          const r2   = await fetch('/api/cartillas/by_access', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+          const d2   = await r2.json();
+          const list = d2.cartillas || [];
+          if (list.length) {
+            list.forEach(c => saveMyCartilla(c.id, c.session_id));
+            loadMyCartillas();
+            setStep(4);
+            await showSuccessPanel(list.map(c => ({ id: c.id, session_id: c.session_id })));
+            return;
+          }
+        } catch(e) {}
+        showToast('⚠️ Ya generaste tu cartilla. Entra al juego con el código que recibiste.');
+        return;
+      }
       const msgs = {
-        bad_code:             '❌ Código inválido.',
-        payment_pending:      '⏳ Pago pendiente de aprobación.',
-        game_started:         '⛔ El juego ya empezó.',
-        max_cartillas_reached:'⚠️ Ya generaste la cartilla de este voucher. Cada pago da derecho a 1 cartilla.',
+        bad_code:        '❌ Código inválido.',
+        payment_pending: '⏳ Pago pendiente de aprobación.',
+        game_started:    '⛔ El juego ya empezó.',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);
       return;
