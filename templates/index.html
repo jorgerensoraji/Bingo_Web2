@@ -1523,10 +1523,37 @@ function toggleYaCodigo() {
   if (open) document.getElementById('yc-input').focus();
 }
 
-function cargarPorCodigo() {
+async function cargarPorCodigo() {
   const code = (document.getElementById('yc-input').value || '').trim().toUpperCase();
   if (!code) { document.getElementById('yc-input').focus(); return; }
-  window.location.href = '/cartillas?code=' + encodeURIComponent(code);
+  showToast('⏳ Cargando cartilla…');
+  try {
+    const res  = await fetch('/api/cartillas/by_access', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    const list = data.cartillas || [];
+    if (!res.ok || !list.length) {
+      // Fallback: redirect to cartillas page to generate/check
+      window.location.href = '/cartillas?code=' + encodeURIComponent(code);
+      return;
+    }
+    // Save to localStorage and load on game page directly
+    const stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+    list.forEach(c => {
+      if (!stored.find(e => (typeof e === 'object' ? e.id : e) === c.id)) {
+        stored.unshift({ id: c.id, session_id: c.session_id || '' });
+      }
+    });
+    localStorage.setItem('my_cartillas', JSON.stringify(stored.slice(0, 30)));
+    document.getElementById('yc-input').value = '';
+    document.getElementById('yc-body').style.display = 'none';
+    document.getElementById('yc-arrow').textContent = '▼ Ver';
+    await loadAllCartillas();
+  } catch(e) {
+    window.location.href = '/cartillas?code=' + encodeURIComponent(code);
+  }
 }
 
 </script>
