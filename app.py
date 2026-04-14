@@ -13,7 +13,7 @@ CHANGES v8.0 (SQLite migration):
   ✅ Foundation ready for payment webhooks (v8.2)
 """
 
-import asyncio, base64, hashlib, json, os, random, socket, tempfile
+import asyncio, base64, hashlib, json, os, random, re, socket, tempfile
 import threading, time, uuid
 from security import (
     apply_security_headers, get_csrf_token, csrf_required,
@@ -1616,6 +1616,18 @@ def api_player_solicitar():
             if existing:
                 return jsonify({"error": "duplicate_email",
                                 "message": "Ya tienes una solicitud registrada para esta sesión."}), 400
+    # Check if same phone number already has a voucher for this session
+    _celular_norm = re.sub(r'\D', '', celular)  # digits only for comparison
+    if _celular_norm and session_id:
+        with db_session() as db:
+            existing_phone = db.query(Voucher).filter(
+                Voucher.session_id == session_id,
+                Voucher.payment_status.in_(["pending_review", "manual_approved", "approved", "pending"])
+            ).all()
+            for v in existing_phone:
+                if re.sub(r'\D', '', v.celular or '') == _celular_norm:
+                    return jsonify({"error": "duplicate_phone",
+                                    "message": "Ya tienes una solicitud registrada con ese número de celular."}), 400
 
     btype = BINGO_TYPES[bingo_type]
     v_dict = {}
