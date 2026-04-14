@@ -3819,6 +3819,14 @@ def api_contact_create():
     if phone:
         phone = _normalize_phone(phone, TWILIO_COUNTRY)
     with db_session() as db:
+        if email:
+            dup = db.query(Contact).filter(Contact.email == email).first()
+            if dup:
+                return jsonify({"error": "Ya existe un contacto con ese email"}), 400
+        if phone:
+            dup = db.query(Contact).filter(Contact.phone == phone).first()
+            if dup:
+                return jsonify({"error": "Ya existe un contacto con ese teléfono"}), 400
         c = Contact(
             nombre=nombre, email=email, phone=phone,
             created=now_peru().isoformat(timespec="seconds"),
@@ -3881,6 +3889,9 @@ def api_contacts_import():
 
     added = 0; skipped = 0
     with db_session() as db:
+        existing_emails = {c.email for c in db.query(Contact).all() if c.email}
+        existing_phones = {c.phone for c in db.query(Contact).all() if c.phone}
+        batch_emails = set(); batch_phones = set()
         for row in rows:
             if not row: continue
             cols   = [c.strip() for c in row]
@@ -3891,6 +3902,11 @@ def api_contacts_import():
                 skipped += 1; continue
             if phone:
                 phone = _normalize_phone(phone, TWILIO_COUNTRY)
+            if (email and (email in existing_emails or email in batch_emails)) or \
+               (phone and (phone in existing_phones or phone in batch_phones)):
+                skipped += 1; continue
+            if email: batch_emails.add(email)
+            if phone: batch_phones.add(phone)
             db.add(Contact(
                 nombre=nombre, email=email, phone=phone,
                 created=now_peru().isoformat(timespec="seconds"),
