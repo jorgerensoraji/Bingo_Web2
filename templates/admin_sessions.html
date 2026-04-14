@@ -1076,7 +1076,7 @@ async function saveType() {
     is_special:    document.getElementById('tf-special').checked,
     special_label: document.getElementById('tf-special-label').value.trim(),
   };
-  const url    = _tEditId ? `/api/admin/sessions/${_tEditId}` : '/api/admin/sessions';
+  const url    = _tEditId ? `/api/admin/bingo_types/${_tEditId}` : '/api/admin/bingo_types';
   const method = _tEditId ? 'PUT' : 'POST';
   try {
     const res  = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
@@ -1091,7 +1091,7 @@ async function saveType() {
 
 async function toggleTypeActive(bid, currentActive) {
   try {
-    const res = await fetch(`/api/admin/sessions/${bid}`, {
+    const res = await fetch(`/api/admin/bingo_types/${bid}`, {
       method:'PUT', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({is_active: !currentActive}),
     });
@@ -1104,7 +1104,7 @@ async function toggleTypeActive(bid, currentActive) {
 async function deleteType(bid, nombre) {
   if (!confirm(`¿Eliminar "${nombre}"?\nSi hay bingos que usaron este tipo no podrás eliminarlo — desactívalo.`)) return;
   try {
-    const res  = await fetch(`/api/admin/sessions/${bid}`, {method:'DELETE'});
+    const res  = await fetch(`/api/admin/bingo_types/${bid}`, {method:'DELETE'});
     const data = await res.json();
     if (!res.ok) { showToast('❌ ' + (data.error||'Error')); return; }
     showToast('🗑️ Tipo eliminado');
