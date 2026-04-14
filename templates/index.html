@@ -920,10 +920,10 @@
         </div>
         <div id="yc-body" style="display:none;padding:0 12px 12px">
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">
-            Ingresa el código que recibiste por email para cargar tus cartillas.
+            Ingresa el ID de tu cartilla o tu código de voucher que recibiste por email.
           </div>
           <div style="display:flex;gap:6px;width:100%;box-sizing:border-box">
-            <input id="yc-input" type="text" placeholder="AB3K9Z" maxlength="6"
+            <input id="yc-input" type="text" placeholder="ID cartilla o código" maxlength="8"
                    oninput="this.value=this.value.toUpperCase()"
                    onkeydown="if(event.key==='Enter') cargarPorCodigo()"
                    style="flex:1;min-width:0;background:var(--sub);border:1px solid var(--border);border-radius:8px;
@@ -1527,32 +1527,44 @@ async function cargarPorCodigo() {
   const code = (document.getElementById('yc-input').value || '').trim().toUpperCase();
   if (!code) { document.getElementById('yc-input').focus(); return; }
   showToast('⏳ Cargando cartilla…');
-  try {
-    const res  = await fetch('/api/cartillas/by_access', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json();
-    const list = data.cartillas || [];
-    if (!res.ok || !list.length) {
-      // Fallback: redirect to cartillas page to generate/check
-      window.location.href = '/cartillas?code=' + encodeURIComponent(code);
-      return;
-    }
-    // Save to localStorage and load on game page directly
+
+  function saveAndLoad(list) {
     const stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
     list.forEach(c => {
-      if (!stored.find(e => (typeof e === 'object' ? e.id : e) === c.id)) {
-        stored.unshift({ id: c.id, session_id: c.session_id || '' });
-      }
+      const cid = typeof c === 'object' ? c.id : c;
+      const sid = typeof c === 'object' ? (c.session_id || '') : '';
+      if (!stored.find(e => (typeof e === 'object' ? e.id : e) === cid))
+        stored.unshift({ id: cid, session_id: sid });
     });
     localStorage.setItem('my_cartillas', JSON.stringify(stored.slice(0, 30)));
     document.getElementById('yc-input').value = '';
     document.getElementById('yc-body').style.display = 'none';
     document.getElementById('yc-arrow').textContent = '▼ Ver';
-    await loadAllCartillas();
+    loadAllCartillas();
+  }
+
+  try {
+    // 1. Try as cartilla ID directly
+    const r1 = await fetch('/api/cartilla/' + encodeURIComponent(code));
+    if (r1.ok) {
+      const d1 = await r1.json();
+      if (d1.grid) { saveAndLoad([{ id: d1.id, session_id: d1.session_id || '' }]); return; }
+    }
+
+    // 2. Try as voucher code
+    const r2 = await fetch('/api/cartillas/by_access', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code }),
+    });
+    if (r2.ok) {
+      const d2 = await r2.json();
+      const list = d2.cartillas || [];
+      if (list.length) { saveAndLoad(list); return; }
+    }
+
+    showToast('❌ No se encontró cartilla con ese código');
   } catch(e) {
-    window.location.href = '/cartillas?code=' + encodeURIComponent(code);
+    showToast('❌ Error de conexión');
   }
 }
 
