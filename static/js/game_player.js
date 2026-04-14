@@ -1102,7 +1102,19 @@ function removeClaimButtons() {
 
 async function loadAllCartillas() {
   const ids = getMyCartillasFromStorage();
-  if (!ids.length) { showToast('⚠️ No tienes cartillas guardadas en este dispositivo'); return; }
+  if (!ids.length) {
+    // Open the code-entry panel and focus it instead of dead-end toast
+    var ycBody  = document.getElementById('yc-body');
+    var ycArrow = document.getElementById('yc-arrow');
+    var ycInput = document.getElementById('yc-input');
+    if (ycBody && ycBody.style.display === 'none') {
+      ycBody.style.display = 'block';
+      if (ycArrow) ycArrow.textContent = '▲ Ocultar';
+    }
+    if (ycInput) ycInput.focus();
+    showToast('🔑 Ingresa el ID de tu cartilla o código de voucher');
+    return;
+  }
 
   // Ensure activeSessionId is known before filtering (avoid race on page load)
   if (activeSessionId === null) {
