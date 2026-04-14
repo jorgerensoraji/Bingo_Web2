@@ -353,6 +353,12 @@
         </div>
       </div>
 
+      <!-- Historial de cartillas anteriores -->
+      <div class="panel" id="panel-historial" style="display:none">
+        <div class="panel-title">📜 Historial de Cartillas</div>
+        <div id="historial-list"></div>
+      </div>
+
       <!-- Últimos ganadores -->
       <div class="panel" id="panel-winners" style="display:none">
         <div class="panel-title">🏆 Últimos Ganadores</div>
@@ -1524,58 +1530,82 @@ function saveMyCartilla(cid, sid) {
 }
 
 async function loadMyCartillas() {
-  const listEl=document.getElementById('mylist');
-  if(!listEl) return;
-  let arr=[];
-  try{arr=JSON.parse(localStorage.getItem('my_cartillas')||'[]');}catch(e){}
-  if(!arr.length){
-    listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+  const listEl = document.getElementById('mylist');
+  const histEl = document.getElementById('historial-list');
+  const histPanel = document.getElementById('panel-historial');
+  if (!listEl) return;
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) {}
+  if (!arr.length) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+    if (histPanel) histPanel.style.display = 'none';
     return;
   }
-  // Verify each cartilla still exists in DB, remove deleted ones from localStorage
+  // Fetch each cartilla to verify existence and get session_status
   const checks = await Promise.all(
     arr.map(entry => {
       const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
-      return fetch(`/api/cartilla/${cid}`).then(r=>({id:cid,ok:r.ok})).catch(()=>({id:cid,ok:false}));
+      return fetch(`/api/cartilla/${cid}`)
+        .then(r => r.ok ? r.json().then(d => ({id:cid, ok:true, session_status: d.session_status, session_nombre: d.session_nombre})) : {id:cid, ok:false})
+        .catch(() => ({id:cid, ok:false}));
     })
   );
-  const validIds = new Set(checks.filter(x=>x.ok).map(x=>x.id));
+  const validChecks = checks.filter(x => x.ok);
+  const validIds = new Set(validChecks.map(x => x.id));
+  const statusMap = {}; const nombreMap = {};
+  validChecks.forEach(x => { statusMap[x.id] = x.session_status; nombreMap[x.id] = x.session_nombre; });
+
   const validArr = arr.filter(e => {
     const cid = (typeof e === 'object' && e !== null) ? e.id : e;
     return validIds.has(cid);
   });
-  if(validArr.length !== arr.length){
+  if (validArr.length !== arr.length) {
     localStorage.setItem('my_cartillas', JSON.stringify(validArr));
     arr = validArr;
   }
-  if(!arr.length){
-    listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+  if (!arr.length) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+    if (histPanel) histPanel.style.display = 'none';
     return;
   }
-  listEl.innerHTML=arr.map(entry=>{
+
+  function renderCard(entry, isHistorial) {
     const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
-    const sid = (typeof entry === 'object' && entry !== null) ? (entry.session_id || '') : '';
-    const pdf=`/api/cartilla/${cid}/pdf`;
-    const png=`/api/cartilla/${cid}/png`;
-    const msg=encodeURIComponent(`Mi cartilla de Bingo. ID: ${cid}`);
-    const wa=`https://wa.me/?text=${msg}`;
+    const pdf = `/api/cartilla/${cid}/pdf`;
+    const png = `/api/cartilla/${cid}/png`;
+    const msg = encodeURIComponent(`Mi cartilla de Bingo. ID: ${cid}`);
+    const wa  = `https://wa.me/?text=${msg}`;
+    const sesNombre = nombreMap[cid] ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">${esc(nombreMap[cid])}</div>` : '';
     return `<div class="myitem">
       <div class="meta">
         <div style="font-weight:900">Cartilla <span style="color:var(--accent)">${cid}</span></div>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:2px">Guarda el ID</div>
+        ${sesNombre}
       </div>
       <div class="actions">
         <a class="btn btn-ghost btn-sm" href="${png}" target="_blank">🖼 PNG</a>
         <a class="btn btn-ghost btn-sm" href="${pdf}" target="_blank">📄 PDF</a>
         <a class="btn btn-sm" style="background:rgba(37,211,102,.15);color:#25d366"
            href="${wa}" target="_blank">📲 WA</a>
-        <a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)"
-           href="/">🎮</a>
+        ${!isHistorial ? `<a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)" href="/">🎮</a>` : ''}
         <button class="btn btn-sm" style="background:rgba(231,76,60,.15);color:var(--danger)"
                 onclick="removeMyCartilla('${cid}')">✕</button>
       </div>
     </div>`;
-  }).join('');
+  }
+
+  const active   = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] !== 'finished'; });
+  const historial = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] === 'finished'; });
+
+  listEl.innerHTML = active.length
+    ? active.map(e => renderCard(e, false)).join('')
+    : '<div style="color:var(--muted);font-size:.85rem">No hay cartillas activas.</div>';
+
+  if (historial.length && histEl && histPanel) {
+    histEl.innerHTML = historial.map(e => renderCard(e, true)).join('');
+    histPanel.style.display = '';
+  } else if (histPanel) {
+    histPanel.style.display = 'none';
+  }
 }
 
 function removeMyCartilla(cid) {

@@ -3117,6 +3117,14 @@ def api_get_cartilla(cid):
             sx = db.query(BingoSession).filter_by(id=csid).first()
             if not sx or sx.status == "cancelled":
                 return jsonify({"error": "session cancelled"}), 404
+    session_status = None
+    session_nombre = None
+    if csid:
+        with db_session() as db:
+            sx = db.query(BingoSession).filter_by(id=csid).first()
+            if sx:
+                session_status = sx.status
+                session_nombre = sx.nombre
     with game_lock:
         drawn2 = list(game.drawn)
     result = check_winner(c["grid"], drawn2)
@@ -3124,6 +3132,8 @@ def api_get_cartilla(cid):
         "id": c["id"], "nombre": c["nombre"], "grid": c["grid"],
         "bingo_type": c.get("bingo_type", "1sol"),
         "session_id": c.get("session_id", ""),
+        "session_status": session_status,
+        "session_nombre": session_nombre,
         "voucher_code": c.get("voucher_code", ""),
         "generada_por_admin": c.get("generada_por_admin", False),
     })
