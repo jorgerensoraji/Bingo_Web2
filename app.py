@@ -4125,7 +4125,7 @@ def api_bingo_types():
 def admin_bingo_types_page():
     return redirect("/admin/sessions")
 
-@app.route("/api/admin/bingo_types")
+@app.route("/api/admin/bingo_types", methods=["GET"])
 def api_admin_list_bingo_types():
     chk = admin_required()
     if chk: return chk
