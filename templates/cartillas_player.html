@@ -1593,12 +1593,14 @@ async function loadMyCartillas() {
     </div>`;
   }
 
-  const active   = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] !== 'finished'; });
+  const LIVE_STATUSES = ['active', 'preparing'];
+  const active    = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; const st = statusMap[cid]; return LIVE_STATUSES.includes(st) || st === null; });
   const historial = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] === 'finished'; });
+  // pending sessions: kept in localStorage but not shown anywhere yet
 
   listEl.innerHTML = active.length
     ? active.map(e => renderCard(e, false)).join('')
-    : '<div style="color:var(--muted);font-size:.85rem">No hay cartillas activas.</div>';
+    : '<div style="color:var(--muted);font-size:.85rem">No hay cartillas en juego ahora.</div>';
 
   if (historial.length && histEl && histPanel) {
     histEl.innerHTML = historial.map(e => renderCard(e, true)).join('');
