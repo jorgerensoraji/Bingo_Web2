@@ -2730,6 +2730,8 @@ def _cancel_session_cleanup(db, sid: str):
 
     # Delete cartillas linked to this session
     db.query(Cartilla).filter_by(session_id=sid).delete()
+    # Delete all vouchers linked to this session
+    db.query(Voucher).filter_by(session_id=sid).delete()
 
 @app.route("/api/admin/session/<sid>/cancel", methods=["POST"])
 def api_cancel_session(sid):
