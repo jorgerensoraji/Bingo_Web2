@@ -3139,7 +3139,7 @@ def api_get_cartilla(cid):
             if not sx or sx.status == "cancelled":
                 return jsonify({"error": "session cancelled"}), 404
             session_status = sx.status
-            session_nombre = sx.nombre
+            session_nombre = sx.bingo_nombre
     with game_lock:
         drawn2 = list(game.drawn)
     result = check_winner(grid, drawn2)
