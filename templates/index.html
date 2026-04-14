@@ -1579,15 +1579,14 @@ async function cargarPorCodigo() {
       if (d1.grid) { saveAndLoad([{ id: d1.id, session_id: d1.session_id || '' }]); return; }
     }
 
-    // 2. Try as voucher code
-    const r2 = await fetch('/api/cartillas/by_access', {
+    // 2. Try as voucher code — redirect to /cartillas to generate the cartilla
+    const r2 = await fetch('/api/voucher/check', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ code }),
     });
     if (r2.ok) {
-      const d2 = await r2.json();
-      const list = d2.cartillas || [];
-      if (list.length) { saveAndLoad(list); return; }
+      window.location.href = '/cartillas?code=' + encodeURIComponent(code);
+      return;
     }
 
     showToast('❌ No se encontró cartilla con ese código');
