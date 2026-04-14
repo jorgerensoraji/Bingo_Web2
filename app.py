@@ -3863,6 +3863,29 @@ def api_contact_create():
         db.refresh(c)
         return jsonify({"contact": c.to_dict()})
 
+@app.route("/api/subscribe", methods=["POST"])
+def api_public_subscribe():
+    """Public endpoint — lets any visitor subscribe to WhatsApp notifications."""
+    data   = request.get_json() or {}
+    nombre = (data.get("nombre") or "").strip()
+    phone  = (data.get("phone")  or "").strip()
+    if not phone:
+        return jsonify({"error": "Ingresa tu número de WhatsApp"}), 400
+    phone = _normalize_phone(phone, TWILIO_COUNTRY)
+    if not phone:
+        return jsonify({"error": "Número de teléfono inválido"}), 400
+    with db_session() as db:
+        dup = db.query(Contact).filter(Contact.phone == phone).first()
+        if dup:
+            return jsonify({"ok": True, "already": True})
+        c = Contact(
+            nombre=nombre, email="", phone=phone,
+            created=now_peru().isoformat(timespec="seconds"),
+        )
+        db.add(c)
+        db.commit()
+    return jsonify({"ok": True, "already": False})
+
 @app.route("/api/admin/contacts/<int:cid>", methods=["DELETE"])
 def api_contact_delete(cid):
     chk = admin_required()

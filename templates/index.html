@@ -767,6 +767,83 @@
   </a>
 </div>
 
+<!-- ══ WhatsApp Subscribe Modal ══ -->
+<div id="wa-modal-overlay" style="
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(4,16,21,.88);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:16px;
+  font-family:'Outfit',sans-serif;
+">
+  <div style="
+    background:linear-gradient(160deg,#071e2a,#041015);
+    border:1px solid rgba(37,211,102,.35);
+    border-radius:18px;width:100%;max-width:400px;
+    padding:28px 24px;position:relative;text-align:center;
+    box-shadow:0 0 60px rgba(37,211,102,.15);
+  ">
+    <!-- Close -->
+    <button onclick="waModalClose()" title="Cerrar" style="
+      position:absolute;top:12px;right:14px;background:none;border:none;
+      color:rgba(255,255,255,.3);font-size:1.3rem;cursor:pointer;line-height:1">✕</button>
+
+    <!-- Step 1: form -->
+    <div id="wa-modal-step1">
+      <div style="font-size:2rem;margin-bottom:8px">📲</div>
+      <div style="font-size:1.15rem;font-weight:900;color:#25D366;margin-bottom:6px">
+        ¡Recibe avisos de futuros bingos!
+      </div>
+      <div style="font-size:.82rem;color:rgba(255,255,255,.5);margin-bottom:20px">
+        Agrega tu WhatsApp y te avisamos cuando haya un nuevo bingo.
+      </div>
+      <input id="wa-sub-nombre" type="text" placeholder="Tu nombre (opcional)" maxlength="60"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);
+               border:1px solid rgba(255,255,255,.15);border-radius:10px;
+               padding:10px 14px;color:#fff;font-family:'Outfit',sans-serif;
+               font-size:.9rem;outline:none;margin-bottom:10px">
+      <input id="wa-sub-phone" type="tel" placeholder="Celular / WhatsApp *"
+        onkeydown="if(event.key==='Enter') waSubscribeSubmit()"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);
+               border:1px solid rgba(37,211,102,.4);border-radius:10px;
+               padding:10px 14px;color:#fff;font-family:'Outfit',sans-serif;
+               font-size:.9rem;outline:none;margin-bottom:16px">
+      <button onclick="waSubscribeSubmit()" id="wa-sub-btn" style="
+        width:100%;background:#25D366;color:#fff;border:none;border-radius:10px;
+        padding:12px;font-family:'Outfit',sans-serif;font-weight:900;
+        font-size:1rem;cursor:pointer;margin-bottom:10px">
+        Suscribirme gratis
+      </button>
+      <button onclick="waModalClose()" style="
+        background:none;border:none;color:rgba(255,255,255,.3);
+        font-size:.78rem;cursor:pointer;font-family:'Outfit',sans-serif">
+        No gracias, continuar al bingo
+      </button>
+    </div>
+
+    <!-- Step 2: activate WhatsApp -->
+    <div id="wa-modal-step2" style="display:none">
+      <div style="font-size:2rem;margin-bottom:8px">✅</div>
+      <div style="font-size:1.1rem;font-weight:900;color:#25D366;margin-bottom:8px">
+        ¡Listo! Un paso más:
+      </div>
+      <div style="font-size:.84rem;color:rgba(255,255,255,.6);margin-bottom:18px">
+        Toca el botón — se abrirá WhatsApp con un mensaje listo.<br>
+        Solo presiona <strong>Enviar</strong> para activar las notificaciones.
+      </div>
+      <a id="wa-sub-activate-link" href="#" target="_blank" style="
+        display:block;background:#25D366;color:#fff;font-weight:900;
+        border-radius:10px;padding:12px;text-decoration:none;
+        font-size:1rem;margin-bottom:14px">
+        💬 Activar notificaciones WhatsApp
+      </a>
+      <button onclick="waModalClose()" style="
+        background:none;border:none;color:rgba(255,255,255,.3);
+        font-size:.78rem;cursor:pointer;font-family:'Outfit',sans-serif">
+        Continuar al bingo →
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="progress-wrap">
   <div id="progress"></div>
 </div>
@@ -1594,6 +1671,51 @@ async function cargarPorCodigo() {
     showToast('❌ Error de conexión');
   }
 }
+
+// ── WhatsApp subscribe modal ──────────────────────────
+function waModalOpen() {
+  document.getElementById('wa-modal-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('wa-sub-phone').focus(), 100);
+}
+function waModalClose() {
+  document.getElementById('wa-modal-overlay').style.display = 'none';
+  localStorage.setItem('wa_sub_dismissed', '1');
+}
+
+async function waSubscribeSubmit() {
+  const nombre = (document.getElementById('wa-sub-nombre').value || '').trim();
+  const phone  = (document.getElementById('wa-sub-phone').value  || '').trim();
+  if (!phone) { document.getElementById('wa-sub-phone').focus(); return; }
+  const btn = document.getElementById('wa-sub-btn');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res  = await fetch('/api/subscribe', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre, phone })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast('⚠️ ' + (data.error || 'Error'));
+      btn.disabled = false; btn.textContent = 'Suscribirme gratis';
+      return;
+    }
+    // Move to step 2
+    const waLink = `https://wa.me/14155238886?text=${encodeURIComponent('join leaf-sides')}`;
+    document.getElementById('wa-sub-activate-link').href = waLink;
+    document.getElementById('wa-modal-step1').style.display = 'none';
+    document.getElementById('wa-modal-step2').style.display = 'block';
+    localStorage.setItem('wa_sub_dismissed', '1');
+  } catch(e) {
+    showToast('❌ Error de conexión'); btn.disabled=false; btn.textContent='Suscribirme gratis';
+  }
+}
+
+// Show modal on first visit (not dismissed before)
+document.addEventListener('DOMContentLoaded', function() {
+  if (!localStorage.getItem('wa_sub_dismissed')) {
+    setTimeout(waModalOpen, 800);
+  }
+});
 
 </script>
 <script src="/static/js/game_player.js"></script>
