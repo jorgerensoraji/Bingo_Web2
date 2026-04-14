@@ -3064,6 +3064,17 @@ def api_save_manual():
     vinfo      = get_voucher_info(code) if code else None
     session_id = (vinfo.get("session_id") if vinfo else None) or ""
     bingo_type = (vinfo.get("bingo_type") if vinfo else "1sol")
+    # If no session from voucher, use current game session or most recent pending/active session
+    if not session_id:
+        with game_lock:
+            session_id = game.session_id or ""
+    if not session_id:
+        with db_session() as db:
+            sx = db.query(BingoSession).filter(
+                BingoSession.status.in_(["active", "preparing", "pending"])
+            ).order_by(BingoSession.created.desc()).first()
+            if sx:
+                session_id = sx.id
     if not grid or len(grid) != 5 or any(len(r) != 5 for r in grid):
         return jsonify({"error": "grid invalido"}), 400
     nums = [n for row in grid for n in row if n is not None]
@@ -3117,6 +3128,14 @@ def api_get_cartilla(cid):
             sx = db.query(BingoSession).filter_by(id=csid).first()
             if not sx or sx.status == "cancelled":
                 return jsonify({"error": "session cancelled"}), 404
+    session_status = None
+    session_nombre = None
+    if csid:
+        with db_session() as db:
+            sx = db.query(BingoSession).filter_by(id=csid).first()
+            if sx:
+                session_status = sx.status
+                session_nombre = sx.nombre
     with game_lock:
         drawn2 = list(game.drawn)
     result = check_winner(c["grid"], drawn2)
@@ -3124,6 +3143,8 @@ def api_get_cartilla(cid):
         "id": c["id"], "nombre": c["nombre"], "grid": c["grid"],
         "bingo_type": c.get("bingo_type", "1sol"),
         "session_id": c.get("session_id", ""),
+        "session_status": session_status,
+        "session_nombre": session_nombre,
         "voucher_code": c.get("voucher_code", ""),
         "generada_por_admin": c.get("generada_por_admin", False),
     })
@@ -3809,6 +3830,14 @@ def api_contact_create():
     if phone:
         phone = _normalize_phone(phone, TWILIO_COUNTRY)
     with db_session() as db:
+        if email:
+            dup = db.query(Contact).filter(Contact.email == email).first()
+            if dup:
+                return jsonify({"error": "Ya existe un contacto con ese email"}), 400
+        if phone:
+            dup = db.query(Contact).filter(Contact.phone == phone).first()
+            if dup:
+                return jsonify({"error": "Ya existe un contacto con ese teléfono"}), 400
         c = Contact(
             nombre=nombre, email=email, phone=phone,
             created=now_peru().isoformat(timespec="seconds"),
@@ -3871,6 +3900,9 @@ def api_contacts_import():
 
     added = 0; skipped = 0
     with db_session() as db:
+        existing_emails = {c.email for c in db.query(Contact).all() if c.email}
+        existing_phones = {c.phone for c in db.query(Contact).all() if c.phone}
+        batch_emails = set(); batch_phones = set()
         for row in rows:
             if not row: continue
             cols   = [c.strip() for c in row]
@@ -3881,6 +3913,11 @@ def api_contacts_import():
                 skipped += 1; continue
             if phone:
                 phone = _normalize_phone(phone, TWILIO_COUNTRY)
+            if (email and (email in existing_emails or email in batch_emails)) or \
+               (phone and (phone in existing_phones or phone in batch_phones)):
+                skipped += 1; continue
+            if email: batch_emails.add(email)
+            if phone: batch_phones.add(phone)
             db.add(Contact(
                 nombre=nombre, email=email, phone=phone,
                 created=now_peru().isoformat(timespec="seconds"),

@@ -353,6 +353,12 @@
         </div>
       </div>
 
+      <!-- Historial de cartillas anteriores -->
+      <div class="panel" id="panel-historial" style="display:none">
+        <div class="panel-title">📜 Historial de Cartillas</div>
+        <div id="historial-list"></div>
+      </div>
+
       <!-- Últimos ganadores -->
       <div class="panel" id="panel-winners" style="display:none">
         <div class="panel-title">🏆 Últimos Ganadores</div>
@@ -442,9 +448,9 @@
 
     <!-- ── PASO 2: Selección de Bingo y pago ── -->
     <div id="wiz-step2" style="display:none">
-      <!-- Tipo de bingo -->
-      <div class="form-group">
-        <label>Tipo de Bingo *</label>
+      <!-- Tipo de bingo (se muestra tras elegir sesión) -->
+      <div class="form-group" id="btype-group" style="display:none">
+        <label>Tipo de Bingo</label>
         <div id="btype-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px"></div>
       </div>
 
@@ -464,6 +470,9 @@
           ❌ No hay Bingos disponibles. El administrador debe crear un Bingo antes de poder comprar cartillas.
         </div>
       </div>
+
+      <!-- Preview card for selected session -->
+      <div id="session-preview" style="display:none;margin-bottom:14px;"></div>
 
       <hr class="section-sep">
 
@@ -768,7 +777,7 @@ async function loadBingoTypes() {
     window._btypesCache = data.bingo_types || [];
     const cont = document.getElementById('btype-selector');
     if (!cont) return;
-    cont.innerHTML = (data.bingo_types || []).map(bt => `
+    cont.innerHTML = (data.bingo_types || []).filter(bt => !selBtype || bt.id === selBtype).map(bt => `
       <div onclick="selectBtype('${bt.id}')" id="bcard-${bt.id}"
            style="border:2px solid ${selBtype===bt.id?bt.color:'var(--border)'};
                   background:${selBtype===bt.id?bt.color+'18':'var(--card)'};
@@ -839,6 +848,9 @@ function renderSessions() {
       return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
     }).join('');
 
+  // Refresh preview in case session was pre-selected
+  renderSessionPreview(sel.value);
+
   // Bloquear el botón solo si no hay ninguna sesión
   const btnSolicitar = document.getElementById('btn-solicitar');
   if (ssAll.length > 0) {
@@ -885,10 +897,14 @@ function renderSessions() {
 function onSessionChange() {
   const sel  = document.getElementById('inp-session');
   const hint = document.getElementById('session-hint');
+  const btypeGroup = document.getElementById('btype-group');
   // Limpiar error visual cuando elige una sesión
   if (sel.value) {
     sel.style.borderColor = 'rgba(0,229,180,.5)';
     if (hint) hint.style.display = 'none';
+    if (btypeGroup) btypeGroup.style.display = '';
+  } else {
+    if (btypeGroup) btypeGroup.style.display = 'none';
   }
   const opt = sel.options[sel.selectedIndex];
   const btype = opt ? opt.getAttribute('data-btype') : null;
@@ -896,6 +912,87 @@ function onSessionChange() {
     selBtype = btype;
     loadBingoTypes(); // re-render tipo con el correcto seleccionado
   }
+  renderSessionPreview(sel.value);
+}
+
+function renderSessionPreview(sid) {
+  const preview = document.getElementById('session-preview');
+  if (!preview) return;
+  if (!sid) { preview.style.display = 'none'; return; }
+
+  const session = allSessions.find(s => String(s.id) === String(sid));
+  const btypes  = window._btypesCache || [];
+  const bt      = btypes.find(b => b.id === (session ? session.bingo_type : null));
+  if (!session && !bt) { preview.style.display = 'none'; return; }
+
+  const color   = (bt && bt.color)  || (session && session.bingo_color) || '#00e5b4';
+  const emoji   = (bt && bt.emoji)  || '🎱';
+  const nombre  = (session && session.bingo_nombre) || (bt && bt.nombre) || '—';
+  const precio  = session ? session.bingo_precio : (bt ? bt.precio : 0);
+  const desc    = (bt && bt.descripcion) || (session && session.descripcion) || '';
+
+  // Prize percentages
+  let prizesHtml = '';
+  if (bt) {
+    const toP = v => Math.round((v||0)*100);
+    prizesHtml = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(0,229,180,.12);color:#00e5b4;font-weight:700;">
+          🎉 Bingo ${toP(bt.prize_pct)}%
+        </span>
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(236,72,153,.12);color:#ec4899;font-weight:700;">
+          ⭕ Letra O ${toP(bt.o_pct)}%
+        </span>
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(59,130,246,.12);color:#3b82f6;font-weight:700;">
+          🔷 Letra U ${toP(bt.u_pct)}%
+        </span>
+        <span style="font-size:.72rem;padding:3px 9px;border-radius:10px;
+                     background:rgba(246,195,67,.12);color:#f6c343;font-weight:700;">
+          ⭐ Letra I ${toP(bt.linea_pct)}%
+        </span>
+      </div>`;
+  }
+
+  // Session date
+  let dateHtml = '';
+  if (session && session.datetime_iso) {
+    const dt = new Date(session.datetime_iso);
+    if (!isNaN(dt)) {
+      dateHtml = `<div style="font-size:.76rem;color:var(--muted);margin-top:6px;">
+        📅 ${dt.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'})}
+        · ${dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}
+      </div>`;
+    }
+  }
+
+  preview.innerHTML = `
+    <div style="border:2px solid ${color};border-radius:14px;
+                background:${color}0f;padding:16px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-10px;right:10px;font-size:4rem;opacity:.08;
+                  line-height:1;pointer-events:none;">${emoji}</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:2.6rem;line-height:1;flex-shrink:0;">${emoji}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;
+                      color:${color};letter-spacing:1px;line-height:1.1;">${esc(nombre)}</div>
+          <div style="font-size:1.5rem;font-weight:900;color:${color};margin-top:2px;">
+            S/. ${Number(precio).toFixed(2)}
+          </div>
+          ${desc ? `<div style="font-size:.75rem;color:var(--muted);margin-top:3px;">${esc(desc)}</div>` : ''}
+        </div>
+        <div style="background:${color};color:#041015;font-family:'Bebas Neue',sans-serif;
+                    font-size:.8rem;padding:4px 10px;border-radius:8px;white-space:nowrap;
+                    letter-spacing:1px;align-self:flex-start;flex-shrink:0;">
+          ✓ SELECCIONADO
+        </div>
+      </div>
+      ${dateHtml}
+      ${prizesHtml}
+    </div>`;
+  preview.style.display = 'block';
 }
 
 // ── Enviar solicitud de participación ──────────────────
@@ -1433,58 +1530,87 @@ function saveMyCartilla(cid, sid) {
 }
 
 async function loadMyCartillas() {
-  const listEl=document.getElementById('mylist');
-  if(!listEl) return;
-  let arr=[];
-  try{arr=JSON.parse(localStorage.getItem('my_cartillas')||'[]');}catch(e){}
-  if(!arr.length){
-    listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+  const listEl = document.getElementById('mylist');
+  const histEl = document.getElementById('historial-list');
+  const histPanel = document.getElementById('panel-historial');
+  if (!listEl) return;
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) {}
+  if (!arr.length) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+    if (histPanel) histPanel.style.display = 'none';
     return;
   }
-  // Verify each cartilla still exists in DB, remove deleted ones from localStorage
+  // Fetch each cartilla to verify existence and get session_status
   const checks = await Promise.all(
     arr.map(entry => {
       const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
-      return fetch(`/api/cartilla/${cid}`).then(r=>({id:cid,ok:r.ok})).catch(()=>({id:cid,ok:false}));
+      return fetch(`/api/cartilla/${cid}`)
+        .then(r => r.ok ? r.json().then(d => ({id:cid, ok:true, session_status: d.session_status, session_nombre: d.session_nombre})) : {id:cid, ok:false})
+        .catch(() => ({id:cid, ok:false}));
     })
   );
-  const validIds = new Set(checks.filter(x=>x.ok).map(x=>x.id));
+  const validChecks = checks.filter(x => x.ok);
+  const validIds = new Set(validChecks.map(x => x.id));
+  const statusMap = {}; const nombreMap = {};
+  validChecks.forEach(x => { statusMap[x.id] = x.session_status; nombreMap[x.id] = x.session_nombre; });
+
   const validArr = arr.filter(e => {
     const cid = (typeof e === 'object' && e !== null) ? e.id : e;
     return validIds.has(cid);
   });
-  if(validArr.length !== arr.length){
+  if (validArr.length !== arr.length) {
     localStorage.setItem('my_cartillas', JSON.stringify(validArr));
     arr = validArr;
   }
-  if(!arr.length){
-    listEl.innerHTML='<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+  if (!arr.length) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+    if (histPanel) histPanel.style.display = 'none';
     return;
   }
-  listEl.innerHTML=arr.map(entry=>{
+
+  const LIVE_STATUSES = ['active', 'preparing'];
+
+  function renderCard(entry, isHistorial) {
     const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
-    const sid = (typeof entry === 'object' && entry !== null) ? (entry.session_id || '') : '';
-    const pdf=`/api/cartilla/${cid}/pdf`;
-    const png=`/api/cartilla/${cid}/png`;
-    const msg=encodeURIComponent(`Mi cartilla de Bingo. ID: ${cid}`);
-    const wa=`https://wa.me/?text=${msg}`;
+    const st  = statusMap[cid];
+    const isLive = LIVE_STATUSES.includes(st);
+    const pdf = `/api/cartilla/${cid}/pdf`;
+    const png = `/api/cartilla/${cid}/png`;
+    const msg = encodeURIComponent(`Mi cartilla de Bingo. ID: ${cid}`);
+    const wa  = `https://wa.me/?text=${msg}`;
+    const sesNombre = nombreMap[cid] ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">${esc(nombreMap[cid])}</div>` : '';
+    const pendingBadge = (!isHistorial && st === 'pending') ? `<div style="font-size:.68rem;color:var(--warning);margin-top:3px">⏳ Próximamente</div>` : '';
     return `<div class="myitem">
       <div class="meta">
         <div style="font-weight:900">Cartilla <span style="color:var(--accent)">${cid}</span></div>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:2px">Guarda el ID</div>
+        ${sesNombre}${pendingBadge}
       </div>
       <div class="actions">
         <a class="btn btn-ghost btn-sm" href="${png}" target="_blank">🖼 PNG</a>
         <a class="btn btn-ghost btn-sm" href="${pdf}" target="_blank">📄 PDF</a>
         <a class="btn btn-sm" style="background:rgba(37,211,102,.15);color:#25d366"
            href="${wa}" target="_blank">📲 WA</a>
-        <a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)"
-           href="/">🎮</a>
+        ${isLive && !isHistorial ? `<a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)" href="/">🎮</a>` : ''}
         <button class="btn btn-sm" style="background:rgba(231,76,60,.15);color:var(--danger)"
                 onclick="removeMyCartilla('${cid}')">✕</button>
       </div>
     </div>`;
-  }).join('');
+  }
+
+  const active    = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; const st = statusMap[cid]; return st !== 'finished'; });
+  const historial = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] === 'finished'; });
+
+  listEl.innerHTML = active.length
+    ? active.map(e => renderCard(e, false)).join('')
+    : '<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
+
+  if (historial.length && histEl && histPanel) {
+    histEl.innerHTML = historial.map(e => renderCard(e, true)).join('');
+    histPanel.style.display = '';
+  } else if (histPanel) {
+    histPanel.style.display = 'none';
+  }
 }
 
 function removeMyCartilla(cid) {
