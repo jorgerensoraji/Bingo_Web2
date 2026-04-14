@@ -35,7 +35,9 @@
       "Bash(sed -i 's/>📅 Sesiones</>📅 Bingos</g' templates/admin_bingo_types.html)",
       "Bash(sed -i 's/visible para jugadores y sesiones/visible para jugadores y bingos/g' templates/admin_bingo_types.html)",
       "Bash(sed -i 's/Si hay sesiones que usaron este tipo/Si hay bingos que usaron este tipo/g' templates/admin_bingo_types.html)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(python \"/c/Users/jorge/OneDrive/Documents/programas python/BingoProClaude/migrate_to_sqlite.py\")"
     ]
   }
 }

@@ -108,6 +108,39 @@ function initGridForMode() {
   }
 }
 
+async function autoLoadByAccessCode() {
+  const code = (localStorage.getItem('bingo_access_code') || '').trim().toUpperCase();
+  if (!code) return false;
+
+  try {
+    const res = await fetch('/api/cartillas/by_access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (!res.ok) return false;
+
+    const list = data.cartillas || [];
+    if (!list.length) return false;
+
+    let stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+    stored = stored.map(e => typeof e === 'string' ? { id: e, session_id: '' } : e);
+
+    list.forEach(c => {
+      if (!stored.find(e => e.id === c.id)) {
+        stored.unshift({ id: c.id, session_id: c.session_id || '' });
+      }
+    });
+
+    localStorage.setItem('my_cartillas', JSON.stringify(stored.slice(0, 30)));
+    await loadAllCartillas();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function initGrid() { initGridForMode(); }
 
 function initGridReset() {
@@ -1420,11 +1453,15 @@ async function showPlayerSessionBanner() {
   banner.style.display = 'block';
 }
 
-function initMyCartillaUI() {
-  const btn = document.getElementById('btn-load-cartilla');
-  if (btn) btn.addEventListener('click', loadAllCartillas);
+async function initMyCartillaUI() {
   showPlayerSessionBanner();
-  if (getMyCartillasFromStorage().length) setTimeout(loadAllCartillas, 800);
+
+  if (getMyCartillasFromStorage().length) {
+    setTimeout(loadAllCartillas, 800);
+    return;
+  }
+
+  await autoLoadByAccessCode();
 }
 
 // ── Auto-reclamar BINGO ───────────────────────────────
