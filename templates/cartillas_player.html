@@ -1569,38 +1569,41 @@ async function loadMyCartillas() {
     return;
   }
 
+  const LIVE_STATUSES = ['active', 'preparing'];
+
   function renderCard(entry, isHistorial) {
     const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
+    const st  = statusMap[cid];
+    const isLive = LIVE_STATUSES.includes(st);
     const pdf = `/api/cartilla/${cid}/pdf`;
     const png = `/api/cartilla/${cid}/png`;
     const msg = encodeURIComponent(`Mi cartilla de Bingo. ID: ${cid}`);
     const wa  = `https://wa.me/?text=${msg}`;
     const sesNombre = nombreMap[cid] ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">${esc(nombreMap[cid])}</div>` : '';
+    const pendingBadge = (!isHistorial && st === 'pending') ? `<div style="font-size:.68rem;color:var(--warning);margin-top:3px">⏳ Próximamente</div>` : '';
     return `<div class="myitem">
       <div class="meta">
         <div style="font-weight:900">Cartilla <span style="color:var(--accent)">${cid}</span></div>
-        ${sesNombre}
+        ${sesNombre}${pendingBadge}
       </div>
       <div class="actions">
         <a class="btn btn-ghost btn-sm" href="${png}" target="_blank">🖼 PNG</a>
         <a class="btn btn-ghost btn-sm" href="${pdf}" target="_blank">📄 PDF</a>
         <a class="btn btn-sm" style="background:rgba(37,211,102,.15);color:#25d366"
            href="${wa}" target="_blank">📲 WA</a>
-        ${!isHistorial ? `<a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)" href="/">🎮</a>` : ''}
+        ${isLive && !isHistorial ? `<a class="btn btn-sm" style="background:rgba(0,229,180,.12);color:var(--accent)" href="/">🎮</a>` : ''}
         <button class="btn btn-sm" style="background:rgba(231,76,60,.15);color:var(--danger)"
                 onclick="removeMyCartilla('${cid}')">✕</button>
       </div>
     </div>`;
   }
 
-  const LIVE_STATUSES = ['active', 'preparing'];
-  const active    = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; const st = statusMap[cid]; return LIVE_STATUSES.includes(st) || st === null; });
+  const active    = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; const st = statusMap[cid]; return st !== 'finished'; });
   const historial = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] === 'finished'; });
-  // pending sessions: kept in localStorage but not shown anywhere yet
 
   listEl.innerHTML = active.length
     ? active.map(e => renderCard(e, false)).join('')
-    : '<div style="color:var(--muted);font-size:.85rem">No hay cartillas en juego ahora.</div>';
+    : '<div style="color:var(--muted);font-size:.85rem">Aún no has generado cartillas.</div>';
 
   if (historial.length && histEl && histPanel) {
     histEl.innerHTML = historial.map(e => renderCard(e, true)).join('');
