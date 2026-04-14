@@ -351,6 +351,30 @@
             Aún no has generado cartillas.
           </div>
         </div>
+        <!-- Recuperar cartilla por ID o código de voucher -->
+        <div id="recover-panel" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">
+            ¿Ya tienes tu cartilla pero no aparece aquí?<br>
+            Ingresa el <strong style="color:var(--text)">ID de cartilla</strong> (del email) o tu
+            <strong style="color:var(--text)">código de voucher</strong>:
+          </div>
+          <div style="display:flex;gap:6px">
+            <input id="recover-input" type="text" placeholder="ID o código" maxlength="8"
+                   oninput="this.value=this.value.toUpperCase()"
+                   onkeydown="if(event.key==='Enter') recoverCartilla()"
+                   style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
+                          padding:8px 10px;color:var(--text);font-family:Outfit,sans-serif;
+                          font-size:.9rem;font-weight:700;text-align:center;letter-spacing:2px;
+                          text-transform:uppercase;outline:none">
+            <button onclick="recoverCartilla()"
+                    style="padding:8px 14px;border:none;border-radius:8px;
+                           background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);
+                           color:var(--accent);font-family:Outfit,sans-serif;font-weight:700;
+                           font-size:.8rem;cursor:pointer;white-space:nowrap">
+              Recuperar
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Historial de cartillas anteriores -->
@@ -1636,6 +1660,47 @@ function removeMyCartilla(cid) {
     localStorage.setItem('my_cartillas',JSON.stringify(arr));
     loadMyCartillas(); showToast('🗑️ Eliminada de tu lista');
   }catch(e){}
+}
+
+// ── Recuperar cartilla por ID o voucher ────────────────
+async function recoverCartilla() {
+  const input = document.getElementById('recover-input');
+  const code  = (input?.value || '').trim().toUpperCase();
+  if (!code) { input?.focus(); return; }
+  showToast('⏳ Buscando cartilla…');
+  try {
+    // 1. Intenta como ID de cartilla (8 chars)
+    const r1 = await fetch('/api/cartilla/' + encodeURIComponent(code));
+    if (r1.ok) {
+      const d1 = await r1.json();
+      if (d1.grid) {
+        saveMyCartilla(d1.id, d1.session_id || '');
+        if (input) input.value = '';
+        showToast('✅ Cartilla ' + d1.id + ' recuperada');
+        loadMyCartillas();
+        return;
+      }
+    }
+    // 2. Intenta como código de voucher
+    const r2 = await fetch('/api/cartillas/by_access', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code }),
+    });
+    if (r2.ok) {
+      const d2  = await r2.json();
+      const list = d2.cartillas || [];
+      if (list.length) {
+        list.forEach(c => saveMyCartilla(c.id, c.session_id || ''));
+        if (input) input.value = '';
+        showToast('✅ ' + list.length + ' cartilla(s) recuperada(s)');
+        loadMyCartillas();
+        return;
+      }
+    }
+    showToast('❌ No se encontró cartilla con ese código');
+  } catch(e) {
+    showToast('❌ Error de conexión');
+  }
 }
 
 // ── Historial de ganadores ─────────────────────────────

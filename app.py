@@ -411,8 +411,10 @@ def _email_cartilla_generada(voucher_dict: dict, cartillas: list, url_base: str)
     </div>
     <div style="background:#0a1520;border-radius:10px;padding:14px;font-size:.85rem;color:#6a9ab8;margin-bottom:20px">
       <strong style="color:#ddeeff">¿Cómo jugar?</strong><br><br>
-      1. Guarda {'este ID' if count==1 else 'estos IDs'} — los necesitarás si juegas desde otro dispositivo<br><br>
-      2. El día del bingo entra al juego en: <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a><br><br>
+      1. El día del bingo entra al juego en: <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a><br><br>
+      2. Si juegas desde otro dispositivo o navegador, en la página del juego busca la sección
+         <strong style="color:#00e5b4">▼ ¿Ya tienes tu código?</strong>, ingresa el
+         <strong style="color:#00e5b4">ID de tu cartilla</strong> (los {'8 caracteres' if count==1 else '8 caracteres de cada ID'} de arriba) y haz clic en <strong style="color:#ddeeff">→ Verificar</strong>.<br><br>
       3. ¡Buena suerte! 🎉
     </div>
     <div style="text-align:center">

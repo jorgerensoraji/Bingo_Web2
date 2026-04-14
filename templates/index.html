@@ -1523,6 +1523,23 @@ function toggleYaCodigo() {
   if (open) document.getElementById('yc-input').focus();
 }
 
+// Auto-expand "¿Ya tienes tu código?" when localStorage is empty
+(function() {
+  try {
+    const arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+    if (!arr.length) {
+      document.addEventListener('DOMContentLoaded', function() {
+        const body  = document.getElementById('yc-body');
+        const arrow = document.getElementById('yc-arrow');
+        if (body && body.style.display === 'none') {
+          body.style.display = 'block';
+          if (arrow) arrow.textContent = '▲ Ocultar';
+        }
+      });
+    }
+  } catch(e) {}
+})();
+
 async function cargarPorCodigo() {
   const code = (document.getElementById('yc-input').value || '').trim().toUpperCase();
   if (!code) { document.getElementById('yc-input').focus(); return; }
