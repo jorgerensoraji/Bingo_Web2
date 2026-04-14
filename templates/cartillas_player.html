@@ -1194,8 +1194,6 @@ async function verificarCodigoRapido() {
     document.getElementById('inp-code-check').value = code;
     activeCode = code;
     localStorage.setItem('bingo_access_code', code);
-    localStorage.setItem('bingo_access_code', code);
-    localStorage.setItem('bingo_access_code', code);
     lastStatus = data.payment_status;
     renderEstado(data);
     if (['pending','pending_review'].includes(data.payment_status)) {

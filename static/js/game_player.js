@@ -1167,11 +1167,24 @@ async function loadAllCartillas() {
     ids.map(function(entry) {
       const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
       return fetch('/api/cartilla/' + String(cid).trim().toUpperCase())
-        .then(function(r) { return r.ok ? r.json() : null; });
+        .then(function(r) {
+          return r.json().then(function(body) {
+            return r.ok ? body : { __error: (body && body.error) || 'not_found' };
+          });
+        })
+        .catch(function() { return null; });
     })
   );
+  let sessionCancelled = 0;
   const all = results
-    .filter(function(r) { return r.status === 'fulfilled' && r.value && r.value.grid; })
+    .filter(function(r) {
+      if (r.status !== 'fulfilled' || !r.value) return false;
+      if (r.value.__error) {
+        if (r.value.__error === 'session cancelled') sessionCancelled++;
+        return false;
+      }
+      return r.value.grid;
+    })
     .map(function(r) { return r.value; });
 
   // Filtrar por sesión activa — si hay sesión activa, sólo cartillas de esa sesión
@@ -1197,7 +1210,14 @@ async function loadAllCartillas() {
   if (wrongSession > 0) {
     showToast('⚠️ ' + wrongSession + ' cartilla(s) de otro Bingo fueron ignoradas.', 4000);
   }
-  if (!myCartillas.length) { showToast("❌ No se encontraron cartillas válidas"); return; }
+  if (!myCartillas.length) {
+    if (sessionCancelled > 0) {
+      showToast('❌ Tu sesión fue cancelada. Contacta al organizador.', 5000);
+    } else {
+      showToast('❌ No se encontraron cartillas válidas');
+    }
+    return;
+  }
 
   const banner = document.getElementById('banner-comprar');
   if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
@@ -1458,6 +1478,9 @@ async function showPlayerSessionBanner() {
 }
 
 async function initMyCartillaUI() {
+  const btn = document.getElementById('btn-load-cartilla');
+  if (btn) btn.addEventListener('click', loadAllCartillas);
+
   showPlayerSessionBanner();
 
   const existing = getMyCartillasFromStorage();
