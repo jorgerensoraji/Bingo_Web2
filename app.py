@@ -3064,6 +3064,10 @@ def api_save_manual():
     vinfo      = get_voucher_info(code) if code else None
     session_id = (vinfo.get("session_id") if vinfo else None) or ""
     bingo_type = (vinfo.get("bingo_type") if vinfo else "1sol")
+    # If no session from voucher, use the current active game session
+    if not session_id:
+        with game_lock:
+            session_id = game.session_id or ""
     if not grid or len(grid) != 5 or any(len(r) != 5 for r in grid):
         return jsonify({"error": "grid invalido"}), 400
     nums = [n for row in grid for n in row if n is not None]
