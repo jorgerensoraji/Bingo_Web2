@@ -959,6 +959,14 @@
       <!-- Banner info de sesión del jugador -->
       <div id="player-session-banner" style="display:none;margin-top:8px"></div>
 
+      <button id="btn-load-cartilla"
+              style="margin-top:8px;width:100%;padding:9px 14px;border:1px solid rgba(0,229,180,.4);
+                     border-radius:9px;background:rgba(0,229,180,.1);color:var(--accent);
+                     font-family:Outfit,sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;
+                     letter-spacing:.5px">
+        🎴 Cargar mis cartillas
+      </button>
+
       <div id="my-cartilla-status" style="font-size:.76rem;color:var(--muted);min-height:.9rem;margin-top:4px"></div>
       <div id="mis-cartillas-wrap"></div>
     </div>
@@ -1478,12 +1486,15 @@ function closeFsOverlay(){
   document.body.style.overflow = '';
 }
 
-// Show/hide the fullscreen button once cartillas are loaded
+// Show/hide fullscreen button and load-button based on cartilla wrap content
 (function(){
   var observer = new MutationObserver(function(){
-    var wrap = document.getElementById('mis-cartillas-wrap');
-    var btn  = document.getElementById('btn-fs-open');
-    if(btn) btn.style.display = (wrap && wrap.children.length > 0) ? 'flex' : 'none';
+    var wrap    = document.getElementById('mis-cartillas-wrap');
+    var btnFs   = document.getElementById('btn-fs-open');
+    var btnLoad = document.getElementById('btn-load-cartilla');
+    var hasCards = wrap && wrap.children.length > 0;
+    if(btnFs)   btnFs.style.display   = hasCards ? 'flex' : 'none';
+    if(btnLoad) btnLoad.style.display = hasCards ? 'none' : '';
   });
   var wrap = document.getElementById('mis-cartillas-wrap');
   if(wrap) observer.observe(wrap, {childList:true});
