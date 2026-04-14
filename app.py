@@ -3125,26 +3125,26 @@ def api_get_cartilla(cid):
     c = load_cartilla(cid.upper())
     if not c:
         return jsonify({"error": "not found"}), 404
-    # Return 404 if the cartilla's session was cancelled or deleted
+    # Validate grid is 5×5 — old 3×9 cartillas would crash check_winner
+    grid = c.get("grid") or []
+    if len(grid) != 5 or any(len(row) != 5 for row in grid):
+        return jsonify({"error": "invalid grid format"}), 404
+    # Single DB query: check session exists, not cancelled, and get its status
     csid = c.get("session_id", "")
-    if csid:
-        with db_session() as db:
-            sx = db.query(BingoSession).filter_by(id=csid).first()
-            if not sx or sx.status == "cancelled":
-                return jsonify({"error": "session cancelled"}), 404
     session_status = None
     session_nombre = None
     if csid:
         with db_session() as db:
             sx = db.query(BingoSession).filter_by(id=csid).first()
-            if sx:
-                session_status = sx.status
-                session_nombre = sx.nombre
+            if not sx or sx.status == "cancelled":
+                return jsonify({"error": "session cancelled"}), 404
+            session_status = sx.status
+            session_nombre = sx.nombre
     with game_lock:
         drawn2 = list(game.drawn)
-    result = check_winner(c["grid"], drawn2)
+    result = check_winner(grid, drawn2)
     result.update({
-        "id": c["id"], "nombre": c["nombre"], "grid": c["grid"],
+        "id": c["id"], "nombre": c["nombre"], "grid": grid,
         "bingo_type": c.get("bingo_type", "1sol"),
         "session_id": c.get("session_id", ""),
         "session_status": session_status,
