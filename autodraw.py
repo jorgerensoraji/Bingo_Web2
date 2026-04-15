@@ -230,10 +230,9 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
             game.winners_log.append(entry)
             new_entries.append(entry)
 
-        # Pause if limit reached
-        if total_winners >= game.winners_limit:
-            game.paused = True
-            _log("game_paused", {"session_id": session_id, "winners": total_winners})
+        # Always pause when any new bingo/apagón winner is detected
+        game.paused = True
+        _log("game_paused", {"session_id": session_id, "winners": total_winners})
 
         game.save_to_disk()
 

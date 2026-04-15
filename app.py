@@ -2070,7 +2070,51 @@ def api_draw():
             "status": "ok", "number": num, "words": words, "phrase": phrase,
             "drawn": list(game.drawn), "remaining": len(game.available), "count": count,
         }
+        drawn_snap = list(game.drawn)
+        active_sid = game.session_id
         game.save_to_db()
+
+    # Auto-detect bingo/apagón winners for manual draw (outside lock for DB query)
+    if active_sid and not game.paused:
+        try:
+            cartillas = load_all_cartillas(active_sid)
+            with game_lock:
+                already = set(game.claimed_winners)
+            new_winners = []
+            for c in cartillas:
+                cid = c.get("id", "")
+                if cid in already:
+                    continue
+                chk = check_winner(c.get("grid", []), drawn_snap)
+                if chk.get("bingo"):
+                    new_winners.append(c)
+            if new_winners:
+                with game_lock:
+                    already2 = set(game.claimed_winners)
+                    n_new = 0
+                    for c in new_winners:
+                        cid = c.get("id", "")
+                        if cid not in already2:
+                            game.claimed_winners.add(cid)
+                            btype = BINGO_TYPES.get(game.bingo_type, BINGO_TYPES["1sol"])
+                            n_new += 1
+                            game.winners_log.append({
+                                "id":            cid,
+                                "nombre":        c.get("nombre", ""),
+                                "claimed_at":    now_peru().isoformat(),
+                                "drawn_count":   len(drawn_snap),
+                                "game_id":       game.game_id,
+                                "prize":         round(game.prize_pool / max(1, len(game.claimed_winners)), 2),
+                                "n_winners":     len(game.claimed_winners),
+                                "split":         len(game.claimed_winners) > 1,
+                                "auto_detected": True,
+                            })
+                    if n_new:
+                        game.paused = True
+                        game.save_to_db()
+        except Exception:
+            pass
+
     try:
         voice = (request.get_json(silent=True) or {}).get("voice", "es-PE-CamilaNeural")
     except Exception:
