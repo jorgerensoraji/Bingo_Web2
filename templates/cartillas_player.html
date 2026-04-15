@@ -1089,10 +1089,10 @@ async function enviarSolicitud() {
         duplicate_reference: '⚠️ ' + (data.message || 'Referencia duplicada.'),
         no_session:          '❌ No hay bingos disponibles. El administrador debe crear un bingo.',
         invalid_bingo_type:  '⚠️ Tipo de bingo inválido.',
-        invalid_session:     '⚠️ La sesión seleccionada no existe.',
-        bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con la sesión.'),
+        invalid_session:     '⚠️ El bingo seleccionado no existe.',
+        bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con el bingo seleccionado.'),
         rate_limited:        '⏳ Demasiados intentos. Espera un momento.',
-        duplicate_email:     '⚠️ Ya tienes una solicitud registrada para esta sesión.',
+        duplicate_email:     '⚠️ Ya tienes una solicitud registrada para este bingo.',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);
       btn.disabled    = false;
