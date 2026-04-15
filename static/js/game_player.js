@@ -109,6 +109,7 @@ function initGridForMode() {
 }
 
 async function autoLoadByAccessCode() {
+  if (sessionFinishedShown) return false;
   const code = (localStorage.getItem('bingo_access_code') || '').trim().toUpperCase();
   if (!code) return false;
 
@@ -611,8 +612,9 @@ function handleSessionFinished() {
       var remaining = stored.filter(function(e) {
         var cid = (typeof e === 'object' && e !== null) ? e.id : e;
         var sid = (typeof e === 'object' && e !== null) ? (e.session_id || '') : '';
-        if (toRemove.has(cid)) return false;          // known from loaded data
-        if (sid && sid === finishedSid) return false; // known from localStorage metadata
+        if (toRemove.has(cid)) return false;   // known from loaded data
+        if (sid === finishedSid) return false;  // matches finished session
+        if (!sid) return false;                 // no session_id = unidentified, remove too
         return true;
       });
       localStorage.setItem('my_cartillas', JSON.stringify(remaining));
@@ -1218,6 +1220,11 @@ function removeClaimButtons() {
 }
 
 async function loadAllCartillas() {
+  // Don't load if session is already finished
+  if (sessionFinishedShown) {
+    showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
+    return;
+  }
   const ids = getMyCartillasFromStorage();
   if (!ids.length) {
     // Open the code-entry panel and focus it instead of dead-end toast
@@ -1238,6 +1245,11 @@ async function loadAllCartillas() {
     try {
       const st = await fetch('/api/state');
       const sd = await st.json();
+      if (sd.session_finished) {
+        sessionFinishedShown = true;
+        showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
+        return;
+      }
       if (sd.session_id) activeSessionId = sd.session_id;
     } catch(e) {}
   }
