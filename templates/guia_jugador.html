@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📖 Guía del Jugador — {{ cfg.nombre_organizador }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/game.css">
+<style>
+/* ── Layout ── */
+.page-wrap { max-width: 780px; margin: 0 auto; padding: 24px 16px 80px; position:relative;z-index:1; }
+
+/* ── Header ── */
+.guide-title { font-family:'Bebas Neue',sans-serif; font-size:2.8rem; letter-spacing:3px; color:var(--accent); margin-bottom:4px; line-height:1; }
+.guide-sub   { font-size:.9rem; color:var(--muted); margin-bottom:10px; }
+
+/* ── Mode selector tabs ── */
+.mode-tabs { display:flex; gap:10px; margin:24px 0 32px; flex-wrap:wrap; }
+.mode-btn {
+  flex:1; min-width:140px; padding:16px 20px; border-radius:14px; border:2px solid var(--border);
+  background:var(--panel); cursor:pointer; font-family:'Outfit',sans-serif;
+  font-size:.95rem; font-weight:700; color:var(--muted); transition:all .2s; text-align:center;
+}
+.mode-btn .icon { font-size:1.8rem; display:block; margin-bottom:5px; }
+.mode-btn:hover { border-color:var(--accent); color:var(--text); }
+.mode-btn.active-paid  { border-color:var(--accent); background:rgba(0,229,180,.1); color:var(--accent); }
+.mode-btn.active-free  { border-color:#f6c343;        background:rgba(246,195,67,.1); color:#f6c343; }
+
+/* ── Section title ── */
+.section-label {
+  font-family:'Bebas Neue',sans-serif; font-size:1.6rem; letter-spacing:2px;
+  margin:0 0 20px; display:flex; align-items:center; gap:10px;
+}
+.section-label.paid { color:var(--accent); }
+.section-label.free { color:#f6c343; }
+
+/* ── Steps ── */
+.steps-list { display:flex; flex-direction:column; gap:28px; }
+.step-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:18px; overflow:hidden;
+}
+.step-header {
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+}
+.step-num {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Bebas Neue',sans-serif; font-size:1.2rem; font-weight:900;
+}
+.step-num.paid { background:rgba(0,229,180,.15); color:var(--accent); border:2px solid rgba(0,229,180,.4); }
+.step-num.free { background:rgba(246,195,67,.15); color:#f6c343;     border:2px solid rgba(246,195,67,.4); }
+.step-title  { font-weight:800; font-size:1rem; color:var(--text); }
+.step-subtitle { font-size:.78rem; color:var(--muted); margin-top:2px; }
+.step-body { padding:18px 20px; }
+.step-body p { font-size:.9rem; color:var(--muted); line-height:1.7; margin:0 0 12px; }
+.step-body p:last-child { margin-bottom:0; }
+.step-body strong { color:var(--text); }
+
+/* ── Mock screenshots ── */
+.mock-screen {
+  background:#041015; border:1px solid rgba(0,229,180,.2);
+  border-radius:12px; overflow:hidden; margin:14px 0;
+  font-family:'Outfit',sans-serif; font-size:.82rem;
+}
+.mock-bar {
+  background:rgba(0,229,180,.08); border-bottom:1px solid rgba(0,229,180,.12);
+  padding:7px 14px; font-size:.65rem; color:var(--muted); letter-spacing:1px;
+  display:flex; align-items:center; gap:6px;
+}
+.mock-bar::before { content:'●'; color:var(--accent); font-size:.55rem; }
+.mock-body { padding:14px 16px; }
+.mock-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.mock-label { font-size:.72rem; color:var(--muted); margin-bottom:4px; }
+.mock-input {
+  background:rgba(255,255,255,.06); border:1px solid rgba(0,229,180,.3);
+  border-radius:7px; padding:8px 12px; color:rgba(255,255,255,.7);
+  font-size:.82rem; width:100%; box-sizing:border-box;
+}
+.mock-btn {
+  display:block; width:100%; padding:11px; border-radius:10px;
+  font-weight:800; font-size:.88rem; text-align:center; margin-top:10px;
+}
+.mock-btn.primary { background:linear-gradient(135deg,#00e5b4,#00b890); color:#041015; }
+.mock-btn.yape    { background:linear-gradient(135deg,#722ed1,#531dab); color:#fff; }
+.mock-btn.plin    { background:linear-gradient(135deg,#0050e8,#003ab5); color:#fff; }
+.mock-btn.free    { background:linear-gradient(135deg,#f6c343,#e5ad2b); color:#041015; }
+.mock-badge {
+  display:inline-block; padding:3px 10px; border-radius:20px;
+  font-size:.68rem; font-weight:700;
+}
+.mock-badge.pending  { background:rgba(246,195,67,.15); color:#f6c343; border:1px solid rgba(246,195,67,.3); }
+.mock-badge.approved { background:rgba(39,174,96,.15);  color:#27ae60; border:1px solid rgba(39,174,96,.3); }
+.mock-badge.free-tag { background:rgba(246,195,67,.15); color:#f6c343; border:1px solid rgba(246,195,67,.3); }
+.mock-email-box {
+  background:rgba(255,255,255,.04); border:1px solid var(--border);
+  border-radius:10px; padding:12px 14px; font-size:.8rem; line-height:1.7; color:var(--muted);
+}
+.mock-email-box .subj { font-weight:700; color:var(--text); margin-bottom:5px; }
+.mock-code-box {
+  text-align:center; background:rgba(0,229,180,.06); border:2px dashed rgba(0,229,180,.35);
+  border-radius:12px; padding:14px; margin:10px 0;
+  font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:8px; color:var(--accent);
+}
+.mock-cartilla-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:3px; margin-top:8px;
+}
+.mock-cell {
+  background:rgba(255,255,255,.07); border-radius:5px; padding:6px 2px;
+  text-align:center; font-size:.72rem; font-weight:700; color:var(--text);
+}
+.mock-cell.hit { background:rgba(0,229,180,.25); color:var(--accent); }
+.mock-cell.free-cell { background:rgba(246,195,67,.2); color:#f6c343; font-size:.55rem; }
+
+/* ── Tips ── */
+.tip-box {
+  display:flex; gap:10px; align-items:flex-start;
+  background:rgba(0,229,180,.05); border:1px solid rgba(0,229,180,.2);
+  border-radius:10px; padding:12px 14px; margin-top:12px;
+  font-size:.82rem; color:var(--muted); line-height:1.6;
+}
+.tip-box.warning {
+  background:rgba(246,195,67,.05); border-color:rgba(246,195,67,.25);
+}
+.tip-icon { font-size:1.1rem; flex-shrink:0; margin-top:1px; }
+
+/* ── Divider ── */
+.guide-divider {
+  border:none; border-top:1px solid var(--border); margin:40px 0;
+}
+
+/* ── Payment method cards in mock ── */
+.mock-methods { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:8px 0; }
+.mock-method {
+  border:1px solid rgba(255,255,255,.1); border-radius:8px;
+  padding:8px 4px; text-align:center; font-size:.68rem;
+  color:var(--muted); font-weight:600;
+}
+.mock-method.sel { border-color:#722ed1; background:rgba(114,46,209,.12); color:#b47ffa; }
+
+/* ── Back link ── */
+.back-link {
+  display:inline-flex; align-items:center; gap:6px;
+  color:var(--muted); text-decoration:none; font-size:.82rem;
+  font-weight:600; margin-bottom:20px; transition:color .2s;
+}
+.back-link:hover { color:var(--accent); }
+
+/* ── Pane toggle ── */
+.guide-pane { display:none; }
+.guide-pane.active { display:block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">🎱 {{ cfg.nombre_organizador }} <span class="badge">Guía</span></div>
+  </div>
+  <div class="header-right">
+    <a href="/" style="color:var(--muted);font-size:.82rem;font-weight:600;text-decoration:none;
+       padding:6px 12px;border:1px solid var(--border);border-radius:8px;transition:color .2s"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+      🎮 Ir al Bingo
+    </a>
+  </div>
+</header>
+
+<div class="page-wrap">
+
+  <div class="guide-title">📖 Guía del Jugador</div>
+  <div class="guide-sub">Todo lo que necesitas saber para jugar al bingo paso a paso.</div>
+
+  <!-- Mode selector -->
+  <div class="mode-tabs">
+    <button class="mode-btn active-paid" id="btn-paid" onclick="showMode('paid')">
+      <span class="icon">💳</span>
+      Bingo con Pago<br>
+      <span style="font-size:.72rem;font-weight:400;color:inherit;opacity:.8">Yape · Plin · Efectivo</span>
+    </button>
+    <button class="mode-btn" id="btn-free" onclick="showMode('free')">
+      <span class="icon">🎁</span>
+      Bingo Gratis<br>
+      <span style="font-size:.72rem;font-weight:400;color:inherit;opacity:.8">Sin costo · Acceso directo</span>
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       GUÍA BINGO CON PAGO
+       ════════════════════════════════════ -->
+  <div class="guide-pane active" id="pane-paid">
+
+    <div class="section-label paid">💳 Bingo con Pago — Paso a Paso</div>
+
+    <div class="steps-list">
+
+      <!-- PASO 1 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">1</div>
+          <div>
+            <div class="step-title">Entra a la página y haz clic en "Comprar cartilla"</div>
+            <div class="step-subtitle">Desde ganabingoperu.com o directamente en /cartillas</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Cuando entras al sitio verás el panel principal del bingo. En la columna derecha hay un botón grande verde que dice <strong>🛒 COMPRAR AHORA</strong>. Tócalo para empezar.</p>
+          <p>También puedes entrar directamente a <strong>/cartillas</strong> desde tu navegador.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">ganabingoperu.com</div>
+            <div class="mock-body">
+              <div style="text-align:center;padding:10px 0">
+                <div style="font-size:.65rem;letter-spacing:2px;color:#f6c343;font-weight:700;margin-bottom:4px">⚡ ACCIÓN REQUERIDA</div>
+                <div style="font-size:1.5rem;margin-bottom:4px">🎴</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--accent);letter-spacing:2px;margin-bottom:6px">¡COMPRA TU CARTILLA!</div>
+                <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px">Sin cartilla no participas — ¡asegura tu lugar ahora!</div>
+                <div class="mock-btn primary">🛒 COMPRAR AHORA</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tip-box">
+            <div class="tip-icon">💡</div>
+            <div>Si ya cerraste ese panel, ve directamente a <strong style="color:var(--accent)">ganabingoperu.com/cartillas</strong> y haz clic en <strong>"📝 Registrarme para jugar"</strong>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">2</div>
+          <div>
+            <div class="step-title">Llena tus datos personales</div>
+            <div class="step-subtitle">Paso 1 de 3 del formulario de registro</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Se abre un formulario con 3 pasos. En el <strong>Paso 1</strong> ingresa:</p>
+          <p>
+            • <strong>Nombres</strong> — Tu primer nombre y segundo nombre si tienes.<br>
+            • <strong>Apellidos</strong> — Tus apellidos.<br>
+            • <strong>Correo electrónico</strong> — Muy importante: aquí recibirás tu código de voucher.<br>
+            • <strong>Celular / WhatsApp</strong> — Para avisarte del premio si ganas.
+          </p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Paso 1 de 3 — Tus datos</div>
+            <div class="mock-body">
+              <div class="mock-label">Nombres *</div>
+              <div class="mock-input" style="margin-bottom:8px">Ana María</div>
+              <div class="mock-label">Apellidos</div>
+              <div class="mock-input" style="margin-bottom:8px">García López</div>
+              <div class="mock-label">Correo electrónico * <span style="color:var(--muted)">(recibirás tu código aquí)</span></div>
+              <div class="mock-input" style="margin-bottom:8px">ana@correo.com</div>
+              <div class="mock-label">Celular / WhatsApp *</div>
+              <div style="display:flex;gap:6px;margin-bottom:10px">
+                <div class="mock-input" style="width:80px;flex-shrink:0">🇵🇪 +51</div>
+                <div class="mock-input" style="flex:1">987 654 321</div>
+              </div>
+              <div class="mock-btn primary">Siguiente →</div>
+            </div>
+          </div>
+
+          <div class="tip-box warning">
+            <div class="tip-icon">⚠️</div>
+            <div>Revisa bien tu <strong>correo electrónico</strong> antes de continuar. Si lo escribes mal, no recibirás tu código de voucher.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">3</div>
+          <div>
+            <div class="step-title">Elige el Bingo y realiza tu pago</div>
+            <div class="step-subtitle">Paso 2 de 3 — Selección y método de pago</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>En el <strong>Paso 2</strong> selecciona el bingo en que quieres jugar y elige cómo vas a pagar.</p>
+          <p><strong>Métodos disponibles:</strong></p>
+          <p>
+            • <strong style="color:#b47ffa">Yape</strong> — Transfiere al número del organizador, luego ingresa el número de operación.<br>
+            • <strong style="color:#7fb3fa">Plin</strong> — Igual que Yape, transfiere y anota el N° de operación.<br>
+            • <strong style="color:#f6c343">Efectivo</strong> — El organizador aprueba cuando recibe el dinero en persona.
+          </p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Paso 2 de 3 — Bingo y pago</div>
+            <div class="mock-body">
+              <div class="mock-label">📅 ¿En qué Bingo quieres jugar?</div>
+              <div class="mock-input" style="margin-bottom:10px">🎱 Bingo Especial de Verano — sáb 15 feb · 8:00 pm</div>
+              <div class="mock-label">Método de pago *</div>
+              <div class="mock-methods">
+                <div class="mock-method sel">💜 Yape</div>
+                <div class="mock-method">💙 Plin</div>
+                <div class="mock-method">💵 Efectivo</div>
+              </div>
+              <div style="background:rgba(114,46,209,.08);border:1px solid rgba(114,46,209,.3);border-radius:8px;padding:8px 10px;font-size:.72rem;color:#b47ffa;margin:6px 0 8px">
+                📲 Yape al <strong>999 888 777</strong> — Monto: <strong>S/. 5.00</strong><br>
+                Luego ingresa el N° de operación.
+              </div>
+              <div class="mock-label">N° de operación *</div>
+              <div class="mock-input" style="margin-bottom:10px">12345678</div>
+              <div class="mock-btn primary">Siguiente →</div>
+            </div>
+          </div>
+
+          <div class="tip-box warning">
+            <div class="tip-icon">⚠️</div>
+            <div>El número de operación aparece en tu app de Yape o Plin justo después de hacer la transferencia. <strong>Cópialo exacto</strong> — sin ese número tu solicitud no puede ser aprobada.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">4</div>
+          <div>
+            <div class="step-title">Confirma y envía tu solicitud</div>
+            <div class="step-subtitle">Paso 3 de 3 — Resumen y términos</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>En el <strong>Paso 3</strong> verás un resumen con todos tus datos. Revisa que todo esté correcto.</p>
+          <p>Marca la casilla <strong>"Acepto los términos y condiciones"</strong> y haz clic en <strong>"📤 Enviar solicitud de participación"</strong>.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Paso 3 de 3 — Confirmación</div>
+            <div class="mock-body">
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.78rem;line-height:1.8;margin-bottom:10px">
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px">
+                  <span style="color:var(--muted)">Nombre</span><strong>Ana María García López</strong>
+                  <span style="color:var(--muted)">Correo</span><span>ana@correo.com</span>
+                  <span style="color:var(--muted)">Celular</span><span>+51 987 654 321</span>
+                  <span style="color:var(--muted)">Bingo</span><strong style="color:var(--accent)">Bingo Especial de Verano</strong>
+                  <span style="color:var(--muted)">Pago</span><span>Yape · op. 12345678</span>
+                  <span style="color:var(--muted)">Total</span><strong style="color:var(--accent)">S/. 5.00</strong>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.78rem;color:var(--muted)">
+                <div style="width:14px;height:14px;border:2px solid var(--accent);border-radius:3px;flex-shrink:0;background:rgba(0,229,180,.2)"></div>
+                Acepto los términos y condiciones
+              </div>
+              <div class="mock-btn primary">📤 Enviar solicitud de participación</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 5 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">5</div>
+          <div>
+            <div class="step-title">Espera la aprobación del organizador</div>
+            <div class="step-subtitle">El organizador verifica tu pago y te aprueba</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Después de enviar tu solicitud verás un mensaje de <strong style="color:#f6c343">⏳ Solicitud enviada</strong>. Ahora el organizador verifica tu pago.</p>
+          <p>Cuando sea aprobado recibirás un <strong>correo electrónico</strong> con tu código de voucher y un enlace directo para generar tu cartilla.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Estado de mi solicitud</div>
+            <div class="mock-body">
+              <div style="background:rgba(246,195,67,.08);border:1px solid rgba(246,195,67,.25);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+                <div style="font-size:1.4rem">⏳</div>
+                <div>
+                  <div style="font-weight:700;color:#f6c343;margin-bottom:3px">Solicitud enviada</div>
+                  <div style="font-size:.75rem;color:var(--muted)">El admin está verificando tu pago. Recibirás tu código por correo pronto.</div>
+                </div>
+              </div>
+              <div class="mock-email-box">
+                <div class="subj">📧 Correo que recibirás:</div>
+                <div>🎱 Tu código para <strong>Bingo Especial de Verano</strong> — Bingo Pro</div>
+                <div style="font-size:.75rem;margin-top:4px">Tu solicitud fue aprobada. Tu código de voucher es:</div>
+                <div class="mock-code-box">AB3K9Z</div>
+                <div style="font-size:.72rem;color:var(--muted)">Toca el enlace del correo para generar tu cartilla directamente.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tip-box warning">
+            <div class="tip-icon">📨</div>
+            <div>Revisa también tu carpeta de <strong>Spam / Correo no deseado</strong>. A veces los correos automáticos caen ahí.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 6 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">6</div>
+          <div>
+            <div class="step-title">Genera tu cartilla con el código</div>
+            <div class="step-subtitle">Ingresa tu código de voucher para generar tu cartilla</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Tienes dos formas de generar tu cartilla:</p>
+          <p>
+            • <strong>Desde el correo:</strong> Toca el enlace directo del correo de aprobación — te lleva directamente a generar tu cartilla.<br>
+            • <strong>Manualmente:</strong> Ve a <strong>ganabingoperu.com/cartillas</strong>, busca la sección <strong>"¿Ya tienes tu código?"</strong> e ingresa tu código de 6 letras.
+          </p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">ganabingoperu.com/cartillas</div>
+            <div class="mock-body">
+              <div style="background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.35);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+                <div style="font-size:.82rem;font-weight:800;color:var(--accent);margin-bottom:8px">🔑 ¿Ya tienes tu código?</div>
+                <div style="display:flex;gap:6px">
+                  <div class="mock-input" style="flex:1;text-align:center;letter-spacing:4px;font-weight:700">AB3K9Z</div>
+                  <div style="background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);border-radius:7px;padding:8px 10px;color:var(--accent);font-weight:700;font-size:.78rem;white-space:nowrap">→ Verificar</div>
+                </div>
+              </div>
+              <div style="background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);border-radius:10px;padding:12px;margin-bottom:10px">
+                <div style="font-weight:700;color:#27ae60;margin-bottom:4px">✅ ¡Aprobado! Genera tu cartilla</div>
+                <div class="mock-label" style="margin-top:8px">Nombre en la cartilla</div>
+                <div class="mock-input" style="margin-bottom:8px">Ana García</div>
+                <div class="mock-btn primary">🎴 Generar Cartilla</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 7 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num paid">7</div>
+          <div>
+            <div class="step-title">¡A jugar! Tu cartilla se marca sola</div>
+            <div class="step-subtitle">Entra al bingo y observa cómo se marcan tus números</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Una vez generada tu cartilla, entra a <strong>ganabingoperu.com</strong>. Tu cartilla aparecerá en la columna derecha y se irá marcando <strong>automáticamente</strong> conforme caigan las bolillas.</p>
+          <p>¡Solo tienes que estar atento! Si completas el patrón ganador, el sistema te lo indica y puedes reclamar tu premio.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">ganabingoperu.com — Juego en vivo</div>
+            <div class="mock-body">
+              <div style="text-align:center;margin-bottom:10px">
+                <div style="font-size:.65rem;letter-spacing:1px;color:var(--muted);margin-bottom:4px">ÚLTIMA BOLILLA</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:2.5rem;color:var(--accent);line-height:1">42</div>
+              </div>
+              <div style="font-size:.72rem;color:var(--muted);text-align:center;margin-bottom:8px;font-weight:600">🎴 MI CARTILLA — ANA GARCÍA</div>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:6px">
+                <div style="text-align:center;font-size:.6rem;font-weight:700;color:var(--accent);padding:3px 0">B</div>
+                <div style="text-align:center;font-size:.6rem;font-weight:700;color:var(--accent);padding:3px 0">I</div>
+                <div style="text-align:center;font-size:.6rem;font-weight:700;color:var(--accent);padding:3px 0">N</div>
+                <div style="text-align:center;font-size:.6rem;font-weight:700;color:var(--accent);padding:3px 0">G</div>
+                <div style="text-align:center;font-size:.6rem;font-weight:700;color:var(--accent);padding:3px 0">O</div>
+              </div>
+              <div class="mock-cartilla-grid">
+                <div class="mock-cell hit">5</div><div class="mock-cell">23</div><div class="mock-cell hit">34</div><div class="mock-cell">48</div><div class="mock-cell hit">62</div>
+                <div class="mock-cell">12</div><div class="mock-cell hit">29</div><div class="mock-cell">41</div><div class="mock-cell hit">55</div><div class="mock-cell">70</div>
+                <div class="mock-cell">8</div><div class="mock-cell">16</div><div class="mock-cell free-cell">FREE</div><div class="mock-cell">52</div><div class="mock-cell hit">68</div>
+                <div class="mock-cell hit">3</div><div class="mock-cell">20</div><div class="mock-cell hit">42</div><div class="mock-cell">59</div><div class="mock-cell">73</div>
+                <div class="mock-cell">14</div><div class="mock-cell hit">27</div><div class="mock-cell">38</div><div class="mock-cell hit">46</div><div class="mock-cell">75</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tip-box">
+            <div class="tip-icon">🏆</div>
+            <div>Si ganas, recibirás un <strong>correo con el resumen completo</strong> del bingo y tu cartilla marcada. El organizador se pondrá en contacto para entregarte el premio.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps-list paid -->
+  </div><!-- /pane-paid -->
+
+
+  <!-- ════════════════════════════════════
+       GUÍA BINGO GRATIS
+       ════════════════════════════════════ -->
+  <div class="guide-pane" id="pane-free">
+
+    <div class="section-label free">🎁 Bingo Gratis — Paso a Paso</div>
+
+    <div class="steps-list">
+
+      <!-- PASO 1 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">1</div>
+          <div>
+            <div class="step-title">Entra a /cartillas y haz clic en "Registrarme para jugar"</div>
+            <div class="step-subtitle">El bingo gratis no requiere ningún pago</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Ve a <strong>ganabingoperu.com/cartillas</strong>. Verás el botón <strong>"📝 Registrarme para jugar"</strong>. En los bingos gratis, la sección de pago no aparece.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">ganabingoperu.com/cartillas</div>
+            <div class="mock-body">
+              <div style="text-align:center;padding:14px 0">
+                <div style="font-size:2rem;margin-bottom:6px">🎴</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--accent);letter-spacing:2px;margin-bottom:4px">¡Únete al Bingo!</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-bottom:14px">Regístrate en 3 pasos rápidos</div>
+                <div class="mock-btn free">📝 Registrarme para jugar</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">2</div>
+          <div>
+            <div class="step-title">Llena tus datos personales</div>
+            <div class="step-subtitle">Paso 1 de 3 — Igual que el bingo de pago</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Ingresa tu <strong>nombre</strong>, <strong>apellidos</strong>, <strong>correo electrónico</strong> y <strong>celular</strong>. Luego haz clic en <strong>"Siguiente →"</strong>.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Paso 1 de 3 — Tus datos</div>
+            <div class="mock-body">
+              <div class="mock-label">Nombres *</div>
+              <div class="mock-input" style="margin-bottom:8px">Carlos</div>
+              <div class="mock-label">Apellidos</div>
+              <div class="mock-input" style="margin-bottom:8px">Rodríguez</div>
+              <div class="mock-label">Correo electrónico *</div>
+              <div class="mock-input" style="margin-bottom:8px">carlos@correo.com</div>
+              <div class="mock-label">Celular / WhatsApp *</div>
+              <div class="mock-input" style="margin-bottom:10px">+51 912 345 678</div>
+              <div class="mock-btn free">Siguiente →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">3</div>
+          <div>
+            <div class="step-title">Elige el Bingo — sin sección de pago</div>
+            <div class="step-subtitle">Paso 2 de 3 — Solo selecciona el bingo</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>En el <strong>Paso 2</strong> solo verás el selector de bingo. <strong>No hay sección de pago</strong> porque es gratis. Selecciona el bingo y haz clic en <strong>"Siguiente →"</strong>.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Paso 2 de 3 — Elige tu Bingo</div>
+            <div class="mock-body">
+              <div class="mock-label">📅 ¿En qué Bingo quieres jugar?</div>
+              <div class="mock-input" style="margin-bottom:6px">🎁 Bingo Gratuito — dom 16 feb · 7:00 pm</div>
+              <div style="background:rgba(246,195,67,.08);border:1px solid rgba(246,195,67,.2);border-radius:8px;padding:8px 10px;font-size:.72rem;color:#f6c343;margin:8px 0">
+                🎁 Este bingo es <strong>GRATIS</strong> — no necesitas realizar ningún pago.
+              </div>
+              <div class="mock-btn free" style="margin-top:10px">Siguiente →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">4</div>
+          <div>
+            <div class="step-title">Confirma y envía tu solicitud</div>
+            <div class="step-subtitle">Paso 3 de 3 — Sin monto a pagar</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Revisa el resumen — verás que el monto es <strong style="color:#f6c343">S/. 0.00 (Gratis)</strong>. Acepta los términos y envía tu solicitud.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">Paso 3 de 3 — Confirmación</div>
+            <div class="mock-body">
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.78rem;line-height:1.8;margin-bottom:10px">
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px">
+                  <span style="color:var(--muted)">Nombre</span><strong>Carlos Rodríguez</strong>
+                  <span style="color:var(--muted)">Correo</span><span>carlos@correo.com</span>
+                  <span style="color:var(--muted)">Bingo</span><strong style="color:#f6c343">🎁 Bingo Gratuito</strong>
+                  <span style="color:var(--muted)">Total</span><strong style="color:#f6c343">S/. 0.00 (Gratis)</strong>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.78rem;color:var(--muted)">
+                <div style="width:14px;height:14px;border:2px solid #f6c343;border-radius:3px;flex-shrink:0;background:rgba(246,195,67,.2)"></div>
+                Acepto los términos y condiciones
+              </div>
+              <div class="mock-btn free">📤 Enviar solicitud de participación</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 5 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">5</div>
+          <div>
+            <div class="step-title">Recibe tu código y genera tu cartilla</div>
+            <div class="step-subtitle">El organizador aprueba y te envía el código por correo</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Para bingos gratis la aprobación puede ser <strong>inmediata o muy rápida</strong>. Recibirás un correo con tu <strong>código de voucher</strong> y un enlace directo.</p>
+          <p>Con ese enlace (o ingresando el código en <strong>/cartillas</strong>), genera tu cartilla poniendo tu nombre.</p>
+
+          <div class="mock-screen">
+            <div class="mock-bar">¡Tu cartilla está lista!</div>
+            <div class="mock-body">
+              <div style="text-align:center;padding:10px 0">
+                <div style="font-size:2rem;margin-bottom:6px">🎉</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--accent);letter-spacing:2px">¡Cartilla Lista!</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-top:4px">ID de tu cartilla</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--text);letter-spacing:4px;margin:6px 0">XZ4P1R</div>
+                <div style="background:rgba(246,195,67,.08);border:1px solid rgba(246,195,67,.2);border-radius:8px;padding:8px;font-size:.72rem;color:#f6c343;margin:8px 0">
+                  📅 Bingo Gratuito · dom 16 feb · 7:00 pm
+                </div>
+                <div class="mock-btn free">🎮 Ir al Juego</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 6 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">6</div>
+          <div>
+            <div class="step-title">¡A jugar! Tu cartilla se marca automáticamente</div>
+            <div class="step-subtitle">Entra a ganabingoperu.com cuando empiece el bingo</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Cuando el bingo empiece, entra a <strong>ganabingoperu.com</strong>. Tu cartilla aparecerá y se marcará sola con cada bolilla que caiga. ¡Solo disfruta el juego!</p>
+
+          <div class="tip-box">
+            <div class="tip-icon">📱</div>
+            <div>Puedes jugar desde tu celular, tablet o computadora. Si cambias de dispositivo, ingresa tu código de cartilla en la sección <strong>"🔑 ¿Ya tienes tu código?"</strong> de la pantalla principal.</div>
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">🏆</div>
+            <div>Si ganas en un bingo gratis, el organizador te contactará por WhatsApp para coordinar la entrega del premio.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps-list free -->
+  </div><!-- /pane-free -->
+
+  <hr class="guide-divider">
+
+  <!-- ── Preguntas rápidas ── -->
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;margin-bottom:20px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);letter-spacing:2px;margin-bottom:18px">❓ Preguntas frecuentes</div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">No recibí el correo con mi código ¿qué hago?</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+          1. Revisa tu carpeta de <strong>Spam / Correo no deseado</strong>.<br>
+          2. Verifica que escribiste bien tu correo al registrarte.<br>
+          3. Ve a <strong>/cartillas → "Mis Cartillas"</strong> y usa la opción <strong>"Reenviar correo"</strong>.<br>
+          4. Si el problema sigue, contáctanos por WhatsApp.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿Puedo jugar desde mi celular?</div>
+        <div style="font-size:.85rem;color:var(--muted)">Sí, el sitio funciona perfectamente en celulares, tablets y computadoras. No necesitas descargar ninguna app.</div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿Puedo tener más de una cartilla?</div>
+        <div style="font-size:.85rem;color:var(--muted)">Depende del organizador. Si está habilitado, podrás elegir la cantidad al momento de generar tu cartilla.</div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿Qué pasa si cierro la página durante el juego?</div>
+        <div style="font-size:.85rem;color:var(--muted)">No te preocupes. Tu cartilla se guarda automáticamente. Al volver a <strong>ganabingoperu.com</strong> e ingresar tu código, tu cartilla reaparece con todos los números ya marcados.</div>
+      </div>
+
+      <div>
+        <div style="font-weight:700;margin-bottom:5px">¿Cómo sé si gané?</div>
+        <div style="font-size:.85rem;color:var(--muted)">El sistema lo detecta automáticamente y aparece un aviso en pantalla. También puedes reclamar tu bingo tocando el botón <strong>"🎉 ¡BINGO!"</strong> si crees que completaste el patrón.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div style="text-align:center;color:var(--muted);font-size:.78rem;line-height:1.8">
+    ¿Tienes más dudas? Visita <a href="/ayuda" style="color:var(--accent);text-decoration:none">Ayuda &amp; Contacto</a>
+    o escríbenos directamente por WhatsApp.<br>
+    <span style="opacity:.5">{{ cfg.nombre_organizador }} — Bingo Pro</span>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+function showMode(mode) {
+  document.getElementById('pane-paid').classList.toggle('active', mode === 'paid');
+  document.getElementById('pane-free').classList.toggle('active', mode === 'free');
+  document.getElementById('btn-paid').className = 'mode-btn' + (mode === 'paid' ? ' active-paid' : '');
+  document.getElementById('btn-free').className = 'mode-btn' + (mode === 'free' ? ' active-free' : '');
+}
+</script>
+</body>
+</html>

@@ -1443,6 +1443,10 @@ def cartillas_player_page():
 def ayuda_page():
     return render_template("ayuda.html", cfg=_load_config())
 
+@app.route("/guia")
+def guia_jugador_page():
+    return render_template("guia_jugador.html", cfg=_load_config())
+
 @app.route("/admin/login")
 def admin_login_page():
     if is_admin(): return redirect("/admin")
