@@ -3071,7 +3071,7 @@ def api_caja():
 @rate_limit(max_calls=10, window_seconds=30)
 def api_generate():
     data   = request.get_json() or {}
-    nombre = (data.get("nombre", "") or "Jugador").strip()[:40]
+    nombre = (data.get("nombre", "") or "").strip()[:40]
     code   = (data.get("code", "")   or "").strip().upper()
     count  = min(int(data.get("count", 1)), 10)
 
@@ -3092,6 +3092,12 @@ def api_generate():
         count = min(count, disponibles)
     else:
         vinfo = get_voucher_info(code) if code else None
+
+    # Use voucher's player name as fallback if none was provided
+    if not nombre and vinfo:
+        nombre = (vinfo.get("nombre") or "").strip()[:40]
+    if not nombre:
+        nombre = "Jugador"
 
     session_id = (vinfo.get("session_id") if vinfo else None) or ""
     bingo_type = (vinfo.get("bingo_type") if vinfo else "1sol")
@@ -3117,7 +3123,7 @@ def api_generate():
 @rate_limit(max_calls=5, window_seconds=30)
 def api_save_manual():
     data   = request.get_json() or {}
-    nombre = (data.get("nombre", "") or "Jugador").strip()[:40]
+    nombre = (data.get("nombre", "") or "").strip()[:40]
     code   = (data.get("code", "")   or "").strip().upper()
     grid   = data.get("grid")
     if not is_admin():
@@ -3128,6 +3134,11 @@ def api_save_manual():
         if not ok:
             return jsonify({"error": err}), 403
     vinfo      = get_voucher_info(code) if code else None
+    # Use voucher's player name as fallback if none was provided
+    if not nombre and vinfo:
+        nombre = (vinfo.get("nombre") or "").strip()[:40]
+    if not nombre:
+        nombre = "Jugador"
     session_id = (vinfo.get("session_id") if vinfo else None) or ""
     bingo_type = (vinfo.get("bingo_type") if vinfo else "1sol")
     # If no session from voucher, use current game session or most recent pending/active session

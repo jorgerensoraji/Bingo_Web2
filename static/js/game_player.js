@@ -1439,14 +1439,8 @@ function updateMyCartillaAutoMark(force) {
         cell.style.borderColor = '';
         cell.style.opacity = '';
 
-        // Highlight winning line
-        var inLine = false;
-        if (isLinea) {
-          if (lineaType === 'row'       && ri === lineaIdx)  inLine = true;
-          if (lineaType === 'col'       && ci === lineaIdx)  inLine = true;
-          if (lineaType === 'diag_main' && ri === ci)        inLine = true;
-          if (lineaType === 'diag_anti' && ri + ci === 4)    inLine = true;
-        }
+        // Highlight winning line — Letra I is always column index 1
+        var inLine = isLinea && ci === 1;
 
         const isFree = isBingo75 && ri === 2 && ci === 2;
         if (isFree) {
