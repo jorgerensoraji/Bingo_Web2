@@ -863,6 +863,7 @@ function renderSessions() {
   const noSess = document.getElementById('session-no-sessions');
 
   // ── Selector de sesión (todas las sesiones) ──
+  const prevVal = sel.value; // preserve user's current selection
   sel.innerHTML = '<option value="">— Elige el Bingo en que quieres jugar —</option>' +
     ssAll.map(s => {
       const dt = new Date(s.datetime_iso);
@@ -871,6 +872,7 @@ function renderSessions() {
         ' ' + dt.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
       return `<option value="${s.id}" data-btype="${s.bingo_type}">${s.bingo_nombre} — ${dstr}</option>`;
     }).join('');
+  if (prevVal) sel.value = prevVal; // restore selection after rebuild
 
   // Refresh preview in case session was pre-selected
   renderSessionPreview(sel.value);
