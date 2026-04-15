@@ -845,7 +845,7 @@ def _is_duplicate_payment_ref(ref: str, method: str, session_id: str = "") -> bo
     with db_session() as db:
         q = db.query(Voucher).filter(
             Voucher.payment_method == method,
-            Voucher.payment_status.in_(["pending_review", "approved", "manual_approved"])
+            Voucher.payment_status.in_(["pending_review", "approved", "manual_approved", "rejected"])
         )
         for v in q.all():
             if (v.payment_ref or "").strip().upper() == ref_norm:
@@ -1677,9 +1677,11 @@ def api_player_solicitar():
                 created=now,
             ))
 
+    email_sent = False
     if email:
         asunto = f"Recibimos tu solicitud - {btype['nombre']} | Bingo Pro"
         ok, err = enviar_email(email, asunto, _email_pago_recibido(v_dict))
+        email_sent = ok
         if not ok:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
@@ -1708,7 +1710,7 @@ def api_player_solicitar():
             print(f"[WARN] WhatsApp admin error: {e}")
 
     msg = "Solicitud registrada. Recibirás tu código cuando el admin confirme tu registro."
-    return jsonify({"status": "ok", "message": msg, "email": email})
+    return jsonify({"status": "ok", "message": msg, "email": email, "email_sent": email_sent})
 
 # ─── Vouchers admin ───────────────────────────────────────────────────────────
 @app.route("/api/admin/voucher", methods=["POST"])
@@ -2071,6 +2073,12 @@ def api_register_payment():
 def api_draw():
     chk = admin_required()
     if chk: return chk
+    # Block manual draw while autodraw is running to prevent double-draws
+    with game_lock:
+        _sid_check = game.session_id
+    if _sid_check and autodraw.is_session_active(_sid_check):
+        return jsonify({"error": "autodraw_active",
+                        "message": "El sorteo automático está activo. Detente antes de sacar bolillas manualmente."}), 409
     with game_lock:
         if not game.available:
             return jsonify({"status": "finished", "drawn": game.drawn})
@@ -2468,11 +2476,14 @@ def api_create_session():
         return jsonify({"error": "datetime required"}), 400
     btype = BINGO_TYPES[bingo_type]
 
-    # ── Validar que no haya otra sesión dentro de 1 hora ──────────────────────
+    # ── Validar fecha ─────────────────────────────────────────────────────────
     try:
         new_dt = datetime.fromisoformat(dt_str)
     except ValueError:
         return jsonify({"error": "Formato de fecha inválido"}), 400
+
+    if new_dt < now_peru() - timedelta(hours=1):
+        return jsonify({"error": "La fecha del Bingo debe ser en el futuro."}), 400
 
     with db_session() as db:
         conflictos = db.query(BingoSession).filter(
@@ -2533,6 +2544,18 @@ def api_update_session(sid):
             new_dt = datetime.fromisoformat(dt_str)
         except ValueError:
             return jsonify({"error": "Formato de fecha inválido"}), 400
+
+        if new_dt < now_peru() - timedelta(hours=1):
+            return jsonify({"error": "La fecha del Bingo debe ser en el futuro."}), 400
+
+        # Block bingo_type change if players already registered
+        if bingo_type != s.bingo_type:
+            has_vouchers = db.query(Voucher).filter(
+                Voucher.session_id == sid,
+                Voucher.payment_status.in_(["pending_review", "approved", "manual_approved", "pending"])
+            ).first()
+            if has_vouchers:
+                return jsonify({"error": "No se puede cambiar el tipo de Bingo: ya hay jugadores registrados para esta sesión."}), 400
 
         # Check time conflict (skip self)
         conflictos = db.query(BingoSession).filter(
@@ -3279,6 +3302,7 @@ def api_check_all():
     return jsonify({"results": results, "drawn_count": len(drawn2)})
 
 @app.route("/api/cartilla/<cid>/pdf")
+@rate_limit(max_calls=20, window_seconds=60)
 def api_pdf(cid):
     c = load_cartilla(cid.upper())
     if not c: return jsonify({"error": "not found"}), 404
@@ -3288,6 +3312,7 @@ def api_pdf(cid):
     return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=name)
 
 @app.route("/api/cartilla/<cid>/png")
+@rate_limit(max_calls=20, window_seconds=60)
 def api_png(cid):
     c = load_cartilla(cid.upper())
     if not c: return jsonify({"error": "not found"}), 404
@@ -4120,7 +4145,7 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     ]
     return "\n".join(lines)
 
-TWILIO_WA_TEMPLATE_SID = "HX57b3e729f20e7c5212f722d1890a1246"
+TWILIO_WA_TEMPLATE_SID = os.environ.get("TWILIO_WA_TEMPLATE_SID", "HX57b3e729f20e7c5212f722d1890a1246")
 
 def enviar_whatsapp(to_number: str, body: str, content_sid: str = None, content_variables: dict = None):
     """Send a WhatsApp message via Twilio. Returns (ok, error_str).

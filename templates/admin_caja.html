@@ -1198,12 +1198,12 @@ function renderGanadores(payments){
   document.getElementById('k-pagado').textContent=fmt(paid.reduce((s,p)=>s+entryPrize(p),0));
   document.getElementById('k-total-w').textContent=payments.length;
   const lp=document.getElementById('list-pending');
-  lp.innerHTML=pending.length?pending.map(p=>payRowHTML(p,false)).join(''):'<div class="empty">🎉 Sin pagos pendientes</div>';
+  lp.innerHTML=pending.length?pending.map(p=>payRowHTML(p,false,payments.indexOf(p))).join(''):'<div class="empty">🎉 Sin pagos pendientes</div>';
   const lpa=document.getElementById('list-paid');
-  lpa.innerHTML=paid.length?paid.map(p=>payRowHTML(p,true)).join(''):'<div class="empty">Aún no hay pagos registrados</div>';
+  lpa.innerHTML=paid.length?paid.map(p=>payRowHTML(p,true,payments.indexOf(p))).join(''):'<div class="empty">Aún no hay pagos registrados</div>';
 }
 
-function payRowHTML(p,isPaid){
+function payRowHTML(p,isPaid,idx){
   const isBingo=(p.tipo||'bingo')==='bingo';
   const prize=p.prize_amount||p.prize||p.u_prize||p.o_prize||p.linea_prize||0;
   const TIPO_BADGE={
@@ -1227,8 +1227,8 @@ function payRowHTML(p,isPaid){
     </div>`:'';
   const sessInfo=p.session_fecha?`${esc(p.session_fecha)} ${esc(p.session_hora||'')} · `:'';
   const actionBtn=isPaid
-    ?`<button class="btn btn-ghost btn-sm" onclick='openPayModal(${JSON.stringify(p)})'>✏️ Editar</button>`
-    :`<button class="btn btn-accent btn-sm" onclick='openPayModal(${JSON.stringify(p)})'>💸 Registrar Pago</button>`;
+    ?`<button class="btn btn-ghost btn-sm" onclick='openPayModal(${idx})'>✏️ Editar</button>`
+    :`<button class="btn btn-accent btn-sm" onclick='openPayModal(${idx})'>💸 Registrar Pago</button>`;
   const deleteBtn=p.winner_id
     ?`<button class="btn btn-sm" style="background:rgba(255,80,80,.15);color:#ff5050;border:1px solid rgba(255,80,80,.3)" onclick='deleteGanador(${p.winner_id})'>🗑️ Eliminar</button>`
     :'';
@@ -1250,7 +1250,9 @@ function payRowHTML(p,isPaid){
   </div>`;
 }
 
-function openPayModal(p){
+function openPayModal(idxOrObj){
+  const p=(typeof idxOrObj==='number')?_ganadoresData[idxOrObj]:idxOrObj;
+  if(!p) return;
   _pendingTarget=p;
   const isBingo=(p.tipo||'bingo')==='bingo';
   const prizeShow=isBingo?(p.prize||0):(p.linea_prize||0);

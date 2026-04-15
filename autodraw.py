@@ -497,6 +497,11 @@ def stop_scheduler():
 def is_running() -> bool:
     return _scheduler_running
 
+def is_session_active(session_id: str) -> bool:
+    """Returns True if autodraw is currently configured and enabled for this session."""
+    with _auto_lock:
+        return bool(_auto_config.get(session_id, {}).get("enabled", False))
+
 def get_status() -> dict:
     with _auto_lock:
         sessions = {

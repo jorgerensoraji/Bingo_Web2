@@ -611,11 +611,11 @@ let methodsData    = [];
 
 // ── Toast ──────────────────────────────────────────────
 let _tj = null;
-function showToast(msg) {
+function showToast(msg, duration) {
   const t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg; t.classList.add('show');
-  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), 3500);
+  clearTimeout(_tj); _tj = setTimeout(() => t.classList.remove('show'), duration || 3500);
 }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1113,7 +1113,11 @@ async function enviarSolicitud() {
     localStorage.setItem('bingo_yape_plin', yape_plin);
 
     showEstadoEsperando(email, method, nombres, celular);
-    showToast('✅ Solicitud enviada. Revisa tu correo electrónico.');
+    if (data.email_sent === false && email) {
+      showToast('⚠️ Solicitud enviada, pero no pudimos enviarte el email de confirmación. Guarda tu código o contáctanos.', 7000);
+    } else {
+      showToast('✅ Solicitud enviada. Revisa tu correo electrónico.');
+    }
 
     // Iniciar polling para detectar cuando el admin aprueba
     // (el jugador no tiene código todavía — usamos email como tracking)
