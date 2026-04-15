@@ -57,15 +57,18 @@ h1 { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:var(--accent);
 }
 
 /* FORM */
-.form-group { margin-bottom:14px; }
-label { display:block; font-size:.8rem; color:#c2dff0; margin-bottom:5px; font-weight:500; }
-input[type=text],input[type=number],select,textarea {
+.form-group { margin-bottom:18px; }
+label { display:block; font-size:.95rem; color:#e8f4ff; margin-bottom:7px; font-weight:700; letter-spacing:.2px; }
+input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea {
   width:100%; background:var(--card); color:var(--text);
-  border:1px solid var(--border); border-radius:8px;
-  padding:10px 14px; font-family:'Outfit',sans-serif; font-size:.9rem;
-  outline:none; transition:border-color .2s;
+  border:2px solid rgba(194,223,240,.25); border-radius:10px;
+  padding:13px 16px; font-family:'Outfit',sans-serif; font-size:1rem;
+  outline:none; transition:border-color .2s, box-shadow .2s;
 }
-input:focus,select:focus,textarea:focus { border-color:var(--accent); }
+input:focus,select:focus,textarea:focus,input[type=email]:focus,input[type=tel]:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,229,180,.12);
+}
 
 /* BUTTONS */
 .btn {
