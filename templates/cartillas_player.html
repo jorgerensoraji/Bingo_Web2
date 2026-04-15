@@ -1174,6 +1174,17 @@ function toggleYaTengoCodigo() {
   if (open) document.getElementById('inp-code-quick').focus();
 }
 
+function _sessionStatusMsg(data) {
+  const ss = data.session_status;
+  const nombre = data.bingo_nombre ? `"${data.bingo_nombre}"` : 'este Bingo';
+  if (ss === 'finished')          return `⏹️ El Bingo ${nombre} ya terminó. Este código no está disponible.`;
+  if (ss === 'cancelled')         return `🚫 El Bingo ${nombre} fue cancelado. Este código no está disponible.`;
+  if (ss === 'old_session')       return `⏹️ Este código es de un Bingo anterior que ya terminó.`;
+  if (ss === 'no_active_session') return `ℹ️ No hay un Bingo activo en este momento para este código.`;
+  if (ss === 'no_session')        return `⚠️ Este código no tiene un Bingo asignado. Contacta al organizador.`;
+  return null; // active — all good
+}
+
 async function verificarCodigoRapido() {
   const code = document.getElementById('inp-code-quick').value.trim().toUpperCase();
   if (!code) { showToast('🔑 Ingresa el código'); return; }
@@ -1188,6 +1199,8 @@ async function verificarCodigoRapido() {
       showToast(data.error === 'not_found' ? '❌ Código no encontrado' : '❌ ' + data.error);
       return;
     }
+    const ssMsg = _sessionStatusMsg(data);
+    if (ssMsg) { showToast(ssMsg, 5000); return; }
     // Ocultar el banner de acceso rápido y el formulario de registro
     document.getElementById('panel-ya-tengo-codigo').style.display = 'none';
     document.getElementById('panel-solicitud').style.display = 'none';
@@ -1220,6 +1233,8 @@ async function verificarCodigo() {
       showToast(data.error === 'not_found' ? '❌ Código no encontrado' : '❌ ' + data.error);
       return;
     }
+    const ssMsg = _sessionStatusMsg(data);
+    if (ssMsg) { showToast(ssMsg, 5000); return; }
     activeCode = code;
     lastStatus = data.payment_status;
     renderEstado(data);

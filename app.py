@@ -1995,16 +1995,41 @@ def api_voucher_status():
     ya_c     = len(v.get("cartillas", []))
     max_c    = btype.get("max_cartillas_per_voucher", 5)
     approved = v.get("payment_status") in ("approved", "manual_approved")
+
+    # Determine session_status relative to the currently active game
+    v_sid = v.get("session_id")
+    with game_lock:
+        active_sid      = game.session_id
+        active_finished = game.session_finished
+    if not v_sid:
+        session_status = "no_session"
+    elif v_sid == active_sid and not active_finished:
+        session_status = "active"
+    else:
+        # Check what happened to the voucher's session in the DB
+        with db_session() as db:
+            sx = db.query(BingoSession).filter_by(id=v_sid).first()
+            db_status = sx.status if sx else None
+        if db_status == "cancelled":
+            session_status = "cancelled"
+        elif db_status == "finished":
+            session_status = "finished"
+        elif active_sid and v_sid != active_sid:
+            session_status = "old_session"
+        else:
+            session_status = "no_active_session"
+
     return jsonify({
         "code":                v["code"],
         "payment_status":      v.get("payment_status", "pending"),
         "bingo_type":          v.get("bingo_type"),
         "bingo_nombre":        v.get("bingo_nombre"),
         "bingo_color":         btype.get("color"),
-        "session_id":          v.get("session_id"),
+        "session_id":          v_sid,
+        "session_status":      session_status,
         "cartillas_generadas": ya_c,
         "max_cartillas":       max_c,
-        "puede_generar":       approved and ya_c < max_c,
+        "puede_generar":       approved and ya_c < max_c and session_status == "active",
         "approved_at":         v.get("approved_at", ""),
         "rejected_reason":     v.get("rejected_reason", ""),
         "email_enviado":       v.get("email_codigo_enviado", False),
