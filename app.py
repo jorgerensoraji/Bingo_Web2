@@ -2555,6 +2555,8 @@ def api_prepare_session(sid):
         game.prepare_at   = time.time()
         game.prepare_secs = segundos
         game.prepare_sid  = sid
+        if s.get("bingo_type"):
+            game.bingo_type = s["bingo_type"]
         game.save_to_db()
 
     with db_session() as db:
