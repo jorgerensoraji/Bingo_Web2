@@ -791,7 +791,8 @@ async function prepararInicio(sid) {
 // ── Countdown visual ───────────────────────────────────
 function activarCountdown(sid, prepareAtISO, totalSecs) {
   if (cdTimers[sid]) clearInterval(cdTimers[sid]);
-  const startTs = new Date(prepareAtISO).getTime();
+  // prepareAtISO is a Unix timestamp string (timezone-independent)
+  const startTs = parseFloat(prepareAtISO) * 1000;
 
   function tick() {
     const el = document.getElementById(`cd-${sid}`);

@@ -2595,7 +2595,7 @@ def api_prepare_session(sid):
         sx = db.query(BingoSession).filter_by(id=sid).first()
         if sx:
             sx.status       = "preparing"
-            sx.prepare_at   = now_peru().isoformat()
+            sx.prepare_at   = str(time.time())   # Unix timestamp — timezone-independent
             sx.prepare_secs = segundos
 
     with game_lock:
