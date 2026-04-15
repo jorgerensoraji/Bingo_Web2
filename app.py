@@ -2817,10 +2817,10 @@ def _cancel_session_cleanup(db, sid: str):
             except Exception as e:
                 print(f"[WARN] Email reembolso no enviado a {v.email}: {e}")
 
-    # Delete cartillas linked to this session
+    # Delete cartillas, vouchers, and winners linked to this session
     db.query(Cartilla).filter_by(session_id=sid).delete()
-    # Delete all vouchers linked to this session
     db.query(Voucher).filter_by(session_id=sid).delete()
+    db.query(Winner).filter_by(session_id=sid).delete()
 
 @app.route("/api/admin/session/<sid>/cancel", methods=["POST"])
 def api_cancel_session(sid):
@@ -2852,6 +2852,17 @@ def api_delete_session(sid):
                             "message": "No se puede eliminar una sesión activa o en countdown."}), 400
         _cancel_session_cleanup(db, sid)
         db.delete(sx)
+    return jsonify({"status": "ok"})
+
+@app.route("/api/admin/winner/<int:wid>", methods=["DELETE"])
+def api_delete_winner(wid):
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        w = db.query(Winner).filter_by(id=wid).first()
+        if not w:
+            return jsonify({"error": "not_found"}), 404
+        db.delete(w)
     return jsonify({"status": "ok"})
 
 @app.route("/api/admin/session/<sid>/prize", methods=["GET"])
@@ -2901,6 +2912,7 @@ def api_winner_payments():
         for w, s in rows:
             tipo = w.tipo or "bingo"
             result.append({
+                "winner_id":      w.id,
                 "session_id":     w.session_id,
                 "session_fecha":  s.date       if s else "",
                 "session_hora":   s.time       if s else "",

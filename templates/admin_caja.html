@@ -1229,6 +1229,9 @@ function payRowHTML(p,isPaid){
   const actionBtn=isPaid
     ?`<button class="btn btn-ghost btn-sm" onclick='openPayModal(${JSON.stringify(p)})'>✏️ Editar</button>`
     :`<button class="btn btn-accent btn-sm" onclick='openPayModal(${JSON.stringify(p)})'>💸 Registrar Pago</button>`;
+  const deleteBtn=p.winner_id
+    ?`<button class="btn btn-sm" style="background:rgba(255,80,80,.15);color:#ff5050;border:1px solid rgba(255,80,80,.3)" onclick='deleteGanador(${p.winner_id})'>🗑️ Eliminar</button>`
+    :'';
   return `<div class="pay-row${isPaid?' is-paid':''}">
     <div class="pay-info">
       <div class="pay-name">${esc(p.nombre)} ${esc(p.apellidos||'')}${tipoBadge}</div>
@@ -1242,6 +1245,7 @@ function payRowHTML(p,isPaid){
       <div class="pay-prize${!isBingo?' linea':''}">${fmt(prize)}</div>
       <span class="badge ${isPaid?'b-ok':'b-rej'}">${isPaid?'✅ Pagado':'⏳ Pendiente'}</span>
       ${actionBtn}
+      ${deleteBtn}
     </div>
   </div>`;
 }
@@ -1263,6 +1267,17 @@ function openPayModal(p){
 }
 function closePayModal(){ document.getElementById('modal-pay').classList.remove('open'); _pendingTarget=null; }
 document.getElementById('modal-pay').addEventListener('click',function(e){ if(e.target===this) closePayModal(); });
+
+async function deleteGanador(winnerId){
+  if(!confirm('¿Eliminar este ganador? Esta acción no se puede deshacer.')) return;
+  try{
+    const res=await fetch(`/api/admin/winner/${winnerId}`,{method:'DELETE'});
+    const data=await res.json();
+    if(!res.ok){ showToast('❌ '+(data.error||'Error al eliminar')); return; }
+    showToast('✅ Ganador eliminado');
+    loadGanadores();
+  }catch(e){ showToast('❌ Error de conexión') }
+}
 
 async function confirmPay(){
   if(!_pendingTarget) return;
