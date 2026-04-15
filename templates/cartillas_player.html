@@ -355,7 +355,7 @@
         <div id="recover-panel" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">
             ¿Ya tienes tu cartilla pero no aparece aquí?<br>
-            Ingresa el <strong style="color:var(--text)">ID de cartilla</strong> (del email) o tu
+            Ingresa el <strong style="color:var(--text)">ID de cartilla</strong> (del correo) o tu
             <strong style="color:var(--text)">código de voucher</strong>:
           </div>
           <div style="display:flex;gap:6px">
@@ -431,7 +431,7 @@
         <input type="text" id="inp-apellidos" placeholder="Ej: García López" maxlength="40">
       </div>
       <div class="form-group">
-        <label>Email * <span style="color:var(--muted);font-weight:400">(recibirás tu código aquí)</span></label>
+        <label>Correo electrónico * <span style="color:var(--muted);font-weight:400">(recibirás tu código aquí)</span></label>
         <input type="email" id="inp-email" placeholder="tu@email.com" maxlength="100">
       </div>
       <div class="form-group">
@@ -731,7 +731,7 @@ function updateWizSummary() {
     <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px">
       <span style="color:var(--muted)">Nombre</span>
       <strong>${esc(nombres)} ${esc(apellidos)}</strong>
-      <span style="color:var(--muted)">Email</span>
+      <span style="color:var(--muted)">Correo</span>
       <span>${esc(email)}</span>
       <span style="color:var(--muted)">Celular</span>
       <span>${esc(cc)}${esc(rawPhone)}</span>
@@ -1111,7 +1111,7 @@ async function enviarSolicitud() {
     localStorage.setItem('bingo_yape_plin', yape_plin);
 
     showEstadoEsperando(email, method, nombres, celular);
-    showToast('✅ Solicitud enviada. Revisa tu email.');
+    showToast('✅ Solicitud enviada. Revisa tu correo electrónico.');
 
     // Iniciar polling para detectar cuando el admin aprueba
     // (el jugador no tiene código todavía — usamos email como tracking)
@@ -1157,7 +1157,7 @@ function showEstadoEsperando(email, method, nombres, celular) {
         💬 Activar notificaciones WhatsApp
       </a>
       <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">
-        ¿No tienes WhatsApp? No te preocupes, recibirás notificaciones por email.
+        ¿No tienes WhatsApp? No te preocupes, recibirás notificaciones por correo electrónico.
       </div>
     </div>`;
 }
@@ -1237,7 +1237,7 @@ function renderEstado(data) {
     manual_approved: {icon:'✅',title:'¡Pago aprobado!',cls:'pst-manual_approved',
                       sub:'Tu código está listo. Genera tu cartilla abajo.'},
     pending_review:  {icon:'⏳',title:'En revisión',cls:'pst-pending_review',
-                      sub:'El admin está verificando tu pago. Recibirás tu código por email pronto.'},
+                      sub:'El admin está verificando tu pago. Recibirás tu código por correo pronto.'},
     pending:         {icon:'🔘',title:'Sin comprobante',cls:'pst-pending',
                       sub:'Aún no registraste tu comprobante de pago.'},
     rejected:        {icon:'❌',title:'Pago rechazado',cls:'pst-rejected',
@@ -1261,7 +1261,7 @@ function renderEstado(data) {
           ${esc(data.bingo_nombre)} ·
           Cartillas: <strong>${data.cartillas_generadas}/${data.max_cartillas}</strong>
           ${data.email_enviado
-            ? ' · <span style="color:#27ae60">✅ Email enviado</span>'
+            ? ' · <span style="color:#27ae60">✅ Correo enviado</span>'
             : ''}
         </div>`:''
         }
@@ -1308,7 +1308,7 @@ function startPolling(code) {
         lastStatus = data.payment_status;
         renderEstado(data);
         if (['approved','manual_approved'].includes(data.payment_status)) {
-          showToast('🎉 ¡Tu pago fue aprobado! Revisa tu email y genera tu cartilla.');
+          showToast('🎉 ¡Tu pago fue aprobado! Revisa tu correo y genera tu cartilla.');
           clearInterval(pollJob); pollJob = null;
         } else if (data.payment_status === 'rejected') {
           showToast('❌ Tu pago fue rechazado. Contacta al organizador.');
