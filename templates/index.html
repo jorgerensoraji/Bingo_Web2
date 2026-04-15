@@ -1527,8 +1527,9 @@ document.getElementById('modal-guia').addEventListener('click', function(e){
 });
 
 // ── Fullscreen cartilla + chat ──
-var _fsCardsPlaceholder = null;
-var _fsChatPlaceholder  = null;
+var _fsCardsPlaceholder  = null;
+var _fsStatusPlaceholder = null;
+var _fsChatPlaceholder   = null;
 
 function fsSwitchTab(tab){
   var cardsPane = document.getElementById('fs-cards-pane');
@@ -1572,7 +1573,10 @@ function openFsOverlay(){
   _fsCardsPlaceholder = document.createElement('div');
   _fsCardsPlaceholder.id = 'fs-cards-ph';
   cardsWrap.parentNode.insertBefore(_fsCardsPlaceholder, cardsWrap);
-  if(statusDiv) statusDiv.parentNode.insertBefore(_fsCardsPlaceholder, statusDiv);
+
+  _fsStatusPlaceholder = document.createElement('div');
+  _fsStatusPlaceholder.id = 'fs-status-ph';
+  if(statusDiv) statusDiv.parentNode.insertBefore(_fsStatusPlaceholder, statusDiv);
 
   _fsChatPlaceholder = document.createElement('div');
   _fsChatPlaceholder.id = 'fs-chat-ph';
@@ -1585,6 +1589,9 @@ function openFsOverlay(){
 
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // Force re-render of cartilla cells in their new overlay location
+  if(typeof updateMyCartillaAutoMark === 'function') updateMyCartillaAutoMark(true);
 
   // On mobile start on cartilla tab
   if(window.innerWidth <= 700){
@@ -1606,13 +1613,17 @@ function closeFsOverlay(){
   var chatPanel  = document.getElementById('chat-panel');
 
   // Restore elements to original positions using placeholders
-  var cardsPh = document.getElementById('fs-cards-ph');
-  var chatPh  = document.getElementById('fs-chat-ph');
+  var cardsPh  = document.getElementById('fs-cards-ph');
+  var statusPh = document.getElementById('fs-status-ph');
+  var chatPh   = document.getElementById('fs-chat-ph');
 
   if(cardsPh){
-    if(statusDiv) cardsPh.parentNode.insertBefore(statusDiv, cardsPh);
     cardsPh.parentNode.insertBefore(cardsWrap, cardsPh);
     cardsPh.remove();
+  }
+  if(statusPh){
+    if(statusDiv) statusPh.parentNode.insertBefore(statusDiv, statusPh);
+    statusPh.remove();
   }
   if(chatPh){
     chatPh.parentNode.insertBefore(chatPanel, chatPh);
