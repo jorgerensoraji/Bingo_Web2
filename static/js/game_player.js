@@ -372,8 +372,76 @@ function handleAdminOffline() {
   }, 5000);
 }
 
+// ── Winner sounds (Web Audio API — no files needed) ──────────────────────────
+var _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === 'closed')
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+function _note(ctx, freq, start, dur, vol, type) {
+  var osc = ctx.createOscillator();
+  var g   = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, start);
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(vol, start + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(start); osc.stop(start + dur);
+}
+
+// 2-second jingle — for Línea / U / O winners
+function playMiniWinSound() {
+  if (!soundEnabled) return;
+  try {
+    var ctx = _getAudioCtx(), t = ctx.currentTime;
+    // Rising 4-note fanfare: C5 E5 G5 C6
+    [523, 659, 784, 1047].forEach(function(f, i) {
+      _note(ctx, f,       t + i * 0.18, 0.32, 0.45, 'sine');
+      _note(ctx, f * 0.5, t + i * 0.18, 0.28, 0.15, 'triangle');
+    });
+    // Short sustain chord
+    [523, 659, 784, 1047].forEach(function(f) {
+      _note(ctx, f, t + 0.85, 1.0, 0.25, 'sine');
+    });
+  } catch(e) {}
+}
+
+// 5-second celebration — for Bingo / Apagón
+function playBingoWinSound() {
+  if (!soundEnabled) return;
+  try {
+    var ctx = _getAudioCtx(), t = ctx.currentTime;
+    // Opening boom
+    _note(ctx, 80,  t,      0.7, 0.5, 'sawtooth');
+    _note(ctx, 160, t,      0.5, 0.3, 'sawtooth');
+    _note(ctx, 1047, t,     0.4, 0.5, 'sine');
+    // First ascending run: C5→E5→G5→C6→E6→G6
+    [523, 659, 784, 1047, 1319, 1568].forEach(function(f, i) {
+      _note(ctx, f,     t + 0.3 + i * 0.15, 0.28, 0.5, 'sine');
+      _note(ctx, f * 2, t + 0.3 + i * 0.15, 0.22, 0.2, 'triangle');
+    });
+    // Sustained chord
+    [523, 659, 784, 1047].forEach(function(f) {
+      _note(ctx, f, t + 1.5, 2.0, 0.28, 'sine');
+    });
+    // Second run at 2.1s
+    [523, 659, 784, 1047, 1319, 1568].forEach(function(f, i) {
+      _note(ctx, f, t + 2.1 + i * 0.12, 0.22, 0.42, 'sine');
+    });
+    // Final big chord
+    [523, 659, 784, 1047, 2093].forEach(function(f) {
+      _note(ctx, f, t + 3.8, 1.2, 0.32, 'sine');
+    });
+  } catch(e) {}
+}
+
 // ── BANNER GLOBAL DE GANADOR (visible para todos) ────────────────────────────
-var _lastBannerKey = '';
+var _lastBannerKey  = '';
+var _lastBingoSndKey = '';
+var _lastMiniSndKey  = '';
 
 function showGlobalWinnerBanner(winners, lineaWinners, isPaused, uWinners, oWinners) {
   var hasBingo = winners && winners.length > 0;
@@ -392,11 +460,23 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused, uWinners, oWinn
   if (!hasBingo && !hasLinea && !hasU && !hasO) {
     el.style.display = 'none';
     el.innerHTML = '';
-    _lastBannerKey = '';
+    _lastBannerKey   = '';
+    _lastBingoSndKey = '';
+    _lastMiniSndKey  = '';
     return;
   }
 
   el.style.cssText = 'display:flex;flex-direction:column;gap:0;';
+
+  // Fire sounds for new winners (independent of HTML rebuild)
+  var bingoKey = hasBingo ? winners.map(function(w){return w.id;}).join(',') : '';
+  var miniKey  = (hasLinea ? lineaWinners.map(function(w){return w.id;}).join(',') : '') +
+                 '|' + (hasU ? uWinners.map(function(w){return w.id;}).join(',') : '') +
+                 '|' + (hasO ? oWinners.map(function(w){return w.id;}).join(',') : '');
+  if (bingoKey && bingoKey !== _lastBingoSndKey) { playBingoWinSound(); launchConfetti(); }
+  if (miniKey !== '||' && miniKey !== _lastMiniSndKey) playMiniWinSound();
+  _lastBingoSndKey = bingoKey;
+  _lastMiniSndKey  = miniKey;
 
   // Only rebuild HTML when winners change
   if (key === _lastBannerKey) return;
@@ -467,9 +547,6 @@ function showGlobalWinnerBanner(winners, lineaWinners, isPaused, uWinners, oWinn
       ' &nbsp;|&nbsp; <span style="font-weight:400;font-size:.82rem">Juego detenido ⏸</span>' +
       '</div>';
 
-    // Play winner alert sound once per new winner
-    if (soundEnabled) playWinAlert();
-    launchConfetti();
   }
 
   el.innerHTML = html;
@@ -559,7 +636,9 @@ function handleSessionFinished() {
   activeSessionId = null;
   myCartillas    = [];
   cartillaStates = {};
-  _lastBannerKey = '';
+  _lastBannerKey   = '';
+  _lastBingoSndKey = '';
+  _lastMiniSndKey  = '';
   var bannerEl = document.getElementById('winner-zone');
   if (bannerEl) { bannerEl.style.display = 'none'; bannerEl.innerHTML = ''; }
   var psBanner = document.getElementById('player-session-banner');
@@ -1118,6 +1197,7 @@ function getCartillaState(cid) {
 }
 
 function playWinAlert() {
+  playBingoWinSound();
   if (!soundEnabled) return;
   var voice = (document.getElementById('player-voice-select') || {}).value || 'es-PE-CamilaNeural';
   playPhrase('¡Bingo! ¡Felicidades, ganaste!', voice);
