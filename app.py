@@ -3285,7 +3285,7 @@ def api_get_cartilla(cid):
     if csid:
         with db_session() as db:
             sx = db.query(BingoSession).filter_by(id=csid).first()
-            if not sx or sx.status == "cancelled":
+            if sx and sx.status == "cancelled":
                 return jsonify({"error": "session cancelled"}), 404
             session_status = sx.status
             session_nombre = sx.bingo_nombre
