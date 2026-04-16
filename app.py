@@ -294,7 +294,7 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
         <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 Cartón lleno o Bingo</td><td style="text-align:right;color:#00e5b4;font-weight:700">{round(bt.get('prize_pct',0.55)*100,0):.0f}% mínimo</td></tr>
       </table>
       <div style="margin-top:8px;font-size:.76rem;color:#3a5568;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">
-        💡 Si nadie gana U o O, esos premios se acumulan al BINGO. <strong style="color:#ddeeff">El 100% vuelve a los jugadores.</strong>
+        💡 Si nadie gana U o O, esos premios se acumulan al BINGO.
       </div>
     </div>
   </div>
@@ -3816,7 +3816,7 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
         </tr>
       </table>
       <div style="font-size:.73rem;color:#3a5568;margin-top:6px;padding:0 4px">
-        * Si nadie gana O o U, esos premios se acumulan al BINGO. El 100% vuelve a los jugadores.
+        * Si nadie gana O o U, esos premios se acumulan al BINGO.
       </div>
     </div>
 
