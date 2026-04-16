@@ -3171,7 +3171,7 @@ def api_generate():
 
     # Use voucher's player name as fallback if none was provided
     if not nombre and vinfo:
-        nombre = (vinfo.get("nombre") or "").strip()[:40]
+        nombre = (vinfo.get("nombres") or "").strip()[:40]
     if not nombre:
         nombre = "Jugador"
 
@@ -3212,7 +3212,7 @@ def api_save_manual():
     vinfo      = get_voucher_info(code) if code else None
     # Use voucher's player name as fallback if none was provided
     if not nombre and vinfo:
-        nombre = (vinfo.get("nombre") or "").strip()[:40]
+        nombre = (vinfo.get("nombres") or "").strip()[:40]
     if not nombre:
         nombre = "Jugador"
     session_id = (vinfo.get("session_id") if vinfo else None) or ""

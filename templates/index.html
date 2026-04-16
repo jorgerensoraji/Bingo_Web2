@@ -1066,6 +1066,11 @@
       </div>
 
       <!-- Banner comprar cartilla -->
+      <div id="banner-waiting" style="display:none;text-align:center;padding:18px 16px;background:rgba(0,229,180,.07);border:1px solid rgba(0,229,180,.25);border-radius:14px;margin-bottom:8px">
+        <div style="font-size:1.5rem;margin-bottom:6px">🎴</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--accent);letter-spacing:1px">¡Tu cartilla está lista!</div>
+        <div style="color:var(--muted);font-size:.82rem;margin-top:4px">Aparecerá aquí automáticamente cuando el admin inicie el juego.</div>
+      </div>
       <div id="banner-comprar">
         <span class="banner-badge">⚡ ACCIÓN REQUERIDA</span>
         <span class="banner-icon">🎴</span>
@@ -1683,19 +1688,27 @@ function toggleYaCodigo() {
 }
 
 // Auto-expand "¿Ya tienes tu código?" when localStorage is empty
+// Also hide buy banner if player already has a cartilla/code
 (function() {
   try {
-    const arr = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-    if (!arr.length) {
-      document.addEventListener('DOMContentLoaded', function() {
+    const arr  = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+    const code = (localStorage.getItem('bingo_access_code') || '').trim();
+    const hasCartilla = arr.length > 0 || code.length > 0;
+    document.addEventListener('DOMContentLoaded', function() {
+      if (hasCartilla) {
+        var bannerBuy     = document.getElementById('banner-comprar');
+        var bannerWaiting = document.getElementById('banner-waiting');
+        if (bannerBuy)     bannerBuy.style.display     = 'none';
+        if (bannerWaiting) bannerWaiting.style.display = 'block';
+      } else {
         const body  = document.getElementById('yc-body');
         const arrow = document.getElementById('yc-arrow');
         if (body && body.style.display === 'none') {
           body.style.display = 'block';
           if (arrow) arrow.textContent = '▲ Ocultar';
         }
-      });
-    }
+      }
+    });
   } catch(e) {}
 })();
 
