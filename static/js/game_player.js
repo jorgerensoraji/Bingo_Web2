@@ -717,7 +717,6 @@ async function syncState() {
       myCartillas = [];
       cartillaStates = {};
       updateMyCartillaAutoMark(true);
-      showToast('⚠️ La sesión fue cancelada. Tus cartillas han sido retiradas.', 6000);
     }
 
     if (activeSessionId && activeSessionId !== prevSid && myCartillas.length) {
@@ -1312,9 +1311,7 @@ async function loadAllCartillas() {
     showToast('⚠️ ' + wrongSession + ' cartilla(s) de otro Bingo fueron ignoradas.', 4000);
   }
   if (!myCartillas.length) {
-    if (sessionCancelled > 0) {
-      showToast('❌ Tu sesión fue cancelada. Contacta al organizador.', 5000);
-    } else {
+    if (!sessionCancelled) {
       showToast('❌ No se encontraron cartillas válidas');
     }
     return;
