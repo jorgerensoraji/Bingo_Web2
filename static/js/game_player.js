@@ -713,10 +713,9 @@ async function syncState() {
     if (data.session_id) activeSessionId = data.session_id;
     else if (data.prepare_sid) activeSessionId = data.prepare_sid;
 
-    // Auto-load cartillas when game/prepare becomes active and player has stored cartillas
-    const justActivated = !prevSid && activeSessionId;
+    // Auto-load cartillas when a live session_id appears for the first time
     const storedCartillas = (function() { try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) { return []; } })();
-    if (justActivated && myCartillas.length === 0 && storedCartillas.length > 0) {
+    if (data.session_id && data.session_id !== prevSid && myCartillas.length === 0 && storedCartillas.length > 0) {
       loadAllCartillas();
     }
 
