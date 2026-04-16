@@ -1683,25 +1683,22 @@ function toggleYaCodigo() {
 }
 
 // Auto-expand "¿Ya tienes tu código?" when localStorage is empty
-// Hide buy banner if player already has a cartilla/code
+// Auto-expand "¿Ya tienes tu código?" when localStorage is empty
 (function() {
   try {
     const arr  = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
     const code = (localStorage.getItem('bingo_access_code') || '').trim();
     const hasCartilla = arr.length > 0 || code.length > 0;
-    document.addEventListener('DOMContentLoaded', function() {
-      if (hasCartilla) {
-        var bannerBuy = document.getElementById('banner-comprar');
-        if (bannerBuy) bannerBuy.style.display = 'none';
-      } else {
+    if (!hasCartilla) {
+      document.addEventListener('DOMContentLoaded', function() {
         const body  = document.getElementById('yc-body');
         const arrow = document.getElementById('yc-arrow');
         if (body && body.style.display === 'none') {
           body.style.display = 'block';
           if (arrow) arrow.textContent = '▲ Ocultar';
         }
-      }
-    });
+      });
+    }
   } catch(e) {}
 })();
 
