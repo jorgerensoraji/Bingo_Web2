@@ -278,6 +278,9 @@
         <label class="label">Máx. jugadores (0 = sin límite)</label>
         <input type="number" id="inp-max" class="inp" value="0" min="0">
 
+        <label class="label">Pozo fijo S/. (0 = calcular según jugadores)</label>
+        <input type="number" id="inp-premio-fijo" class="inp" value="0" min="0" step="0.01" placeholder="Ej: 100">
+
         <!-- Vista previa del pozo estimado -->
         <div class="preview-box" id="preview-box">
           <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);
@@ -520,14 +523,15 @@ function updatePreview() {
   const body = document.getElementById('preview-body');
   if (!bt) return;
 
+  const fijo    = parseFloat(document.getElementById('inp-premio-fijo')?.value) || 0;
   const ejemplo = max > 0 ? max : 10;
-  const gross   = ejemplo * bt.precio;
+  const gross   = fijo > 0 ? fijo : ejemplo * bt.precio;
   const bingo   = gross * bt.prize_pct;
   const oAmt    = gross * (bt.o_pct || 0.15);
   const uAmt    = gross * (bt.u_pct || 0.13);
   const linea   = gross * bt.linea_pct;
   const casa    = gross - bingo - oAmt - uAmt - linea;
-  const label   = max > 0 ? `${max} jugadores (límite)` : `${ejemplo} jugadores (ejemplo)`;
+  const label   = fijo > 0 ? `Pozo fijo S/. ${fijo.toFixed(2)}` : (max > 0 ? `${max} jugadores (límite)` : `${ejemplo} jugadores (ejemplo)`);
 
   body.innerHTML = `
     <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">${label}</div>
@@ -872,9 +876,10 @@ async function deleteSession(sid) {
 }
 
 async function createSession() {
-  const dt   = document.getElementById('inp-datetime').value;
-  const desc = document.getElementById('inp-desc').value.trim();
-  const max  = parseInt(document.getElementById('inp-max').value) || 0;
+  const dt    = document.getElementById('inp-datetime').value;
+  const desc  = document.getElementById('inp-desc').value.trim();
+  const max   = parseInt(document.getElementById('inp-max').value) || 0;
+  const fijo  = parseFloat(document.getElementById('inp-premio-fijo').value) || 0;
   if (!dt) { showToast('⚠️ Elige fecha y hora'); return; }
 
   const res  = await fetch('/api/admin/session', {
@@ -882,7 +887,7 @@ async function createSession() {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({
       bingo_type: selBtype, datetime: dt,
-      descripcion: desc, max_players: max,
+      descripcion: desc, max_players: max, premio_fijo: fijo,
     }),
   });
   const data = await res.json();
@@ -944,6 +949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Actualizar preview al cambiar max jugadores
   document.getElementById('inp-max')?.addEventListener('input', updatePreview);
+  document.getElementById('inp-premio-fijo')?.addEventListener('input', updatePreview);
 
   await buildBtypes();   // cargar tipos ANTES de renderizar sesiones
   loadSessions();
@@ -1409,6 +1415,7 @@ function openEditSession(sid) {
   document.getElementById('edit-datetime').value    = s.datetime_iso ? s.datetime_iso.slice(0,16) : '';
   document.getElementById('edit-desc').value        = s.descripcion || '';
   document.getElementById('edit-max').value         = s.max_players || 0;
+  document.getElementById('edit-premio-fijo').value = s.premio_fijo || 0;
   // Set bingo type select
   const sel = document.getElementById('edit-btype');
   for (let i = 0; i < sel.options.length; i++) {
@@ -1426,13 +1433,14 @@ async function saveEditSession() {
   const dt       = document.getElementById('edit-datetime').value;
   const desc     = document.getElementById('edit-desc').value.trim();
   const max      = parseInt(document.getElementById('edit-max').value) || 0;
+  const fijo     = parseFloat(document.getElementById('edit-premio-fijo').value) || 0;
   const btype    = document.getElementById('edit-btype').value;
   if (!dt) { showToast('⚠️ Elige fecha y hora'); return; }
 
   const res  = await fetch(`/api/admin/session/${sid}`, {
     method:  'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ bingo_type: btype, datetime: dt, descripcion: desc, max_players: max }),
+    body:    JSON.stringify({ bingo_type: btype, datetime: dt, descripcion: desc, max_players: max, premio_fijo: fijo }),
   });
   const data = await res.json();
   if (!res.ok) {
@@ -1473,6 +1481,11 @@ async function saveEditSession() {
     <div class="tfield">
       <label class="tlabel">Límite de jugadores (0 = sin límite)</label>
       <input id="edit-max" type="number" class="tinput" min="0" max="9999" value="0">
+    </div>
+
+    <div class="tfield">
+      <label class="tlabel">Pozo fijo S/. (0 = calcular según jugadores)</label>
+      <input id="edit-premio-fijo" type="number" class="tinput" min="0" step="0.01" value="0" placeholder="Ej: 100">
     </div>
 
     <div class="tmodal-actions">

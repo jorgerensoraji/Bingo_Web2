@@ -1233,12 +1233,17 @@ def compute_prize_pool(session_id: str, bingo_type: str) -> dict:
     linea_pct = btype.get("linea_pct", 0.04)
     u_pct     = btype.get("u_pct", 0.13)
     o_pct     = btype.get("o_pct", 0.15)
+    # Check for fixed prize pool on the session
+    premio_fijo = 0.0
     with db_session() as db:
+        sx = db.query(BingoSession).filter_by(id=session_id).first()
+        if sx and sx.premio_fijo and sx.premio_fijo > 0:
+            premio_fijo = sx.premio_fijo
         paid = (db.query(Voucher)
                 .filter_by(session_id=session_id, bingo_type=bingo_type)
                 .filter(Voucher.payment_status.in_(["approved", "manual_approved"]))
                 .count())
-    gross  = paid * precio
+    gross  = premio_fijo if premio_fijo > 0 else paid * precio
     linea  = round(gross * linea_pct, 2)
     u_amt  = round(gross * u_pct, 2)
     o_amt  = round(gross * o_pct, 2)
@@ -2531,6 +2536,7 @@ def api_create_session():
             time=dt_str[11:16] if len(dt_str) >= 16 else "00:00",
             descripcion=data.get("descripcion", ""),
             max_players=int(data.get("max_players", 0)),
+            premio_fijo=float(data.get("premio_fijo") or 0),
             status="scheduled",
             created=now_peru().isoformat(),
         )
@@ -2601,6 +2607,7 @@ def api_update_session(sid):
         s.time         = dt_str[11:16] if len(dt_str) >= 16 else "00:00"
         s.descripcion  = (data.get("descripcion") or "").strip()[:300]
         s.max_players  = int(data.get("max_players") or 0)
+        s.premio_fijo  = float(data.get("premio_fijo") or 0)
         db.flush()
         s_dict = s.to_dict()
     return jsonify({"status": "ok", "session": s_dict})

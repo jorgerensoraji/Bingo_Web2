@@ -106,6 +106,7 @@ class Session(Base):
     finished_at   = Column(String(30),  nullable=True)
     prepare_at    = Column(String(30),  nullable=True)
     prepare_secs  = Column(Integer,     default=60)
+    premio_fijo   = Column(Float,       default=0.0)
     # JSON blobs
     prize_info    = Column(Text,        default="{}")
     winners_final = Column(Text,        default="[]")
@@ -139,6 +140,7 @@ class Session(Base):
             "finished_at":   self.finished_at,
             "prepare_at":    self.prepare_at,
             "prepare_secs":  self.prepare_secs,
+            "premio_fijo":   self.premio_fijo or 0.0,
             "prize_info":    pi,
             "winners_final": wf,
         }
