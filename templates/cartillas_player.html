@@ -1343,7 +1343,7 @@ function startPolling(code) {
 // ── Generar cartilla automática ────────────────────────
 async function generateAuto() {
   const code   = activeCode || document.getElementById('inp-code-check')?.value.trim().toUpperCase();
-  const nombre = document.getElementById('inp-name-cartilla')?.value.trim() || 'Jugador';
+  const nombre = document.getElementById('inp-name-cartilla')?.value.trim() || '';
   const count  = parseInt(document.getElementById('inp-count')?.value) || 1;
   if (!code) { showToast('🔑 Ingresa tu código primero'); return; }
   localStorage.setItem('bingo_access_code', code);
@@ -1508,7 +1508,7 @@ function selectedToGrid() {
 
 async function saveManual() {
   const code   = activeCode || document.getElementById('inp-code-check')?.value.trim().toUpperCase();
-  const nombre = document.getElementById('inp-name-cartilla')?.value.trim() || 'Jugador';
+  const nombre = document.getElementById('inp-name-cartilla')?.value.trim() || '';
   if (!code) { showToast('🔑 Ingresa tu código'); return; }
   if (selected.size!==24) { showToast('⚠️ Selecciona exactamente 24 números'); return; }
   let grid;
