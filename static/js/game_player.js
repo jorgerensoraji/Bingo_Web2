@@ -48,6 +48,7 @@ let resetPending   = false;
 
 // ── SESIÓN ACTIVA ─────────────────────────────────────
 let activeSessionId  = null;   // se actualiza desde /api/state
+let liveSessionId    = null;   // sólo se setea cuando hay session_id live (no scheduled)
 let adminWhatsapp    = '';     // número de WhatsApp del admin (desde /api/state)
 
 // ── MI CARTILLA ───────────────────────────────────────
@@ -709,8 +710,9 @@ async function syncState() {
     if (data.admin_whatsapp) adminWhatsapp = data.admin_whatsapp;
 
     // Re-filter loaded cartillas if active session changed
-    const prevSid = activeSessionId;
-    if (data.session_id) activeSessionId = data.session_id;
+    const prevSid      = activeSessionId;
+    const prevLiveSid  = liveSessionId;
+    if (data.session_id) { activeSessionId = data.session_id; liveSessionId = data.session_id; }
     else if (data.prepare_sid) activeSessionId = data.prepare_sid;
 
     // Auto-load cartillas when a live session_id appears for the first time
@@ -719,8 +721,8 @@ async function syncState() {
       loadAllCartillas();
     }
 
-    // Session was cancelled/deleted while player was watching
-    if (prevSid && !data.session_id && myCartillas.length) {
+    // Only clear cartillas when a truly live session disappears (not a scheduled one)
+    if (prevLiveSid && !data.session_id && myCartillas.length) {
       myCartillas = [];
       cartillaStates = {};
       updateMyCartillaAutoMark(true);
