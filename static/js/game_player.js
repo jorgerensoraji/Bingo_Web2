@@ -1328,9 +1328,7 @@ async function loadAllCartillas() {
 
   const banner = document.getElementById('banner-comprar');
   if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
-  var bannerWaiting = document.getElementById('banner-waiting');
-  if (bannerWaiting) bannerWaiting.style.display = 'none';
-  updateMyCartillaAutoMark(true);
+updateMyCartillaAutoMark(true);
   showToast('✅ ' + myCartillas.length + ' cartilla(s) cargada(s)');
   showPlayerSessionBanner();
   var wrapEl = document.getElementById('mis-cartillas-wrap');
