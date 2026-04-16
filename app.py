@@ -47,7 +47,7 @@ except ModuleNotFoundError:
     autodraw = _AutoDrawStub()
 from collections import defaultdict
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 _PERU_TZ = ZoneInfo("America/Lima")
