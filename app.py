@@ -2016,6 +2016,8 @@ def api_voucher_status():
             session_status = "cancelled"
         elif db_status == "finished":
             session_status = "finished"
+        elif db_status in ("scheduled", "preparing"):
+            session_status = "active"
         elif active_sid and v_sid != active_sid:
             session_status = "old_session"
         else:
