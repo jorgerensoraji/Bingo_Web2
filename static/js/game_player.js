@@ -1250,9 +1250,10 @@ async function loadAllCartillas() {
         showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
         return;
       }
-      // Use session_id, or prepare_sid during countdown
+      // Use session_id, or prepare_sid during countdown, or next scheduled session
       if (sd.session_id) activeSessionId = sd.session_id;
       else if (sd.prepare_sid) activeSessionId = sd.prepare_sid;
+      else if (sd.next_session_id) activeSessionId = sd.next_session_id;
     } catch(e) {}
   }
 

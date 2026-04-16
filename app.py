@@ -2242,6 +2242,19 @@ def api_state():
             except Exception:
                 pass
 
+    # If no active or preparing game, find the next scheduled session
+    next_sid = None
+    if not sid and not prepare_sid:
+        try:
+            with db_session() as db:
+                next_s = db.query(BingoSession).filter(
+                    BingoSession.status.in_(["scheduled", "preparing"])
+                ).order_by(BingoSession.datetime_iso.asc()).first()
+                if next_s:
+                    next_sid = next_s.id
+        except Exception:
+            pass
+
     with game_lock:
         return jsonify({
             "drawn":          game.drawn,
@@ -2278,6 +2291,7 @@ def api_state():
             "prepare_at":       game.prepare_at,
             "prepare_secs":     game.prepare_secs,
             "prepare_sid":      prepare_sid,
+            "next_session_id":  next_sid,
             "session_finished": game.session_finished,
             "admin_whatsapp":   _load_config().get("whatsapp", ""),
         })
