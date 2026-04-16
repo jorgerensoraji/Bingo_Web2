@@ -711,6 +711,14 @@ async function syncState() {
     // Re-filter loaded cartillas if active session changed
     const prevSid = activeSessionId;
     if (data.session_id) activeSessionId = data.session_id;
+    else if (data.prepare_sid) activeSessionId = data.prepare_sid;
+
+    // Auto-load cartillas when game/prepare becomes active and player has stored cartillas
+    const justActivated = !prevSid && activeSessionId;
+    const storedCartillas = (function() { try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) { return []; } })();
+    if (justActivated && myCartillas.length === 0 && storedCartillas.length > 0) {
+      loadAllCartillas();
+    }
 
     // Session was cancelled/deleted while player was watching
     if (prevSid && !data.session_id && myCartillas.length) {
@@ -1319,6 +1327,8 @@ async function loadAllCartillas() {
 
   const banner = document.getElementById('banner-comprar');
   if (banner) { banner.style.transition='opacity .4s'; banner.style.opacity='0'; setTimeout(function(){ banner.style.display='none'; }, 420); }
+  var bannerWaiting = document.getElementById('banner-waiting');
+  if (bannerWaiting) bannerWaiting.style.display = 'none';
   updateMyCartillaAutoMark(true);
   showToast('✅ ' + myCartillas.length + ' cartilla(s) cargada(s)');
   showPlayerSessionBanner();
