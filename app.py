@@ -1289,10 +1289,12 @@ def compute_prize_pool(session_id: str, bingo_type: str) -> dict:
         sx = db.query(BingoSession).filter_by(id=session_id).first()
         if sx and sx.premio_fijo and sx.premio_fijo > 0:
             premio_fijo = sx.premio_fijo
-        paid = (db.query(Voucher)
+        # Sum actual cartillas sold (voucher.max_cartillas), not just voucher count
+        vouchers = (db.query(Voucher)
                 .filter_by(session_id=session_id, bingo_type=bingo_type)
                 .filter(Voucher.payment_status.in_(["approved", "manual_approved"]))
-                .count())
+                .all())
+        paid = sum(v.max_cartillas or 1 for v in vouchers)
     gross  = premio_fijo if premio_fijo > 0 else paid * precio
     linea  = round(gross * linea_pct, 2)
     u_amt  = round(gross * u_pct, 2)
