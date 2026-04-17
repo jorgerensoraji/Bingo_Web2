@@ -582,6 +582,23 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                 else:
                     no_voucher.append(c)
 
+            # Build winner cartilla attachments once — same for every player
+            tipo_label = {"bingo": "ganador_bingo", "linea": "ganador_letraI",
+                          "u": "ganador_letraU", "o": "ganador_letraO"}
+            cartilla_by_id = {c["id"]: c for c in cartillas}
+            winner_attachments = []
+            if winners:
+                for w in winners:
+                    cid  = w.get("id") or w.get("cartilla_id", "")
+                    tipo = w.get("tipo", "bingo")
+                    c    = cartilla_by_id.get(cid)
+                    if not c:
+                        continue
+                    buf = cartilla_to_png(c, drawn)
+                    b64 = base64.b64encode(buf.read()).decode()
+                    label = tipo_label.get(tipo, "ganador")
+                    winner_attachments.append({"content": b64, "name": f"{label}_{cid}.png"})
+
             sent_count = 0
             for vc, clist in by_voucher.items():
                 vinfo = voucher_map[vc]
@@ -605,6 +622,7 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                     buf = cartilla_to_png(c, drawn)
                     b64 = base64.b64encode(buf.read()).decode()
                     attachments.append({"content": b64, "name": f"cartilla_{c['id']}.png"})
+                attachments.extend(winner_attachments)
                 html = _email_resumen_bingo(nombre, bingo_nombre, drawn, first_result, url_base, winners)
                 subject = f"🎱 Resumen de tu Bingo — {bingo_nombre}"
                 ok, err = enviar_email(email, subject, html, attachments)
