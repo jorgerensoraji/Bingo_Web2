@@ -903,7 +903,8 @@ async function refreshVouchers(){
 
 function renderVoucherRow(v){
     const who=[v.nombres,v.apellidos].filter(Boolean).join(' ');
-    const bt=getBT(v.bingo_type);
+    const _btd=getBT(v.bingo_type);
+    const bt={nombre:v.bingo_nombre||_btd.nombre||v.bingo_type, color:_btd.color, emoji:_btd.emoji, max_cartillas:v.max_cartillas||_btd.max_cartillas||1};
     const dt=(v.payment_submitted_at||v.created||'').replace('T',' ').slice(0,16);
     const pst=v.payment_status||'pending';
     const isDup=dupRefs.has(v.code);
@@ -928,7 +929,7 @@ function renderVoucherRow(v){
         ?`<span class="email-not-sent">⚠️ No enviado</span>`
         :`<span class="email-not-sent">—</span>`);
     const cAct=(v.cartillas||[]).length;
-    const cMax=getBT(v.bingo_type).max_cartillas||1;
+    const cMax=Math.max(v.max_cartillas||1, cAct);
     const cHtml=`<span style="color:${cAct>0?'var(--accent)':'var(--muted)'}">${cAct}/${cMax}</span>`;
     const origen=v.creado_por==='jugador'
       ?'<span style="font-size:.65rem;color:var(--accent)">🙋 Jugador</span>'
@@ -1021,7 +1022,8 @@ function abrirModalAprobacion(code){
   const v=allVouchers.find(x=>x.code===code);
   if(!v) return;
   pendingApprove=code;
-  const bt=getBT(v.bingo_type);
+  const _btd2=getBT(v.bingo_type);
+  const bt={nombre:v.bingo_nombre||_btd2.nombre||v.bingo_type, color:_btd2.color, emoji:_btd2.emoji};
   const who=[v.nombres,v.apellidos].filter(Boolean).join(' ')||'—';
   document.getElementById('modal-detalle').innerHTML=`
     <div class="detail-row"><span>Código</span><span class="code-mono">${v.code}</span></div>
