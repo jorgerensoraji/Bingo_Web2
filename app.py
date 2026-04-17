@@ -3219,7 +3219,7 @@ def api_generate():
             return jsonify({"error": err}), 403
         vinfo       = get_voucher_info(code)
         btype       = BINGO_TYPES.get(vinfo.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
-        max_c       = btype.get("max_cartillas_per_voucher", 5)
+        max_c       = vinfo.get("max_cartillas") or btype.get("max_cartillas_per_voucher", 5)
         ya_tiene    = len(vinfo.get("cartillas", []))
         disponibles = max_c - ya_tiene
         if disponibles <= 0:
