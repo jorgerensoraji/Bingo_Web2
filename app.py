@@ -2892,7 +2892,7 @@ def _cancel_session_cleanup(db, sid: str):
         if existing:
             continue
         btype = BINGO_TYPES.get(v.bingo_type, BINGO_TYPES["1sol"])
-        amount = btype.get("precio", v.precio or 0.0)
+        amount = v.precio or btype.get("precio", 0.0)
         r = Reimbursement(
             session_id=sid,
             session_nombre=session_nombre,
