@@ -1050,12 +1050,12 @@
           <div style="display:flex;gap:6px;width:100%;box-sizing:border-box">
             <input id="yc-input" type="text" placeholder="ID cartilla o código" maxlength="8"
                    oninput="this.value=this.value.toUpperCase()"
-                   onkeydown="if(event.key==='Enter') cargarPorCodigo()"
+                   onkeydown="if(event.key==='Enter'){ var c=(this.value||'').trim().toUpperCase(); if(c) window.location.href='/cartillas?code='+encodeURIComponent(c); }"
                    style="flex:1;min-width:0;background:var(--sub);border:1px solid var(--border);border-radius:8px;
                           padding:8px 10px;color:var(--text);font-family:Outfit,sans-serif;
                           font-size:.9rem;font-weight:900;text-align:center;letter-spacing:3px;outline:none;
                           text-transform:uppercase;box-sizing:border-box">
-            <button onclick="cargarPorCodigo()"
+            <button onclick="var c=(document.getElementById('yc-input').value||'').trim().toUpperCase(); if(c) window.location.href='/cartillas?code='+encodeURIComponent(c); else document.getElementById('yc-input').focus();"
                     style="flex-shrink:0;padding:8px 12px;border:none;border-radius:8px;
                            background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);
                            color:var(--accent);font-family:Outfit,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer">
