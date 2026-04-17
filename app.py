@@ -2052,7 +2052,7 @@ def api_voucher_status():
         return jsonify({"error": "not_found"}), 404
     btype    = BINGO_TYPES.get(v.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     ya_c     = len(v.get("cartillas", []))
-    max_c    = btype.get("max_cartillas_per_voucher", 5)
+    max_c    = v.get("max_cartillas") or btype.get("max_cartillas_per_voucher", 1)
     approved = v.get("payment_status") in ("approved", "manual_approved")
 
     # Determine session_status relative to the currently active game

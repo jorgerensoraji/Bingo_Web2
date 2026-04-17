@@ -1338,7 +1338,8 @@ function renderEstado(data) {
     if (bar) {
       bar.style.display = 'block';
       bar.innerHTML = `<strong style="color:var(--accent)">${esc(data.bingo_nombre)}</strong>
-        — Cartillas disponibles: <strong>${data.max_cartillas - data.cartillas_generadas}</strong>`;
+        — Generadas: <strong>${data.cartillas_generadas}/${data.max_cartillas}</strong>
+        — Disponibles: <strong>${data.max_cartillas - data.cartillas_generadas}</strong>`;
     }
     const countInput = document.getElementById('inp-count');
     if (countInput) countInput.max = Math.max(1, data.max_cartillas - data.cartillas_generadas);
