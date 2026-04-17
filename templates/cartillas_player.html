@@ -1736,17 +1736,27 @@ async function loadWinnersHistory() {
     const el   = document.getElementById('winners-hist-list');
     if(!ws.length){panel.style.display='none';return;}
     panel.style.display='block';
-    el.innerHTML=ws.map(w=>`
+    const tipoMeta = {
+      bingo: {emoji:'🎉', label:'Bingo / Apagón', color:'var(--accent)'},
+      linea: {emoji:'⭐', label:'Letra I',          color:'#f6c343'},
+      u:     {emoji:'🔷', label:'Letra U',           color:'#3b82f6'},
+      o:     {emoji:'⭕', label:'Letra O',           color:'#ec4899'},
+    };
+    el.innerHTML=ws.map(w=>{
+      const m = tipoMeta[w.tipo] || tipoMeta.bingo;
+      return `
       <div class="winner-item">
         <div>
-          <span style="font-weight:700">🏆 ${esc(w.winner_nombre)}</span>
+          <span style="font-weight:700">${m.emoji} ${esc(w.winner_nombre)}</span>
+          <div style="font-size:.72rem;color:${m.color};margin-top:1px">${m.label}</div>
           <div style="font-size:.72rem;color:var(--muted)">${w.date} · ${esc(w.bingo_nombre)}</div>
         </div>
         <div style="text-align:right">
-          <div style="color:var(--accent);font-weight:700">S/.${Number(w.prize||0).toFixed(2)}</div>
+          <div style="color:${m.color};font-weight:700">S/.${Number(w.prize||0).toFixed(2)}</div>
           <div style="font-size:.7rem;color:var(--muted)">${w.drawn_count} bolillas</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }catch(e){}
 }
 

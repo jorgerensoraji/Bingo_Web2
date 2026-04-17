@@ -2970,7 +2970,7 @@ def api_winners_history():
                 "date":          s.date if s else "",
                 "winner_nombre": w.nombre or "",
                 "drawn_count":   w.drawn_count or 0,
-                "prize":         w.prize_amount if w.tipo == "bingo" else 0,
+                "prize":         w.prize_amount or 0,
                 "tipo":          w.tipo or "bingo",
             })
     return jsonify({"winners": result})
