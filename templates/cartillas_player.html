@@ -1342,7 +1342,11 @@ function renderEstado(data) {
         — Disponibles: <strong>${data.max_cartillas - data.cartillas_generadas}</strong>`;
     }
     const countInput = document.getElementById('inp-count');
-    if (countInput) countInput.max = Math.max(1, data.max_cartillas - data.cartillas_generadas);
+    if (countInput) {
+      const remaining = Math.max(1, data.max_cartillas - data.cartillas_generadas);
+      countInput.max   = remaining;
+      countInput.value = remaining;
+    }
     // Pre-rellenar nombre si lo tenemos
     const nm = document.getElementById('inp-name-cartilla');
     if (nm && !nm.value) nm.value = document.getElementById('inp-nombres')?.value || '';
