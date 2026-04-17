@@ -452,7 +452,7 @@ def _send_cartilla_email_async(vinfo: dict, cartillas: list, url_base: str) -> N
     threading.Thread(target=_do, daemon=True).start()
 
 def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
-                         cartilla_result: dict, url_base: str) -> str:
+                         cartilla_result: dict, url_base: str, winners=None) -> str:
     """Email sent to every player when a bingo session finishes."""
     drawn_set = set(drawn)
     cols = [("B", range(1,16)), ("I", range(16,31)), ("N", range(31,46)),
@@ -494,6 +494,37 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
                          ' número(s) marcados. ¡Suerte en el próximo! 🍀</div>'
                          '</div>')
 
+    # Winners report block
+    winners_html = ""
+    if winners:
+        tipo_meta = {
+            "bingo": ("🎉", "Bingo / Apagón", "#00e5b4", "prize"),
+            "linea": ("⭐", "Letra I",         "#f6c343", "linea_prize"),
+            "u":     ("🔷", "Letra U",          "#3b82f6", "u_prize"),
+            "o":     ("⭕", "Letra O",          "#ec4899", "o_prize"),
+        }
+        rows = ""
+        for tipo_key in ["bingo", "linea", "u", "o"]:
+            group = [w for w in winners if w.get("tipo") == tipo_key]
+            if not group:
+                continue
+            emoji, label, color, amt_key = tipo_meta[tipo_key]
+            for w in group:
+                amt = float(w.get(amt_key, 0) or 0)
+                wname = (w.get("nombre") or "—").split()[0]
+                amt_str = f"S/. {amt:.2f}" if amt > 0 else ""
+                rows += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                         f'padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+                         f'<span style="color:{color};font-weight:700;font-size:.8rem">{emoji} {label}</span>'
+                         f'<span style="color:#ddeeff;font-size:.8rem;padding:0 8px">{wname}</span>'
+                         f'<span style="color:{color};font-weight:900;font-size:.85rem;white-space:nowrap">{amt_str}</span>'
+                         f'</div>')
+        if rows:
+            winners_html = (f'<div style="background:#111f2e;border-radius:10px;padding:16px;margin-bottom:16px">'
+                            f'<div style="font-size:.65rem;color:#6a9ab8;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px">🏆 Ganadores de esta sesión</div>'
+                            f'{rows}'
+                            f'</div>')
+
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
 <div style="max-width:540px;margin:0 auto;padding:32px 24px">
@@ -507,6 +538,7 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
       Adjunto encontrarás tu cartilla con los números marcados.
     </p>
     {result_banner}
+    {winners_html}
     <div style="background:#111f2e;border-radius:10px;padding:16px;margin-bottom:16px">
       <div style="font-size:.65rem;color:#6a9ab8;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px">
         Bolillas sorteadas ({len(drawn)} en total)
@@ -525,7 +557,7 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
 </div></body></html>"""
 
 
-def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str) -> None:
+def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=None) -> None:
     """Fire-and-forget: after session finishes, email every player their cartilla + drawn balls."""
     def _do():
         try:
@@ -573,7 +605,7 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str) -> None:
                     buf = cartilla_to_png(c, drawn)
                     b64 = base64.b64encode(buf.read()).decode()
                     attachments.append({"content": b64, "name": f"cartilla_{c['id']}.png"})
-                html = _email_resumen_bingo(nombre, bingo_nombre, drawn, first_result, url_base)
+                html = _email_resumen_bingo(nombre, bingo_nombre, drawn, first_result, url_base, winners)
                 subject = f"🎱 Resumen de tu Bingo — {bingo_nombre}"
                 ok, err = enviar_email(email, subject, html, attachments)
                 if ok:
@@ -2809,7 +2841,7 @@ def api_finish_session(sid):
     # Send end-of-bingo summary emails to all players (background)
     if drawn_snapshot:
         url_base = request.host_url.rstrip("/")
-        _send_fin_bingo_emails_async(sid, drawn_snapshot, url_base)
+        _send_fin_bingo_emails_async(sid, drawn_snapshot, url_base, wf)
     return jsonify({"status": "ok"})
 
 def _cancel_session_cleanup(db, sid: str):
