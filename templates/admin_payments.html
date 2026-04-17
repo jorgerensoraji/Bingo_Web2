@@ -320,11 +320,21 @@ td{padding:10px 12px;vertical-align:middle}
 </div>
 
 <script>
-const BT = {
+let BT = {
   "1sol":    {nombre:"Bingo 1 Sol",    color:"#f472b6", emoji:"🎯", max_cartillas:1},
   "5soles":  {nombre:"Bingo 5 Soles",  color:"#a855f7", emoji:"🎯", max_cartillas:1},
   "10soles": {nombre:"Bingo 10 Soles", color:"#818cf8", emoji:"🎯", max_cartillas:1},
 };
+async function loadBingoTypes() {
+  try {
+    const res  = await fetch('/api/bingo_types');
+    const data = await res.json();
+    (data.bingo_types || []).forEach(bt => {
+      BT[bt.id] = {nombre: bt.nombre, color: bt.color || '#f472b6',
+                   emoji: bt.emoji || '🎯', max_cartillas: bt.max_cartillas || 1};
+    });
+  } catch(e) {}
+}
 const METHOD_ICON = {
   yape:'💜', plin:'💙', transferencia:'🏦',
   interbank:'🏦', efectivo:'💵', manual:'✍️',
@@ -439,7 +449,7 @@ async function refresh() {
 // ── Renderizar una fila de voucher ────────────────────
 function renderVoucherRow(v) {
     const who    = [v.nombres, v.apellidos].filter(Boolean).join(' ');
-    const bt     = BT[v.bingo_type] || BT['1sol'];
+    const bt     = BT[v.bingo_type] || {nombre: v.bingo_nombre||v.bingo_type, color: v.bingo_color||'#f472b6', emoji:'🎯', max_cartillas: v.max_cartillas||1};
     const dt     = (v.payment_submitted_at||v.created||'').replace('T',' ').slice(0,16);
     const pst    = v.payment_status||'pending';
     const isDup  = dupRefs.has(v.code);
@@ -617,7 +627,7 @@ function abrirModalAprobacion(code) {
   const v = allVouchers.find(x => x.code === code);
   if (!v) return;
   pendingApprove = code;
-  const bt  = BT[v.bingo_type]||BT['1sol'];
+  const bt  = BT[v.bingo_type] || {nombre: v.bingo_nombre||v.bingo_type, color: v.bingo_color||'#f472b6', emoji:'🎯', max_cartillas: v.max_cartillas||1};
   const who = [v.nombres, v.apellidos].filter(Boolean).join(' ') || '—';
 
   document.getElementById('modal-detalle').innerHTML = `
@@ -780,6 +790,7 @@ async function logout() {
 
 // ── Init ───────────────────────────────────────────────
 checkEmailStatus();
+loadBingoTypes().then(() => refresh());
 refresh();
 setInterval(refresh, 6000);
 loadReimbursements();
