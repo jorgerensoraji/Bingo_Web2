@@ -872,7 +872,7 @@ def validate_voucher_for_cartilla(code: str) -> tuple:
         if active_sid and v.session_id and v.session_id != active_sid:
             return False, "session_mismatch"
         btype = BINGO_TYPES.get(v.bingo_type, BINGO_TYPES["1sol"])
-        max_c = btype.get("max_cartillas_per_voucher", 5)
+        max_c = v.max_cartillas or btype.get("max_cartillas_per_voucher", 1)
         if len(v.cartillas_list()) >= max_c:
             return False, "max_cartillas_reached"
     return True, ""
@@ -1631,8 +1631,9 @@ def api_player_solicitar():
     terms_accepted = bool(data.get("terms_accepted", False))
     bingo_type     = data.get("bingo_type", "1sol")
     session_id     = data.get("session_id", "")
-    method         = (data.get("method")        or "").strip()
-    ref            = (data.get("reference")     or "").strip()[:80]
+    method             = (data.get("method")        or "").strip()
+    ref                = (data.get("reference")     or "").strip()[:80]
+    cantidad_cartillas = max(1, min(5, int(data.get("cantidad_cartillas", 1) or 1)))
 
     if not nombres:
         return jsonify({"error": "missing_name", "message": "Ingresa tu nombre."}), 400
@@ -1698,7 +1699,8 @@ def api_player_solicitar():
             email=email, celular=celular,
             yape_plin=yape_plin, terms_accepted=terms_accepted,
             bingo_type=bingo_type, bingo_nombre=btype["nombre"],
-            precio=btype["precio"], session_id=session_id,
+            precio=round(btype["precio"] * cantidad_cartillas, 2), session_id=session_id,
+            max_cartillas=cantidad_cartillas,
             payment_method=method or "gratis", payment_ref=ref,
             payment_status="pending_review",
             payment_submitted_at=now,

@@ -525,6 +525,14 @@
         </div>
       </div><!-- end payment-section -->
 
+      <!-- Cantidad de cartillas -->
+      <div class="form-group" id="cantidad-group" style="margin-top:4px">
+        <label>¿Cuántas cartillas quieres?</label>
+        <div id="qty-btns" style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"></div>
+        <div id="qty-total" style="margin-top:8px;font-size:.83rem;font-weight:700;
+             color:var(--accent);min-height:1.2em"></div>
+      </div>
+
       <div class="wiz-nav">
         <button class="btn btn-ghost" onclick="wizBack(2)" style="white-space:nowrap">
           ← Atrás
@@ -607,6 +615,7 @@ let lastStatus     = '';
 let pollJob        = null;
 let selBtype       = '1sol';
 let selMethod      = '';
+let selQty         = 1;
 let methodsData    = [];
 
 // ── Toast ──────────────────────────────────────────────
@@ -662,6 +671,7 @@ function wizNext(from) {
   if (from === 1) {
     if (!validateWizStep1()) return;
     setWizStep(2);
+    renderQtySelector();
   } else if (from === 2) {
     if (!validateWizStep2()) return;
     updateWizSummary();
@@ -739,6 +749,8 @@ function updateWizSummary() {
       <span>${esc(sessionName)}</span>
       <span style="color:var(--muted)">Tipo</span>
       <span>${esc(btLabel)}</span>
+      ${!isFree ? `<span style="color:var(--muted)">Cartillas</span><span style="font-weight:700;color:var(--accent)">${selQty}</span>` : ''}
+      ${!isFree && selQty > 1 ? `<span style="color:var(--muted)">Total</span><span style="font-weight:700;color:var(--accent)">S/. ${(selQty * (bt ? bt.precio : 0)).toFixed(2)}</span>` : ''}
       ${!isFree && mData ? `<span style="color:var(--muted)">Pago</span><span>${mData.emoji||''} ${esc(mData.nombre)}</span>` : ''}
     </div>`;
 }
@@ -770,6 +782,30 @@ function renderMethods() {
       <span class="icon">${m.emoji||'💳'}</span>
       ${esc(m.nombre)}
     </button>`).join('');
+}
+
+function renderQtySelector() {
+  const bt     = (window._btypesCache || []).find(b => b.id === selBtype);
+  const precio = bt ? bt.precio : 0;
+  const btns   = document.getElementById('qty-btns');
+  const total  = document.getElementById('qty-total');
+  if (!btns) return;
+  btns.innerHTML = [1,2,3,4,5].map(n => {
+    const active = selQty === n;
+    return `<button type="button" onclick="selectQty(${n})"
+      style="padding:8px 18px;border-radius:8px;cursor:pointer;font-family:Outfit,sans-serif;
+             font-weight:700;font-size:1rem;
+             border:2px solid ${active ? 'var(--accent)' : 'var(--border)'};
+             background:${active ? 'rgba(0,229,180,.15)' : 'var(--card)'};
+             color:${active ? 'var(--accent)' : 'var(--text)'}">${n}</button>`;
+  }).join('');
+  if (total) total.textContent = selQty > 1 && precio > 0
+    ? `Total a pagar: S/. ${(selQty * precio).toFixed(2)} (${selQty} × S/. ${precio.toFixed(2)})`
+    : '';
+}
+function selectQty(n) {
+  selQty = n;
+  renderQtySelector();
 }
 
 function selectMethod(id) {
@@ -817,12 +853,14 @@ async function loadBingoTypes() {
 
 function selectBtype(id) {
   selBtype = id;
+  selQty   = 1;
   loadBingoTypes();
   renderSessions();
   const manualBtn = document.getElementById('tab-manual-btn');
   if (manualBtn) manualBtn.style.display = '';
   // Show/hide payment section for free bingo
   updatePaymentVisibility();
+  renderQtySelector();
 }
 
 function updatePaymentVisibility() {
@@ -1077,6 +1115,7 @@ async function enviarSolicitud() {
         nombres, apellidos, email, celular, yape_plin, terms_accepted,
         bingo_type: selBtype, session_id,
         method, reference: ref,
+        cantidad_cartillas: selQty,
       }),
     });
     const data = await res.json();

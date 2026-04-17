@@ -641,9 +641,14 @@ function abrirModalAprobacion(code) {
       </span>
     </div>
     <div class="detail-row">
-      <span>Monto</span>
+      <span>Cartillas</span>
+      <span style="font-weight:700;color:var(--accent)">${v.max_cartillas||1}</span>
+    </div>
+    <div class="detail-row">
+      <span>Monto esperado</span>
       <span style="font-weight:700;color:var(--accent)">
         S/. ${(v.precio||0).toFixed(2)}
+        ${(v.max_cartillas||1) > 1 ? `<span style="font-size:.75rem;color:var(--muted);font-weight:400">&nbsp;(${v.max_cartillas} × S/. ${((v.precio||0)/(v.max_cartillas||1)).toFixed(2)})</span>` : ''}
       </span>
     </div>
     <div class="detail-row">

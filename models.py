@@ -39,6 +39,7 @@ class Voucher(Base):
     creado_por           = Column(String(20),  default="admin")
     # JSON-encoded list of cartilla IDs  e.g. '["AB12", "CD34"]'
     cartillas_ids        = Column(Text,        default="[]")
+    max_cartillas        = Column(Integer,     default=1)
     created              = Column(String(30),  default="")
 
     # Indexes for common query patterns
@@ -82,6 +83,7 @@ class Voucher(Base):
             "creado_por":             self.creado_por,
             "pin_hint":               self.pin_hint or "",
             "cartillas":              self.cartillas_list(),
+            "max_cartillas":          self.max_cartillas or 1,
             "created":                self.created,
             "has_pin":                bool(self.access_pin),
         }
