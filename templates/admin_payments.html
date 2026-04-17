@@ -470,7 +470,7 @@ function renderVoucherRow(v) {
 
     // Cartillas
     const cAct  = (v.cartillas||[]).length;
-    const cMax  = (BT[v.bingo_type] || BT['1sol']).max_cartillas;
+    const cMax  = v.max_cartillas || (BT[v.bingo_type] || BT['1sol']).max_cartillas;
     const cHtml = `<span style="color:${cAct>0?'var(--accent)':'var(--muted)'}">
       ${cAct}/${cMax}</span>`;
 
