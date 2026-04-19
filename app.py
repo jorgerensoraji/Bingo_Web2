@@ -3009,7 +3009,9 @@ def api_start_session(sid):
         game.prepare_at  = None
         game.prepare_sid = None
         game.save_to_db()
-    return jsonify({"status": "ok", "session": s_dict, "prize_info": prize})
+    prize_public = {k: v for k, v in prize.items()
+                    if k not in ("prize_amount", "linea_amount", "u_amount", "o_amount", "house_cut", "gross")}
+    return jsonify({"status": "ok", "session": s_dict, "prize_info": prize_public})
 
 @app.route("/api/admin/session/<sid>/prepare", methods=["POST"])
 def api_prepare_session(sid):
@@ -3280,7 +3282,10 @@ def api_session_prize(sid):
     s = get_session(sid)
     if not s:
         return jsonify({"error": "not found"}), 404
-    return jsonify(compute_prize_pool(sid, s["bingo_type"]))
+    pool = compute_prize_pool(sid, s["bingo_type"])
+    public = {k: v for k, v in pool.items()
+              if k not in ("prize_amount", "linea_amount", "u_amount", "o_amount", "house_cut", "gross")}
+    return jsonify(public)
 
 # ─── Winners history ──────────────────────────────────────────────────────────
 @app.route("/api/winners/history")
