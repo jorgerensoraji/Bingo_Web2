@@ -255,6 +255,22 @@ def enviar_email(destinatario: str, asunto: str, cuerpo_html: str, attachments: 
         return False, f"Error: {e}"
 
 # ─── Email templates (unchanged from v7.2) ───────────────────────────────────
+def _get_referral_code_for_email(email: str, phone: str) -> str:
+    """Look up (or generate) the referral code for a player by email or phone."""
+    if not email and not phone:
+        return ""
+    with db_session() as db:
+        c = None
+        if email:
+            c = db.query(Contact).filter(Contact.email == email).first()
+        if not c and phone:
+            c = db.query(Contact).filter(Contact.phone == phone).first()
+        if not c:
+            return ""
+        if not c.referral_code:
+            c.referral_code = _gen_referral_code(c.nombre or "", db)
+        return c.referral_code
+
 def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = "") -> str:
     bt     = BINGO_TYPES.get(voucher_dict.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     code   = voucher_dict.get("code", "")
@@ -262,6 +278,9 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
     precio = bt["precio"]
     url_cartillas = f"{url_base}/cartillas?code={code}"
     url_juego     = f"{url_base}/"
+    referral_code = _get_referral_code_for_email(
+        voucher_dict.get("email", ""), voucher_dict.get("celular", "")
+    )
 
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
@@ -298,6 +317,20 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
       </div>
     </div>
   </div>
+  {f'''<div style="background:#0d1825;border:1px solid #1a3148;border-radius:14px;padding:20px;margin-bottom:20px">
+    <div style="font-size:.7rem;color:#4a6b85;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px">🎁 Tu código de referidos</div>
+    <div style="background:#111f2e;border:2px solid rgba(246,195,67,.4);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
+      <div style="font-size:.72rem;color:#4a6b85;letter-spacing:2px;margin-bottom:6px">COMPARTE ESTE CÓDIGO</div>
+      <div style="font-family:monospace;font-size:2rem;font-weight:900;color:#f6c343;letter-spacing:6px">{referral_code}</div>
+    </div>
+    <div style="font-size:.82rem;color:#6a9ab8;line-height:1.6">
+      ¿Cómo funciona?<br>
+      1. Comparte tu código con amigos y familiares.<br>
+      2. Ellos lo ingresan en el campo <em>"Código de referido"</em> al pagar.<br>
+      3. Cuando se confirme su pago recibirás un email para confirmar el referido.<br>
+      4. <strong style="color:#f6c343">¡Cada 5 referidos confirmados recibes una cartilla gratis!</strong> 🎉
+    </div>
+  </div>''' if referral_code else ''}
   <p style="text-align:center;color:#1a3148;font-size:.75rem;margin:0">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
   <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
@@ -1923,13 +1956,18 @@ def api_player_solicitar():
                 existing.email = email
             if phone_e164 and not existing.phone:
                 existing.phone = phone_e164
+            if not existing.referral_code:
+                existing.referral_code = _gen_referral_code(existing.nombre or nombres, db)
         else:
-            db.add(Contact(
+            new_contact = Contact(
                 nombre=f"{nombres} {apellidos}".strip(),
                 email=email or "",
                 phone=phone_e164,
                 created=now,
-            ))
+            )
+            db.add(new_contact)
+            db.flush()
+            new_contact.referral_code = _gen_referral_code(new_contact.nombre, db)
 
     email_sent = False
     if email:
