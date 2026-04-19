@@ -276,6 +276,9 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
     code   = voucher_dict.get("code", "")
     nombre = voucher_dict.get("nombres", "Jugador")
     precio = bt["precio"]
+    _pool  = compute_prize_pool(voucher_dict.get("session_id", ""), voucher_dict.get("bingo_type", "1sol"))
+    prize_amt = _pool["prize_amount"]; linea_amt = _pool["linea_amount"]
+    u_amt_e   = _pool["u_amount"];    o_amt_e   = _pool["o_amount"]
     url_cartillas = f"{url_base}/cartillas?code={code}"
     url_juego     = f"{url_base}/"
     referral_code = _get_referral_code_for_email(
@@ -307,10 +310,10 @@ def _email_codigo_voucher(voucher_dict: dict, url_base: str, plain_pin: str = ""
     <div style="background:#0d1e14;border:1px solid rgba(0,229,180,.2);border-radius:10px;padding:14px;font-size:.82rem;margin-bottom:20px">
       <strong style="color:#00e5b4;display:block;margin-bottom:8px">💰 Distribución de premios</strong>
       <table style="width:100%;border-collapse:collapse;color:#4a6b85">
-        <tr><td style="padding:3px 0">⭐ LÍNEA</td><td style="text-align:right;color:#f6c343">{round(bt.get('linea_pct',0.04)*100,0):.0f}% del pozo</td></tr>
-        <tr><td style="padding:3px 0">🔷 Formar Letra U</td><td style="text-align:right;color:#3b82f6">{round(bt.get('u_pct',0.13)*100,0):.0f}% del pozo</td></tr>
-        <tr><td style="padding:3px 0">⭕ Formar Letra O</td><td style="text-align:right;color:#ec4899">{round(bt.get('o_pct',0.15)*100,0):.0f}% del pozo</td></tr>
-        <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 Cartón lleno o Bingo</td><td style="text-align:right;color:#00e5b4;font-weight:700">{round(bt.get('prize_pct',0.55)*100,0):.0f}% mínimo</td></tr>
+        <tr><td style="padding:3px 0">⭐ LÍNEA</td><td style="text-align:right;color:#f6c343">S/. {linea_amt:.2f}</td></tr>
+        <tr><td style="padding:3px 0">🔷 Formar Letra U</td><td style="text-align:right;color:#3b82f6">S/. {u_amt_e:.2f}</td></tr>
+        <tr><td style="padding:3px 0">⭕ Formar Letra O</td><td style="text-align:right;color:#ec4899">S/. {o_amt_e:.2f}</td></tr>
+        <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:4px 0;color:#ddeeff;font-weight:700">🎉 Cartón lleno o Bingo</td><td style="text-align:right;color:#00e5b4;font-weight:700">S/. {prize_amt:.2f}</td></tr>
       </table>
       <div style="margin-top:8px;font-size:.76rem;color:#3a5568;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">
         💡 Si nadie gana U o O, esos premios se acumulan al BINGO.
@@ -4113,10 +4116,11 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
     sid          = session_dict.get("id", "")
     url_cartillas = f"{url_base}/cartillas"
 
-    prize_pct  = btype.get("prize_pct", 0.55)
-    linea_pct  = btype.get("linea_pct", 0.04)
-    u_pct      = btype.get("u_pct", 0.13)
-    o_pct      = btype.get("o_pct", 0.15)
+    _pool      = compute_prize_pool(sid, session_dict.get("bingo_type", "1sol"))
+    prize_amt  = _pool["prize_amount"]
+    linea_amt  = _pool["linea_amount"]
+    u_amt      = _pool["u_amount"]
+    o_amt      = _pool["o_amount"]
 
     desc_block = (f"<div style='background:#111f2e;border-radius:8px;padding:10px 14px;"
                   f"margin:12px 0;font-size:.85rem;color:#ddeeff'>"
@@ -4177,19 +4181,19 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
       <table style="width:100%;border-collapse:collapse;font-size:.85rem">
         <tr style="background:rgba(0,229,180,.06)">
           <td style="padding:7px 10px">🎉 Cartón lleno o Bingo</td>
-          <td style="padding:7px 10px;text-align:right;color:#00e5b4;font-weight:900">{prize_pct*100:.0f}% mínimo</td>
+          <td style="padding:7px 10px;text-align:right;color:#00e5b4;font-weight:900">S/. {prize_amt:.2f}</td>
         </tr>
         <tr>
           <td style="padding:7px 10px">⭕ Formar Letra O</td>
-          <td style="padding:7px 10px;text-align:right;color:#ec4899">{o_pct*100:.0f}%</td>
+          <td style="padding:7px 10px;text-align:right;color:#ec4899">S/. {o_amt:.2f}</td>
         </tr>
         <tr style="background:rgba(0,229,180,.03)">
           <td style="padding:7px 10px">🔷 Formar Letra U</td>
-          <td style="padding:7px 10px;text-align:right;color:#3b82f6">{u_pct*100:.0f}%</td>
+          <td style="padding:7px 10px;text-align:right;color:#3b82f6">S/. {u_amt:.2f}</td>
         </tr>
         <tr>
           <td style="padding:7px 10px">⭐ LÍNEA</td>
-          <td style="padding:7px 10px;text-align:right;color:#f6c343">{linea_pct*100:.0f}%</td>
+          <td style="padding:7px 10px;text-align:right;color:#f6c343">S/. {linea_amt:.2f}</td>
         </tr>
       </table>
       <div style="font-size:.73rem;color:#3a5568;margin-top:6px;padding:0 4px">
@@ -4513,10 +4517,11 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     dt_raw       = session_dict.get("datetime_iso", "")
     dt_str       = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
     descripcion  = session_dict.get("descripcion", "")
-    prize_pct    = btype.get("prize_pct", 0.55)
-    linea_pct    = btype.get("linea_pct", 0.04)
-    u_pct        = btype.get("u_pct", 0.13)
-    o_pct        = btype.get("o_pct", 0.15)
+    _pool        = compute_prize_pool(session_dict.get("id", ""), session_dict.get("bingo_type", "1sol"))
+    prize_amt    = _pool["prize_amount"]
+    linea_amt    = _pool["linea_amount"]
+    u_amt        = _pool["u_amount"]
+    o_amt        = _pool["o_amount"]
     url_cartillas = f"{url_base}/cartillas"
 
     lines = [
@@ -4533,10 +4538,10 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     lines += [
         f"",
         f"💰 *Distribución de premios:*",
-        f"  🎉 Cartón lleno o Bingo → {prize_pct*100:.0f}% mín.",
-        f"  ⭕ Formar Letra O → {o_pct*100:.0f}%",
-        f"  🔷 Formar Letra U → {u_pct*100:.0f}%",
-        f"  ⭐ LÍNEA → {linea_pct*100:.0f}%",
+        f"  🎉 Cartón lleno o Bingo → S/. {prize_amt:.2f}",
+        f"  ⭕ Formar Letra O → S/. {o_amt:.2f}",
+        f"  🔷 Formar Letra U → S/. {u_amt:.2f}",
+        f"  ⭐ LÍNEA → S/. {linea_amt:.2f}",
         f"",
         f"🎴 *Compra tu cartilla aquí:*",
         f"{url_cartillas}",
