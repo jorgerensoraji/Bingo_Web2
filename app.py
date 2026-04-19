@@ -3095,12 +3095,18 @@ def api_winner_payments():
 def api_pay_winner():
     chk = admin_required()
     if chk: return chk
-    data        = request.get_json() or {}
-    session_id  = (data.get("session_id")  or "").strip()
-    cartilla_id = (data.get("cartilla_id") or "").strip().upper()
-    paid_ref    = (data.get("paid_ref")    or "").strip()[:100]
-    paid_method = (data.get("paid_method") or "efectivo").strip()
-    paid_note   = (data.get("paid_note")   or "").strip()[:300]
+    data         = request.get_json() or {}
+    session_id   = (data.get("session_id")  or "").strip()
+    cartilla_id  = (data.get("cartilla_id") or "").strip().upper()
+    paid_ref     = (data.get("paid_ref")    or "").strip()[:100]
+    paid_method  = (data.get("paid_method") or "efectivo").strip()
+    paid_note    = (data.get("paid_note")   or "").strip()[:300]
+    prize_amount = data.get("prize_amount")
+    if prize_amount is not None:
+        try:
+            prize_amount = round(float(prize_amount), 2)
+        except (ValueError, TypeError):
+            prize_amount = None
 
     if not session_id or not cartilla_id:
         return jsonify({"error": "session_id y cartilla_id requeridos"}), 400
@@ -3117,6 +3123,8 @@ def api_pay_winner():
             wr.paid_method = paid_method
             wr.paid_ref    = paid_ref
             wr.paid_note   = paid_note
+            if prize_amount is not None:
+                wr.prize_amount = prize_amount
             updated = True
         # Also keep sessions.winners_final JSON in sync
         if updated:
@@ -3129,6 +3137,8 @@ def api_pay_winner():
                             w["paid"] = True; w["paid_at"] = paid_at_iso
                             w["paid_method"] = paid_method; w["paid_ref"] = paid_ref
                             w["paid_note"] = paid_note
+                            if prize_amount is not None:
+                                w["prize"] = prize_amount
                     sx.winners_final = json.dumps(wf, ensure_ascii=False)
                 except Exception:
                     pass

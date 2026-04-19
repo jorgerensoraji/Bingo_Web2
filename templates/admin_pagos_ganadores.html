@@ -164,6 +164,11 @@
     <div class="modal-sub" id="modal-pay-sub">—</div>
 
     <div class="field">
+      <label>Premio a Pagar (S/.)</label>
+      <input id="pay-prize" type="number" min="0" step="0.01" placeholder="Ej: 10.00">
+    </div>
+
+    <div class="field">
       <label>Método de Pago</label>
       <select id="pay-method">
         <option value="yape">📱 Yape</option>
@@ -312,6 +317,8 @@ function openModal(p) {
     (p.yape_plin ? ` · Yape/Plin: <strong>${esc(p.yape_plin)}</strong>` : '') +
     (p.celular   ? ` · Tel: <strong>${esc(p.celular)}</strong>` : '');
 
+  const prizeVal = isBingo ? (p.prize||0) : (p.linea_prize||p.u_prize||p.o_prize||0);
+  document.getElementById('pay-prize').value  = prizeVal;
   document.getElementById('pay-method').value = p.paid_method || 'yape';
   document.getElementById('pay-ref').value    = p.paid_ref    || '';
   document.getElementById('pay-note').value   = p.paid_note   || '';
@@ -325,9 +332,10 @@ function closeModal() {
 
 async function confirmPay() {
   if (!_pendingTarget) return;
-  const paid_method = document.getElementById('pay-method').value;
-  const paid_ref    = document.getElementById('pay-ref').value.trim();
-  const paid_note   = document.getElementById('pay-note').value.trim();
+  const prize_amount = parseFloat(document.getElementById('pay-prize').value) || 0;
+  const paid_method  = document.getElementById('pay-method').value;
+  const paid_ref     = document.getElementById('pay-ref').value.trim();
+  const paid_note    = document.getElementById('pay-note').value.trim();
 
   try {
     const res  = await fetch('/api/admin/winner_payments/pay', {
@@ -336,7 +344,7 @@ async function confirmPay() {
       body:    JSON.stringify({
         session_id:  _pendingTarget.session_id,
         cartilla_id: _pendingTarget.cartilla_id,
-        paid_method, paid_ref, paid_note,
+        prize_amount, paid_method, paid_ref, paid_note,
       }),
     });
     const data = await res.json();
