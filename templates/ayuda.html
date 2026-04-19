@@ -81,7 +81,7 @@
   overflow: hidden;
   transition: max-height .3s ease, padding .3s ease;
 }
-.faq-item.open .faq-a { max-height: 700px; padding-bottom: 14px; }
+.faq-item.open .faq-a { max-height: 900px; padding-bottom: 14px; }
 .faq-a ol, .faq-a ul { padding-left: 18px; margin-top: 6px; }
 .faq-a li { margin-bottom: 4px; }
 .faq-a strong { color: var(--text); }
@@ -235,12 +235,40 @@
     <ol class="steps-list">
       <li><strong>Toca "Comprar cartilla"</strong> — Se abre una ventana de registro con 3 pasos sencillos.</li>
       <li><strong>Ingresa tus datos</strong> — Nombre, apellidos, correo electrónico y celular. Usa un correo real, ahí recibirás todo.</li>
-      <li><strong>Elige tu Bingo y paga</strong> — Selecciona el bingo, el método de pago (Yape, Plin o efectivo) e ingresa el número de operación si aplica.</li>
+      <li><strong>Elige tu Bingo y paga</strong> — Selecciona el bingo, el método de pago (Yape, Plin, Transferencia u otro) e ingresa el número de operación si aplica. El sistema verificará en tiempo real que ese número no haya sido usado antes.</li>
+      <li><strong>Código de referido (opcional)</strong> — Si alguien te recomendó, ingresa su código de referido en el campo correspondiente para que reciban el crédito.</li>
       <li><strong>Acepta y envía</strong> — Lee los términos y envía tu solicitud de participación.</li>
-      <li><strong>Espera la aprobación</strong> — El organizador revisará tu pago. Recibirás un correo con tu <strong>código de voucher</strong> y un enlace directo para generar tu cartilla.</li>
+      <li><strong>Espera la aprobación</strong> — El organizador revisará tu pago. Recibirás un correo con tu <strong>código de voucher</strong>, un enlace para generar tu cartilla y <strong>tu propio código de referido</strong> para compartir con amigos.</li>
       <li><strong>Genera tu cartilla</strong> — Toca el enlace del correo para ir directamente a generar tu cartilla. Recibirás una copia en imagen a tu correo.</li>
       <li><strong>Únete al juego</strong> — Ingresa tu código de voucher en la pantalla principal cuando empiece el Bingo.</li>
     </ol>
+  </div>
+
+  <!-- ── Programa de Referidos ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎁</span> Programa de Referidos — Gana cartillas gratis</div>
+    <p style="font-size:.86rem;color:var(--muted);line-height:1.6;margin-bottom:16px;">
+      Recomienda el bingo a tus amigos y gana una <strong style="color:var(--text)">cartilla gratis de S/.2</strong> por cada 5 amigos que participen.
+    </p>
+    <ol class="steps-list">
+      <li>
+        <strong>Recibe tu código</strong> — Cuando el organizador apruebe tu primer pago, recibirás por correo tu código de referido personal (ej. <span style="font-family:monospace;color:var(--accent);background:rgba(0,229,180,.1);padding:1px 6px;border-radius:4px;">JORG-K4X2</span>).
+      </li>
+      <li>
+        <strong>Comparte tu código</strong> — Envíaselo a tus amigos. Ellos lo ingresan en el campo <em>"Código de referido"</em> al momento de pagar su cartilla.
+      </li>
+      <li>
+        <strong>Tu amigo confirma</strong> — Cuando el pago de tu amigo sea aprobado, recibirá un correo con un botón para confirmar que tú los referiste. Una vez que haga clic, se registra como referido confirmado.
+      </li>
+      <li>
+        <strong>¡5 referidos = cartilla gratis!</strong> — Al llegar a 5 referidos confirmados, recibirás automáticamente un voucher de S/.2 gratis para usar en el próximo bingo.
+      </li>
+    </ol>
+    <div style="background:rgba(0,229,180,.07);border:1px solid rgba(0,229,180,.2);border-radius:10px;padding:12px 14px;margin-top:6px;">
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.6;">
+        💡 <strong style="color:var(--text)">Tip:</strong> Tu código de referido aparece en el correo de aprobación de pago. Si no lo encuentras, revisa la carpeta de Spam o contáctanos por WhatsApp.
+      </div>
+    </div>
   </div>
 
   <!-- ── FAQ ── -->
@@ -323,7 +351,7 @@
       <div class="faq-a">
         Sí, recibirás 3 correos en total:
         <ol>
-          <li><strong>Código de voucher</strong> — Cuando el organizador apruebe tu pago, con un enlace directo para generar tu cartilla.</li>
+          <li><strong>Código de voucher</strong> — Cuando el organizador apruebe tu pago, con un enlace directo para generar tu cartilla y tu <strong>código de referido personal</strong>.</li>
           <li><strong>Tu cartilla en imagen</strong> — Cuando generes tu cartilla, recibirás una copia en PNG para guardarla.</li>
           <li><strong>Resumen del Bingo</strong> — Al terminar el bingo, recibirás todas las bolillas sorteadas y tu cartilla con los números marcados.</li>
         </ol>
@@ -343,6 +371,26 @@
           <li>Si el problema continúa, cierra otras aplicaciones y pestañas abiertas.</li>
           <li>Las bolillas ya sorteadas siempre estarán visibles al reconectarte, no perderás el progreso.</li>
         </ol>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        ¿Cómo obtengo mi código de referido?
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Tu código de referido se genera automáticamente cuando realizas tu primer pago aprobado. Lo encontrarás en el correo de aprobación, en una sección destacada. Tiene el formato <strong>XXXX-YYYY</strong> (ej. JORG-K4X2). Si no lo ves, revisa tu carpeta de <strong>Spam</strong> o escríbenos por WhatsApp para que te lo enviemos.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        El sistema dice que mi número de operación ya fue usado
+        <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">
+        Esto ocurre cuando alguien ya registró ese mismo número de operación anteriormente. Verifica que estás ingresando el número correcto de tu comprobante de pago (Yape, Plin, transferencia, etc.). Si el número es correcto y el problema persiste, contáctanos por WhatsApp con una captura de pantalla de tu operación.
       </div>
     </div>
 
