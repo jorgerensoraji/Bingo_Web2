@@ -277,6 +277,14 @@
   <div class="toc-item h3-item"><span>Marcado automatico y alertas</span></div>
   <div class="toc-item h3-item"><span>Consejos para ganar</span></div>
   <div class="toc-item h3-item"><span>Que pasa despues de ganar</span></div>
+
+  <div class="toc-item" style="margin-top:10px;background:#fffbea;border-radius:6px;padding:8px 10px;"><span>9. Novedades — Funciones Agregadas Recientemente ⭐</span></div>
+  <div class="toc-item h3-item"><span>9.1 Programa de Referidos</span></div>
+  <div class="toc-item h3-item"><span>9.2 Validacion en tiempo real del N° de Operacion</span></div>
+  <div class="toc-item h3-item"><span>9.3 Premio editable en el modal de ganadores</span></div>
+  <div class="toc-item h3-item"><span>9.4 Transferencia BBVA como metodo de pago</span></div>
+  <div class="toc-item h3-item"><span>9.5 Division automatica del premio en apagon compartido</span></div>
+  <div class="toc-item h3-item"><span>9.6 Nuevas URLs del sistema</span></div>
 </div>
 
 
@@ -1478,6 +1486,125 @@
   </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════════ SECTION 9 -->
+<div class="section section-break">
+  <h2>9. Novedades — Funciones Agregadas Recientemente</h2>
+
+  <h3>9.1 Programa de Referidos</h3>
+  <p>El sistema ahora incluye un programa de referidos completo. Cada jugador recibe un código único al ser aprobado por primera vez. Al compartirlo y tener 5 referidos confirmados, recibe una cartilla gratis de Bingo 2 Soles.</p>
+
+  <h4>Flujo completo</h4>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Código automático</strong> — Al aprobar el pago de un jugador por primera vez, el sistema genera automáticamente un código único (ej: <code>JORG-K4X2</code>) y lo incluye en el correo de aprobación con explicación.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>El jugador comparte su código</strong> — Sus amigos lo ingresan en el campo opcional "Código de referido" al pagar. El campo valida en tiempo real (verde = válido, rojo = no encontrado).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Al aprobar el pago del referido</strong> — El sistema envía automáticamente un email de confirmación al referidor. El referidor hace clic en "Confirmar referido" para validarlo.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>Premio automático</strong> — Al completar 5 referidos confirmados, el sistema genera un voucher flotante de Bingo 2 Soles y se lo envía por correo al referidor. No requiere ninguna acción del admin.
+      </div>
+    </div>
+  </div>
+
+  <h4>Panel de Referidos — /admin/contacts</h4>
+  <p>En la página de contactos ahora verás dos columnas nuevas:</p>
+  <ul>
+    <li><strong>Código Referido</strong> — Muestra el código del contacto. Si no tiene uno aún, aparece un botón "Generar" para crearlo manualmente.</li>
+    <li><strong>Referidos</strong> — Muestra cuántos referidos confirmados (✅) y pendientes (⏳) tiene cada persona.</li>
+  </ul>
+
+  <div class="box box-info">
+    <strong>Nota:</strong> Los vouchers de premio se crean con <code>creado_por = "referral"</code> y <code>payment_status = "manual_approved"</code>. Son vouchers flotantes sin sesión asignada — el jugador los usa en la sesión que prefiera.
+  </div>
+
+  <h3>9.2 Validación en tiempo real del N° de Operación</h3>
+  <p>El formulario de pago del jugador ahora verifica automáticamente si el número de operación ya fue registrado <strong>mientras el jugador escribe</strong> (después de 600ms sin tipear).</p>
+  <ul>
+    <li>✅ Verde — número válido, nunca usado</li>
+    <li>❌ Rojo — número duplicado, bloquea el envío del formulario</li>
+  </ul>
+  <p>El backend también sigue rechazando duplicados en <code>/api/payment/register</code> como capa de seguridad adicional.</p>
+
+  <h3>9.3 Premio editable en el modal de ganadores</h3>
+  <p>Al hacer clic en <strong>✏️ Editar</strong> en la ficha de un ganador (tanto en <strong>/admin/pagos_ganadores</strong> como en <strong>/admin/caja</strong>), ahora aparece un campo <strong>"Premio a Pagar (S/.)"</strong> pre-rellenado con el monto calculado.</p>
+  <p>Puedes corregirlo antes de registrar el pago — útil cuando el sistema calculó mal el reparto (ej: múltiples ganadores de apagón detectados en la misma bolilla).</p>
+
+  <div class="box box-warning">
+    <strong>¿Cuándo puede ocurrir un monto incorrecto?</strong> Si varios jugadores ganan el apagón en la misma bolilla y el sistema los detecta automáticamente, puede ocurrir que los montos queden sin dividir correctamente en sesiones anteriores al parche. Usa el botón Editar para corregirlos.
+  </div>
+
+  <h3>9.4 Transferencia BBVA como método de pago</h3>
+  <p>Se agregó <strong>Transferencia BBVA</strong> a la lista de métodos de pago disponibles. Para activarla:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">Ve a <strong>Admin → Configuración → Métodos de Pago</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">Activa <strong>🔵 Transferencia BBVA</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">Ingresa el número de cuenta y titular, añade instrucciones si lo deseas, y guarda.</div>
+    </div>
+  </div>
+
+  <h3>9.5 División automática del premio en apagón compartido</h3>
+  <p>Cuando múltiples jugadores ganan el apagón (bingo completo) simultáneamente — sea por detección automática o manual — el sistema ahora recalcula el premio por ganador correctamente después de sumar todos los ganadores.</p>
+  <p>Anteriormente, el primer ganador podía quedar registrado con el monto completo y los siguientes con montos parciales. Ahora todos quedan con el mismo monto dividido.</p>
+
+  <h3>9.6 Nuevas URLs del sistema</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
+    <tr style="background:#f0f4ff">
+      <th style="padding:8px 12px;text-align:left;border:1px solid #dde4f0">URL</th>
+      <th style="padding:8px 12px;text-align:left;border:1px solid #dde4f0">Descripción</th>
+      <th style="padding:8px 12px;text-align:left;border:1px solid #dde4f0">Acceso</th>
+    </tr>
+    <tr>
+      <td style="padding:7px 12px;border:1px solid #dde4f0"><code>/referral/confirm/&lt;token&gt;</code></td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Confirmación de referido por el referidor</td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Público (link único por email)</td>
+    </tr>
+    <tr style="background:#f9fbff">
+      <td style="padding:7px 12px;border:1px solid #dde4f0"><code>/api/referral/validate</code></td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Valida un código de referido en tiempo real</td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Público (POST)</td>
+    </tr>
+    <tr>
+      <td style="padding:7px 12px;border:1px solid #dde4f0"><code>/api/admin/referrals</code></td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Lista todos los referidos del sistema</td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Admin</td>
+    </tr>
+    <tr style="background:#f9fbff">
+      <td style="padding:7px 12px;border:1px solid #dde4f0"><code>/api/admin/contact/&lt;id&gt;/referral_code</code></td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Genera código de referido para un contacto</td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Admin</td>
+    </tr>
+    <tr>
+      <td style="padding:7px 12px;border:1px solid #dde4f0"><code>/api/payment/check_ref</code></td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Verifica si un N° de operación ya existe</td>
+      <td style="padding:7px 12px;border:1px solid #dde4f0">Público (POST)</td>
+    </tr>
+  </table>
+
+</div>
 
 <!-- ═══════════════════════════════════════════════════════ FOOTER -->
 <div style="background:#0d1b3e; color:#4a6080; text-align:center; padding:30px; margin-top:40px; font-size:12px;">

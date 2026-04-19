@@ -25,6 +25,7 @@
 .mode-btn:hover { border-color:var(--accent); color:var(--text); }
 .mode-btn.active-paid  { border-color:var(--accent); background:rgba(0,229,180,.1); color:var(--accent); }
 .mode-btn.active-free  { border-color:#f6c343;        background:rgba(246,195,67,.1); color:#f6c343; }
+.mode-btn.active-ref   { border-color:#f6c343;        background:rgba(246,195,67,.1); color:#f6c343; }
 
 /* ── Section title ── */
 .section-label {
@@ -184,6 +185,11 @@
       Bingo Gratis<br>
       <span style="font-size:.72rem;font-weight:400;color:inherit;opacity:.8">Sin costo · Acceso directo</span>
     </button>
+    <button class="mode-btn" id="btn-ref" onclick="showMode('ref')" style="border-color:rgba(246,195,67,.4)">
+      <span class="icon">🎁</span>
+      Programa Referidos<br>
+      <span style="font-size:.72rem;font-weight:400;color:inherit;opacity:.8">Invita amigos · Gana cartillas gratis</span>
+    </button>
   </div>
 
   <!-- ════════════════════════════════════
@@ -305,7 +311,9 @@
                 Luego ingresa el N° de operación.
               </div>
               <div class="mock-label">N° de operación *</div>
-              <div class="mock-input" style="margin-bottom:10px">12345678</div>
+              <div class="mock-input" style="margin-bottom:8px">12345678</div>
+              <div class="mock-label" style="margin-top:4px">Código de referido <span style="opacity:.6">(opcional)</span></div>
+              <div class="mock-input" style="margin-bottom:10px;letter-spacing:2px">JORG-K4X2</div>
               <div class="mock-btn primary">Siguiente →</div>
             </div>
           </div>
@@ -313,6 +321,10 @@
           <div class="tip-box warning">
             <div class="tip-icon">⚠️</div>
             <div>El número de operación aparece en tu app de Yape o Plin justo después de hacer la transferencia. <strong>Cópialo exacto</strong> — sin ese número tu solicitud no puede ser aprobada.</div>
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">🎁</div>
+            <div>¿Alguien te invitó a jugar? Ingresa su <strong style="color:var(--accent)">Código de referido</strong> (ej: JORG-K4X2) en el campo opcional. Así tu amigo acumula referidos y puede ganar cartillas gratis.</div>
           </div>
         </div>
       </div>
@@ -389,6 +401,10 @@
           <div class="tip-box warning">
             <div class="tip-icon">📨</div>
             <div>Revisa también tu carpeta de <strong>Spam / Correo no deseado</strong>. A veces los correos automáticos caen ahí.</div>
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">🎁</div>
+            <div>En ese mismo correo de aprobación encontrarás tu <strong style="color:var(--accent)">código de referidos personal</strong> (ej: <strong>JORG-K4X2</strong>). Compártelo con amigos — cada 5 que se usen ganas una cartilla gratis. ¡Guárdalo!</div>
           </div>
         </div>
       </div>
@@ -659,6 +675,143 @@
     </div><!-- /steps-list free -->
   </div><!-- /pane-free -->
 
+  <!-- ════════════════════════════════════
+       GUÍA PROGRAMA REFERIDOS
+       ════════════════════════════════════ -->
+  <div class="guide-pane" id="pane-ref">
+
+    <div class="section-label free">🎁 Programa Referidos — Invita y Gana</div>
+
+    <div class="steps-list">
+
+      <!-- PASO 1 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">1</div>
+          <div>
+            <div class="step-title">Recibe tu código de referidos</div>
+            <div class="step-subtitle">Automático — llega en el correo de aprobación de tu primer bingo</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Cuando el organizador aprueba tu primer pago, recibes un correo con tu código de voucher. <strong>En ese mismo correo</strong> encontrarás tu código de referidos personal.</p>
+          <div class="mock-screen">
+            <div class="mock-bar">📧 Correo de aprobación</div>
+            <div class="mock-body">
+              <div style="background:rgba(246,195,67,.06);border:2px solid rgba(246,195,67,.3);border-radius:10px;padding:14px;text-align:center">
+                <div style="font-size:.65rem;color:#f6c343;letter-spacing:2px;margin-bottom:6px">🎁 TU CÓDIGO DE REFERIDOS</div>
+                <div style="font-family:monospace;font-size:2rem;font-weight:900;color:#f6c343;letter-spacing:6px">JORG-K4X2</div>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Comparte este código con amigos y familiares</div>
+              </div>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.6">
+                1. Comparte tu código con amigos<br>
+                2. Ellos lo ingresan al pagar su cartilla<br>
+                3. Tú confirmas cada referido por email<br>
+                4. <strong style="color:#f6c343">¡Cada 5 confirmados = 1 cartilla gratis!</strong>
+              </div>
+            </div>
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">💡</div>
+            <div>Tu código es único e irrepetible. No caduca — puedes compartirlo en cualquier momento.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">2</div>
+          <div>
+            <div class="step-title">Comparte tu código con amigos</div>
+            <div class="step-subtitle">Por WhatsApp, mensaje o de boca en boca</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Envía tu código a quien quieras invitar. Diles que lo escriban en el campo <strong>"Código de referido"</strong> cuando estén pagando su cartilla de bingo.</p>
+          <div class="mock-screen">
+            <div class="mock-bar">Tu amigo paga su cartilla</div>
+            <div class="mock-body">
+              <div class="mock-label">N° de operación *</div>
+              <div class="mock-input" style="margin-bottom:8px">87654321</div>
+              <div class="mock-label">Código de referido <span style="opacity:.6">(opcional)</span></div>
+              <div class="mock-input" style="letter-spacing:2px;color:#f6c343;font-weight:700;margin-bottom:4px">JORG-K4X2</div>
+              <div style="font-size:.68rem;color:#27ae60;margin-bottom:10px">✅ Código válido — referido de Jorge</div>
+              <div class="mock-btn primary">Siguiente →</div>
+            </div>
+          </div>
+          <div class="tip-box warning">
+            <div class="tip-icon">⚠️</div>
+            <div>El campo <strong>valida en tiempo real</strong> — si el código es correcto aparece verde con tu nombre. Si es incorrecto aparece rojo.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">3</div>
+          <div>
+            <div class="step-title">Confirma el referido por correo</div>
+            <div class="step-subtitle">Cuando el admin aprueba a tu amigo, tú recibes un email</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Cuando el organizador aprueba el pago de tu amigo, <strong>tú recibes un correo</strong> preguntando si conoces a esa persona. Haz clic en el botón para confirmar.</p>
+          <div class="mock-screen">
+            <div class="mock-bar">📧 Correo de confirmación</div>
+            <div class="mock-body">
+              <div class="mock-email-box">
+                <div class="subj">🎁 ¡Juan Pérez usó tu código de referido!</div>
+                <div style="margin-top:6px;font-size:.8rem">Hola <strong>Jorge</strong>, Juan Pérez usó tu código para unirse a Bingo Pro. Confirma que lo conoces para que cuente como referido válido.</div>
+                <div style="text-align:center;margin-top:12px">
+                  <div style="background:rgba(0,229,180,.15);border:1px solid rgba(0,229,180,.4);border-radius:8px;padding:10px 20px;color:var(--accent);font-weight:700;font-size:.85rem;display:inline-block">✅ Confirmar referido</div>
+                </div>
+                <div style="font-size:.7rem;color:var(--muted);margin-top:8px">Si no reconoces a esta persona, simplemente ignora este email.</div>
+              </div>
+            </div>
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">💡</div>
+            <div>Solo cuentan los referidos que <strong>tú confirmes</strong>. Si no reconoces a la persona, ignora el correo — no pasa nada.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num free">4</div>
+          <div>
+            <div class="step-title">¡A las 5 confirmaciones recibe tu cartilla gratis!</div>
+            <div class="step-subtitle">Premio automático — llega directo a tu correo</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Cuando completes <strong>5 referidos confirmados</strong>, el sistema genera automáticamente una <strong>cartilla gratis de Bingo 2 Soles</strong> y te la envía por correo.</p>
+          <div class="mock-screen">
+            <div class="mock-bar">📧 ¡Premio de referidos!</div>
+            <div class="mock-body">
+              <div style="text-align:center;padding:10px 0">
+                <div style="font-size:2rem;margin-bottom:6px">🏆</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:#f6c343;letter-spacing:2px">¡5 REFERIDOS CONFIRMADOS!</div>
+                <div style="font-size:.75rem;color:var(--muted);margin:6px 0 12px">Tu cartilla gratis de Bingo 2 Soles:</div>
+                <div class="mock-code-box" style="border-color:rgba(246,195,67,.5);color:#f6c343">XZ7R2P</div>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Voucher flotante — úsalo en cualquier sesión futura</div>
+                <div class="mock-btn free" style="margin-top:10px">🎴 Generar mi cartilla</div>
+              </div>
+            </div>
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">🎯</div>
+            <div>El voucher es <strong>flotante</strong> — no está asignado a ninguna sesión específica. Puedes usarlo cuando quieras en cualquier bingo de 2 soles futuro. ¡Y el ciclo vuelve a empezar para el siguiente grupo de 5!</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps-list ref -->
+  </div><!-- /pane-ref -->
+
   <hr class="guide-divider">
 
   <!-- ── Preguntas rápidas ── -->
@@ -692,9 +845,24 @@
         <div style="font-size:.85rem;color:var(--muted)">No te preocupes. Tu cartilla se guarda automáticamente. Al volver a <strong>ganabingoperu.com</strong> e ingresar tu código, tu cartilla reaparece con todos los números ya marcados.</div>
       </div>
 
-      <div>
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
         <div style="font-weight:700;margin-bottom:5px">¿Cómo sé si gané?</div>
         <div style="font-size:.85rem;color:var(--muted)">El sistema lo detecta automáticamente y aparece un aviso en pantalla. También puedes reclamar tu bingo tocando el botón <strong>"🎉 ¡BINGO!"</strong> si crees que completaste el patrón.</div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿Cómo obtengo mi código de referidos?</div>
+        <div style="font-size:.85rem;color:var(--muted)">Lo recibes automáticamente en el correo de aprobación de tu primer pago. Es un código como <strong style="color:#f6c343">JORG-K4X2</strong>. Si no lo encuentras, revisa tu carpeta de Spam.</div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿El número de operación puede repetirse?</div>
+        <div style="font-size:.85rem;color:var(--muted)">No. El sistema valida en tiempo real que el número de operación no haya sido usado antes. Si ya existe, verás un aviso rojo y no podrás continuar hasta ingresar el correcto.</div>
+      </div>
+
+      <div>
+        <div style="font-weight:700;margin-bottom:5px">¿Cuántos referidos necesito para una cartilla gratis?</div>
+        <div style="font-size:.85rem;color:var(--muted)">5 referidos confirmados = 1 cartilla gratis de Bingo 2 Soles. El ciclo se repite — cada 5 nuevos referidos confirmados recibes otra cartilla gratis.</div>
       </div>
 
     </div>
@@ -713,8 +881,10 @@
 function showMode(mode) {
   document.getElementById('pane-paid').classList.toggle('active', mode === 'paid');
   document.getElementById('pane-free').classList.toggle('active', mode === 'free');
+  document.getElementById('pane-ref').classList.toggle('active',  mode === 'ref');
   document.getElementById('btn-paid').className = 'mode-btn' + (mode === 'paid' ? ' active-paid' : '');
   document.getElementById('btn-free').className = 'mode-btn' + (mode === 'free' ? ' active-free' : '');
+  document.getElementById('btn-ref').className  = 'mode-btn'  + (mode === 'ref'  ? ' active-ref'  : '');
 }
 </script>
 </body>
