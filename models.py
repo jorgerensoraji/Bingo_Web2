@@ -37,6 +37,7 @@ class Voucher(Base):
     access_pin           = Column(String(64),  default="")   # SHA-256 del PIN de 4 dígitos
     pin_hint             = Column(String(4),   default="")   # PIN en texto plano (solo para email de aprobación)
     creado_por           = Column(String(20),  default="admin")
+    referral_code_used   = Column(String(12),  default="")
     # JSON-encoded list of cartilla IDs  e.g. '["AB12", "CD34"]'
     cartillas_ids        = Column(Text,        default="[]")
     max_cartillas        = Column(Integer,     default=1)
@@ -81,6 +82,7 @@ class Voucher(Base):
             "email_enviado_at":       self.email_enviado_at,
             "email_reenviado_at":     self.email_reenviado_at,
             "creado_por":             self.creado_por,
+            "referral_code_used":     self.referral_code_used or "",
             "pin_hint":               self.pin_hint or "",
             "cartillas":              self.cartillas_list(),
             "max_cartillas":          self.max_cartillas or 1,
@@ -283,19 +285,21 @@ class Contact(Base):
     """Manual contacts for broadcast — people not yet in the Voucher table."""
     __tablename__ = "contacts"
 
-    id      = Column(Integer, primary_key=True, autoincrement=True)
-    nombre  = Column(String(120), default="")
-    email   = Column(String(100), default="")
-    phone   = Column(String(25),  default="")   # E.164 format e.g. +51987654321
-    created = Column(String(30),  default="")
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    nombre        = Column(String(120), default="")
+    email         = Column(String(100), default="")
+    phone         = Column(String(25),  default="")   # E.164 format e.g. +51987654321
+    referral_code = Column(String(12),  default="", index=True)
+    created       = Column(String(30),  default="")
 
     def to_dict(self) -> dict:
         return {
-            "id":      self.id,
-            "nombre":  self.nombre  or "",
-            "email":   self.email   or "",
-            "phone":   self.phone   or "",
-            "created": self.created or "",
+            "id":            self.id,
+            "nombre":        self.nombre        or "",
+            "email":         self.email         or "",
+            "phone":         self.phone         or "",
+            "referral_code": self.referral_code or "",
+            "created":       self.created       or "",
         }
 
 
@@ -374,4 +378,36 @@ class Winner(Base):
             "paid_ref":     self.paid_ref      or "",
             "paid_note":    self.paid_note     or "",
             "created":      self.created       or "",
+        }
+
+
+class Referral(Base):
+    """Tracks referral relationships and confirmation status."""
+    __tablename__ = "referrals"
+
+    id                  = Column(Integer,    primary_key=True, autoincrement=True)
+    referrer_contact_id = Column(Integer,    default=0, index=True)
+    referrer_code       = Column(String(12), default="")
+    referrer_email      = Column(String(100),default="")
+    referrer_nombre     = Column(String(120),default="")
+    voucher_code        = Column(String(10), default="", index=True)
+    referred_nombre     = Column(String(120),default="")
+    status              = Column(String(20), default="pending")   # pending | confirmed
+    confirm_token       = Column(String(64), default="", unique=True, index=True)
+    created_at          = Column(String(30), default="")
+    confirmed_at        = Column(String(30), default="")
+
+    def to_dict(self) -> dict:
+        return {
+            "id":                  self.id,
+            "referrer_contact_id": self.referrer_contact_id,
+            "referrer_code":       self.referrer_code  or "",
+            "referrer_email":      self.referrer_email or "",
+            "referrer_nombre":     self.referrer_nombre or "",
+            "voucher_code":        self.voucher_code   or "",
+            "referred_nombre":     self.referred_nombre or "",
+            "status":              self.status         or "pending",
+            "confirm_token":       self.confirm_token  or "",
+            "created_at":          self.created_at     or "",
+            "confirmed_at":        self.confirmed_at   or "",
         }

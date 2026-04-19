@@ -523,6 +523,14 @@
           💵 Para pago en efectivo, el organizador aprobará tu solicitud
           cuando reciba el dinero presencialmente.
         </div>
+        <div class="form-group" style="margin-top:8px">
+          <label>Código de referido <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+          <input type="text" id="inp-referral" placeholder="Ej: JORG-K4X2" maxlength="12"
+                 style="text-transform:uppercase">
+          <div id="referral-feedback" style="font-size:.72rem;margin-top:4px;color:var(--muted)">
+            Si alguien te invitó, ingresa su código para que reciba créditos.
+          </div>
+        </div>
       </div><!-- end payment-section -->
 
       <!-- Cantidad de cartillas -->
@@ -870,6 +878,47 @@ document.getElementById('inp-ref').addEventListener('input', function() {
   }, 600);
 });
 
+// ── Validación en tiempo real del código de referido ───
+let _referralTimer = null;
+let _referralValid = true; // empty = valid (it's optional)
+document.getElementById('inp-referral').addEventListener('input', function() {
+  clearTimeout(_referralTimer);
+  const code     = this.value.trim().toUpperCase();
+  const feedback = document.getElementById('referral-feedback');
+  this.value     = code;
+  if (!code) {
+    _referralValid = true;
+    feedback.style.color = 'var(--muted)';
+    feedback.textContent = 'Si alguien te invitó, ingresa su código para que reciba créditos.';
+    return;
+  }
+  feedback.style.color = 'var(--muted)';
+  feedback.textContent = '🔍 Verificando…';
+  _referralTimer = setTimeout(async () => {
+    try {
+      const res  = await fetch('/api/referral/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        _referralValid = true;
+        feedback.style.color = '#27ae60';
+        feedback.textContent = `✅ Código válido — referido de ${data.nombre}`;
+      } else {
+        _referralValid = false;
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = '❌ Código de referido no encontrado.';
+      }
+    } catch(e) {
+      _referralValid = true;
+      feedback.style.color = 'var(--muted)';
+      feedback.textContent = 'Si alguien te invitó, ingresa su código para que reciba créditos.';
+    }
+  }, 600);
+});
+
 // ── Selector de tipo de bingo ──────────────────────────
 async function loadBingoTypes() {
   try {
@@ -1148,6 +1197,11 @@ async function enviarSolicitud() {
     document.getElementById('inp-ref').focus();
     return;
   }
+  if (!_referralValid) {
+    showToast('❌ Código de referido inválido. Corrígelo o déjalo vacío.');
+    document.getElementById('inp-referral').focus();
+    return;
+  }
 
   const btn = document.getElementById('btn-solicitar');
   btn.disabled   = true;
@@ -1161,6 +1215,7 @@ async function enviarSolicitud() {
         nombres, apellidos, email, celular, yape_plin, terms_accepted,
         bingo_type: selBtype, session_id,
         method, reference: ref,
+        referral_code: document.getElementById('inp-referral').value.trim().toUpperCase() || '',
         cantidad_cartillas: selQty,
       }),
     });

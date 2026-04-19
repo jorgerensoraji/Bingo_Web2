@@ -149,12 +149,14 @@ textarea.inp{width:100%;resize:vertical;min-height:120px;box-sizing:border-box;f
             <th>Nombre</th>
             <th>Email</th>
             <th>WhatsApp</th>
+            <th>Código Referido</th>
+            <th>Referidos</th>
             <th>Agregado</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="contacts-body">
-          <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -187,7 +189,7 @@ function esc(s) {
 function renderTable(data) {
   const tbody = document.getElementById('contacts-body');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Sin contactos todavía</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Sin contactos todavía</td></tr>';
     document.getElementById('table-count').textContent = '';
     return;
   }
@@ -197,6 +199,18 @@ function renderTable(data) {
       <td><strong>${esc(c.nombre) || '<span style="color:var(--muted)">—</span>'}</strong></td>
       <td>${c.email ? `<a href="mailto:${esc(c.email)}" style="color:var(--accent);text-decoration:none">${esc(c.email)}</a>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td>${c.phone ? `<span style="color:#25d366">${esc(c.phone)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>
+        ${c.referral_code
+          ? `<span style="font-family:monospace;background:var(--card);padding:2px 8px;border-radius:6px;
+                          font-size:.82rem;color:var(--accent);border:1px solid var(--border)">${esc(c.referral_code)}</span>`
+          : `<button class="btn btn-ghost btn-sm" onclick="genCode(${c.id},this)">Generar</button>`}
+      </td>
+      <td style="text-align:center">
+        <span style="color:${(c.confirmed_referrals||0)>=5?'#f6c343':'var(--muted)'}">
+          ${c.confirmed_referrals||0} ✅
+          ${(c.pending_referrals||0) > 0 ? `<span style="color:var(--muted)">(${c.pending_referrals} ⏳)</span>` : ''}
+        </span>
+      </td>
       <td style="color:var(--muted)">${(c.created||'').slice(0,10)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteContact(${c.id})">🗑</button></td>
     </tr>`).join('');
@@ -217,17 +231,49 @@ function filterTable() {
 
 async function loadContacts() {
   try {
-    const res  = await fetch('/api/admin/contacts');
-    const data = await res.json();
-    allContacts = data.contacts || [];
+    const [cRes, rRes] = await Promise.all([
+      fetch('/api/admin/contacts'),
+      fetch('/api/admin/referrals'),
+    ]);
+    const cData = await cRes.json();
+    const rData = await rRes.json();
+    // Build referral counts per referrer_contact_id
+    const refCounts = {};
+    for (const r of (rData.referrals || [])) {
+      const cid = r.referrer_contact_id;
+      if (!refCounts[cid]) refCounts[cid] = { confirmed: 0, pending: 0 };
+      if (r.status === 'confirmed') refCounts[cid].confirmed++;
+      else refCounts[cid].pending++;
+    }
+    allContacts = (cData.contacts || []).map(c => ({
+      ...c,
+      confirmed_referrals: (refCounts[c.id] || {}).confirmed || 0,
+      pending_referrals:   (refCounts[c.id] || {}).pending   || 0,
+    }));
     document.getElementById('st-total').textContent  = allContacts.length;
     document.getElementById('st-emails').textContent = allContacts.filter(c => c.email).length;
     document.getElementById('st-phones').textContent = allContacts.filter(c => c.phone).length;
     renderTable(allContacts);
   } catch(e) {
     document.getElementById('contacts-body').innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger)">Error al cargar</td></tr>';
+      '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--danger)">Error al cargar</td></tr>';
   }
+}
+
+async function genCode(cid, btn) {
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res  = await fetch(`/api/admin/contact/${cid}/referral_code`);
+    const data = await res.json();
+    if (data.referral_code) {
+      btn.parentElement.innerHTML =
+        `<span style="font-family:monospace;background:var(--card);padding:2px 8px;border-radius:6px;
+                      font-size:.82rem;color:var(--accent);border:1px solid var(--border)">${data.referral_code}</span>`;
+      // update local cache
+      const c = allContacts.find(x => x.id === cid);
+      if (c) c.referral_code = data.referral_code;
+    }
+  } catch(e) { btn.disabled = false; btn.textContent = 'Generar'; }
 }
 
 async function addContact() {

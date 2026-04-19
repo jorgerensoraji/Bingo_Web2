@@ -13,7 +13,7 @@ CHANGES v8.0 (SQLite migration):
   ✅ Foundation ready for payment webhooks (v8.2)
 """
 
-import asyncio, base64, hashlib, json, os, random, re, socket, tempfile
+import asyncio, base64, hashlib, json, os, random, re, secrets, socket, tempfile
 import threading, time, uuid
 from security import (
     apply_security_headers, get_csrf_token, csrf_required,
@@ -73,7 +73,7 @@ import qrcode
 
 
 from database import init_db, SessionLocal
-from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact, Reimbursement, Winner, _winner_prize
+from models import Voucher, Session as BingoSession, Cartilla, Config, BingoTypeDB, Contact, Reimbursement, Winner, Referral, _winner_prize
 
 # ── Cargar .env ───────────────────────────────────────────────────────────────
 try:
@@ -847,6 +847,191 @@ def _unique_code(db) -> str:
         if not db.query(Voucher).filter_by(code=code).first():
             return code
     raise RuntimeError("No se pudo generar código único")
+
+# ─── Referral helpers ────────────────────────────────────────────────────────
+
+def _gen_referral_code(nombre: str, db) -> str:
+    """Generate a unique referral code like JORG-K4X2."""
+    prefix = re.sub(r'[^A-Z]', '', (nombre or "USER").upper())[:4].ljust(4, "X")
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    for _ in range(50):
+        suffix = "".join(random.choice(alphabet) for _ in range(4))
+        code = f"{prefix}-{suffix}"
+        if not db.query(Contact).filter(Contact.referral_code == code).first():
+            return code
+    raise RuntimeError("No se pudo generar código de referido único")
+
+def _get_or_create_referral_code(contact_id: int) -> str:
+    """Return existing referral code for a contact, or generate and save one."""
+    with db_session() as db:
+        c = db.query(Contact).filter_by(id=contact_id).first()
+        if not c:
+            return ""
+        if c.referral_code:
+            return c.referral_code
+        code = _gen_referral_code(c.nombre, db)
+        c.referral_code = code
+        return code
+
+def _award_free_voucher(contact_id: int, referrer_nombre: str, referrer_email: str, url_base: str) -> str:
+    """Create a free 2-soles floating voucher for the referrer. Returns the voucher code."""
+    btype_id = "2sol"
+    btype    = BINGO_TYPES.get(btype_id)
+    if not btype:
+        # fallback to any bingo type with precio==2
+        btype_id = next((k for k, v in BINGO_TYPES.items() if v.get("precio") == 2.0), None)
+        if not btype_id:
+            btype_id = list(BINGO_TYPES.keys())[0]
+        btype = BINGO_TYPES[btype_id]
+    now = now_peru().isoformat()
+    with db_session() as db:
+        code = _unique_code(db)
+        v = Voucher(
+            code=code,
+            nombres=referrer_nombre.split()[0] if referrer_nombre else "Jugador",
+            apellidos=" ".join(referrer_nombre.split()[1:]) if referrer_nombre else "",
+            email=referrer_email or "",
+            bingo_type=btype_id,
+            bingo_nombre=btype["nombre"],
+            precio=0.0,
+            session_id="",
+            payment_method="referido",
+            payment_ref="",
+            payment_status="manual_approved",
+            approved_at=now,
+            approved_note="Premio por 5 referidos confirmados",
+            creado_por="referral",
+            created=now,
+        )
+        db.add(v)
+        db.flush()
+        v_dict = v.to_dict()
+    # Notify referrer by email
+    if referrer_email:
+        asunto = f"🎁 ¡Ganaste una cartilla gratis de {btype['nombre']}!"
+        html = _email_referral_prize(referrer_nombre, btype["nombre"], code, url_base)
+        ok, err = enviar_email(referrer_email, asunto, html)
+        if not ok:
+            print(f"[WARN] Email premio referido no enviado a {referrer_email}: {err}")
+    return code
+
+def _check_referral_milestone(contact_id: int, url_base: str):
+    """Check if referrer has hit a multiple of 5 confirmed referrals and award free voucher."""
+    with db_session() as db:
+        c = db.query(Contact).filter_by(id=contact_id).first()
+        if not c:
+            return
+        confirmed = db.query(Referral).filter_by(
+            referrer_contact_id=contact_id, status="confirmed"
+        ).count()
+        # Award one free voucher per completed group of 5
+        awarded = db.query(Voucher).filter(
+            Voucher.creado_por == "referral",
+            Voucher.approved_note == "Premio por 5 referidos confirmados",
+            Voucher.email == (c.email or "")
+        ).count() if c.email else 0
+        milestones_reached  = confirmed // 5
+        milestones_rewarded = awarded
+        if milestones_reached > milestones_rewarded:
+            nombre = c.nombre or ""
+            email  = c.email  or ""
+    if milestones_reached > milestones_rewarded:
+        _award_free_voucher(contact_id, nombre, email, url_base)
+
+def _email_referral_confirmation(referrer_nombre: str, referred_nombre: str,
+                                  confirm_url: str) -> str:
+    return f"""<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#0a1628;font-family:Arial,sans-serif">
+<div style="max-width:520px;margin:40px auto;background:#111f2e;border-radius:16px;
+            padding:32px;color:#ddeeff">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:2.5rem">🎁</div>
+    <h2 style="color:#00e5b4;margin:8px 0">¡Alguien usó tu código!</h2>
+  </div>
+  <p style="color:#ddeeff">Hola <strong>{referrer_nombre}</strong>,</p>
+  <p style="color:#6a9ab8"><strong style="color:#ddeeff">{referred_nombre}</strong>
+     usó tu código de referido para unirse a Bingo Pro.</p>
+  <p style="color:#6a9ab8">Confirma que lo conoces para que cuente como referido válido.
+     Cada 5 referidos confirmados recibes <strong style="color:#00e5b4">una cartilla gratis</strong>.</p>
+  <div style="text-align:center;margin:28px 0">
+    <a href="{confirm_url}" style="background:#00e5b4;color:#0a1628;padding:14px 32px;
+       border-radius:10px;font-weight:900;font-size:1rem;text-decoration:none;
+       display:inline-block">✅ Confirmar referido</a>
+  </div>
+  <p style="color:#4a6b85;font-size:.75rem;text-align:center">
+    Si no reconoces a esta persona, simplemente ignora este email.</p>
+</div>
+</body></html>"""
+
+def _email_referral_prize(referrer_nombre: str, bingo_nombre: str,
+                           voucher_code: str, url_base: str) -> str:
+    url = f"{url_base}/cartillas?code={voucher_code}"
+    return f"""<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#0a1628;font-family:Arial,sans-serif">
+<div style="max-width:520px;margin:40px auto;background:#111f2e;border-radius:16px;
+            padding:32px;color:#ddeeff">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:2.5rem">🏆</div>
+    <h2 style="color:#f6c343;margin:8px 0">¡Premio de referidos!</h2>
+  </div>
+  <p style="color:#ddeeff">Hola <strong>{referrer_nombre}</strong>,</p>
+  <p style="color:#6a9ab8">¡Completaste 5 referidos confirmados! 🎉</p>
+  <p style="color:#6a9ab8">Tu premio es una cartilla gratis de
+     <strong style="color:#00e5b4">{bingo_nombre}</strong>.</p>
+  <div style="background:#0a1628;border-radius:10px;padding:16px;text-align:center;margin:20px 0">
+    <div style="font-size:.7rem;color:#4a6b85;letter-spacing:3px;margin-bottom:6px">TU CÓDIGO</div>
+    <div style="font-size:2rem;font-weight:900;color:#00e5b4;letter-spacing:4px">{voucher_code}</div>
+  </div>
+  <div style="text-align:center;margin:20px 0">
+    <a href="{url}" style="background:#00e5b4;color:#0a1628;padding:14px 32px;
+       border-radius:10px;font-weight:900;text-decoration:none;display:inline-block">
+       🎴 Generar mi cartilla</a>
+  </div>
+  <p style="color:#4a6b85;font-size:.75rem;text-align:center">
+    Este voucher es flotante — úsalo en cualquier sesión futura de {bingo_nombre}.</p>
+</div>
+</body></html>"""
+
+def _trigger_referral_on_approval(v_dict: dict, url_base: str):
+    """Called after a voucher is approved. If it had a referral code, create
+    a pending Referral and send confirmation email to the referrer."""
+    ref_code = (v_dict.get("referral_code_used") or "").strip().upper()
+    if not ref_code:
+        return
+    voucher_code    = v_dict.get("code", "")
+    referred_nombre = f"{v_dict.get('nombres','')} {v_dict.get('apellidos','')}".strip()
+    with db_session() as db:
+        # Avoid duplicate referral records for the same voucher
+        existing = db.query(Referral).filter_by(voucher_code=voucher_code).first()
+        if existing:
+            return
+        referrer = db.query(Contact).filter(Contact.referral_code == ref_code).first()
+        if not referrer:
+            return
+        if not referrer.email:
+            return  # can't send confirmation without email
+        token = secrets.token_hex(32)
+        db.add(Referral(
+            referrer_contact_id=referrer.id,
+            referrer_code=ref_code,
+            referrer_email=referrer.email,
+            referrer_nombre=referrer.nombre or "",
+            voucher_code=voucher_code,
+            referred_nombre=referred_nombre,
+            status="pending",
+            confirm_token=token,
+            created_at=now_peru().isoformat(),
+        ))
+        db.flush()
+        confirm_url    = f"{url_base}/referral/confirm/{token}"
+        referrer_email = referrer.email
+        referrer_nombre= referrer.nombre or "amigo/a"
+    # Send email outside the DB session
+    asunto = f"🎁 ¡{referred_nombre} usó tu código de referido!"
+    html   = _email_referral_confirmation(referrer_nombre, referred_nombre, confirm_url)
+    ok, err = enviar_email(referrer_email, asunto, html)
+    if not ok:
+        print(f"[WARN] Email confirmación referido no enviado a {referrer_email}: {err}")
 
 def get_voucher_info(code: str) -> dict | None:
     code = (code or "").strip().upper()
@@ -1635,6 +1820,7 @@ def api_player_solicitar():
     session_id     = data.get("session_id", "")
     method             = (data.get("method")        or "").strip()
     ref                = (data.get("reference")     or "").strip()[:80]
+    referral_code      = (data.get("referral_code") or "").strip().upper()[:12]
     cantidad_cartillas = max(1, min(5, int(data.get("cantidad_cartillas", 1) or 1)))
 
     if not nombres:
@@ -1660,6 +1846,14 @@ def api_player_solicitar():
             return jsonify({"error": "bingo_type_mismatch",
                             "message": f"Esta sesión es de {s.get('bingo_nombre')}. "
                                        f"Selecciona el tipo correcto."}), 400
+    # Validate referral code if provided
+    if referral_code:
+        with db_session() as db:
+            ref_contact = db.query(Contact).filter(Contact.referral_code == referral_code).first()
+            if not ref_contact:
+                return jsonify({"error": "invalid_referral",
+                                "message": "Código de referido inválido."}), 400
+
     is_free = BINGO_TYPES.get(bingo_type, {}).get("precio", 1) == 0
     if not is_free:
         if method != "efectivo" and not ref:
@@ -1709,6 +1903,7 @@ def api_player_solicitar():
             approved_at=None,
             created=now,
             creado_por="jugador",
+            referral_code_used=referral_code,
         )
         db.add(v)
         db.flush()
@@ -1850,6 +2045,9 @@ def api_approve_voucher(code):
         else:
             print(f"[WARN] Email no enviado a {email}: {err}")
 
+    # Fire referral confirmation email if this voucher had a referral code
+    _trigger_referral_on_approval(v_dict, request.host_url.rstrip("/"))
+
     return jsonify({"status": "ok", "voucher": v_dict, "email_result": email_result})
 
 @app.route("/api/admin/voucher/<code>/reject", methods=["POST"])
@@ -1898,6 +2096,7 @@ def quick_approve(code):
                     v2.email_enviado_at     = now_peru().isoformat()
         else:
             print(f"[WARN] Email aprobación no enviado: {err}")
+    _trigger_referral_on_approval(v_dict, request.host_url.rstrip("/"))
     return _quick_result("approved", f"Voucher {code} aprobado correctamente.", code)
 
 @app.route("/admin/quick/reject/<code>", methods=["GET", "POST"])
@@ -2109,6 +2308,56 @@ def api_check_payment_ref():
         return jsonify({"duplicate": False})
     duplicate = _is_duplicate_payment_ref(ref, method, session_id)
     return jsonify({"duplicate": duplicate})
+
+@app.route("/api/referral/validate", methods=["POST"])
+@rate_limit(max_calls=30, window_seconds=60)
+def api_referral_validate():
+    """Check if a referral code exists and return the referrer's name."""
+    code = (request.get_json() or {}).get("code", "").strip().upper()
+    if not code:
+        return jsonify({"valid": False})
+    with db_session() as db:
+        c = db.query(Contact).filter(Contact.referral_code == code).first()
+        if not c:
+            return jsonify({"valid": False})
+        return jsonify({"valid": True, "nombre": (c.nombre or "").split()[0]})
+
+@app.route("/referral/confirm/<token>")
+def referral_confirm(token):
+    """Confirmation link clicked by the referrer."""
+    token = token.strip()
+    with db_session() as db:
+        ref = db.query(Referral).filter_by(confirm_token=token).first()
+        if not ref:
+            return _quick_result("error", "Enlace de confirmación inválido o ya utilizado.")
+        if ref.status == "confirmed":
+            return _quick_result("already", "Este referido ya fue confirmado anteriormente.")
+        ref.status       = "confirmed"
+        ref.confirmed_at = now_peru().isoformat()
+        contact_id       = ref.referrer_contact_id
+        referrer_nombre  = ref.referrer_nombre
+    url_base = request.host_url.rstrip("/")
+    _check_referral_milestone(contact_id, url_base)
+    return _quick_result("ok",
+        f"✅ ¡Referido confirmado! Gracias {referrer_nombre}. "
+        f"Cada 5 referidos confirmados recibes una cartilla gratis.")
+
+@app.route("/api/admin/referrals")
+def api_admin_referrals():
+    """List all referrals for admin view."""
+    chk = admin_required()
+    if chk: return chk
+    with db_session() as db:
+        rows = db.query(Referral).order_by(Referral.id.desc()).all()
+        return jsonify({"referrals": [r.to_dict() for r in rows]})
+
+@app.route("/api/admin/contact/<int:cid>/referral_code")
+def api_get_contact_referral_code(cid):
+    """Get (or generate) a contact's referral code."""
+    chk = admin_required()
+    if chk: return chk
+    code = _get_or_create_referral_code(cid)
+    return jsonify({"referral_code": code})
 
 @app.route("/api/payment/register", methods=["POST"])
 @rate_limit(max_calls=5, window_seconds=60)
