@@ -513,7 +513,7 @@
         <div class="form-group" id="ref-group" style="display:none">
           <label>N° de operación *</label>
           <input type="text" id="inp-ref" placeholder="Número exacto de tu Yape/Plin/transferencia" maxlength="60">
-          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
+          <div id="ref-feedback" style="font-size:.72rem;margin-top:4px;color:var(--muted)">
             ⚠️ Ingresa el número exacto que aparece en tu app de pago
           </div>
         </div>
@@ -829,6 +829,47 @@ function selectMethod(id) {
   en.style.display = (id === 'efectivo') ? 'block' : 'none';
 }
 
+// ── Validación en tiempo real del N° de operación ──────
+let _refCheckTimer = null;
+let _refDuplicate  = false;
+document.getElementById('inp-ref').addEventListener('input', function() {
+  clearTimeout(_refCheckTimer);
+  const ref      = this.value.trim();
+  const method   = document.getElementById('inp-method').value;
+  const feedback = document.getElementById('ref-feedback');
+  _refDuplicate  = false;
+  if (!ref || ref.length < 4 || !method || method === 'efectivo') {
+    feedback.style.color = 'var(--muted)';
+    feedback.textContent = '⚠️ Ingresa el número exacto que aparece en tu app de pago';
+    return;
+  }
+  feedback.style.color = 'var(--muted)';
+  feedback.textContent = '🔍 Verificando…';
+  _refCheckTimer = setTimeout(async () => {
+    const session_id = document.getElementById('inp-session').value;
+    try {
+      const res  = await fetch('/api/payment/check_ref', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref, method, session_id })
+      });
+      const data = await res.json();
+      if (data.duplicate) {
+        _refDuplicate = true;
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = '❌ Este número de operación ya fue registrado. Verifica que sea correcto.';
+      } else {
+        _refDuplicate = false;
+        feedback.style.color = '#27ae60';
+        feedback.textContent = '✅ Número de operación válido';
+      }
+    } catch(e) {
+      feedback.style.color = 'var(--muted)';
+      feedback.textContent = '⚠️ Ingresa el número exacto que aparece en tu app de pago';
+    }
+  }, 600);
+});
+
 // ── Selector de tipo de bingo ──────────────────────────
 async function loadBingoTypes() {
   try {
@@ -1100,6 +1141,11 @@ async function enviarSolicitud() {
   }
   if (!isFree && method !== 'efectivo' && !ref) {
     showToast('⚠️ Ingresa el número de operación de tu pago');
+    return;
+  }
+  if (!isFree && method !== 'efectivo' && _refDuplicate) {
+    showToast('❌ Ese número de operación ya fue registrado. Usa otro.');
+    document.getElementById('inp-ref').focus();
     return;
   }
 

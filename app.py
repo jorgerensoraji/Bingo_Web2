@@ -2098,6 +2098,18 @@ def api_voucher_status():
         "email_enviado":       v.get("email_codigo_enviado", False),
     })
 
+@app.route("/api/payment/check_ref", methods=["POST"])
+@rate_limit(max_calls=30, window_seconds=60)
+def api_check_payment_ref():
+    data       = request.get_json() or {}
+    ref        = (data.get("ref")        or "").strip()
+    method     = (data.get("method")     or "").strip()
+    session_id = (data.get("session_id") or "").strip()
+    if not ref or len(ref) < 4 or not method or method == "efectivo":
+        return jsonify({"duplicate": False})
+    duplicate = _is_duplicate_payment_ref(ref, method, session_id)
+    return jsonify({"duplicate": duplicate})
+
 @app.route("/api/payment/register", methods=["POST"])
 @rate_limit(max_calls=5, window_seconds=60)
 def api_register_payment():
