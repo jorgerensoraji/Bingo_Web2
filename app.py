@@ -2535,15 +2535,33 @@ def api_draw():
                                 "auto_detected": True,
                             })
                     if n_new:
+                        # Merge unclaimed O/U pools into bingo prize (first bingo winners only)
+                        merged_o = 0.0
+                        merged_u = 0.0
+                        if len(already2) == 0:
+                            if not game.o_claimed and game.o_pool > 0:
+                                merged_o = game.o_pool
+                                game.prize_pool += game.o_pool
+                                game.o_pool = 0.0
+                            if not game.u_claimed and game.u_pool > 0:
+                                merged_u = game.u_pool
+                                game.prize_pool += game.u_pool
+                                game.u_pool = 0.0
                         # Recalculate prize equally for ALL winners of this game
                         n_total    = len(game.claimed_winners)
                         prize_each = round(game.prize_pool / max(1, n_total), 2)
                         cur_gid    = game.game_id
+                        first_winner = True
                         for prev in game.winners_log:
                             if prev.get("game_id") == cur_gid:
                                 prev["prize"]     = prize_each
                                 prev["n_winners"] = n_total
                                 prev["split"]     = n_total > 1
+                                if first_winner and merged_o > 0:
+                                    prev["merged_o"] = merged_o
+                                if first_winner and merged_u > 0:
+                                    prev["merged_u"] = merged_u
+                                first_winner = False
                         game.paused = True
                         game.save_to_db()
         except Exception:
