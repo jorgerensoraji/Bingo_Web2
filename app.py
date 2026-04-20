@@ -4665,25 +4665,18 @@ def api_whatsapp_broadcast_session(sid):
     dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
     url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
 
-    # Build rich {{2}} variable with bingo info and prizes
-    _pool     = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
-    emoji     = btype.get("emoji", "🎯")
-    descripcion = (s.get("descripcion") or "").strip()
-    var2_lines = [
-        f"{emoji} {btype.get('nombre', 'Bingo')}",
-        f"Fecha: {dt_str}",
-        f"Precio cartilla: S/. {btype.get('precio', 0.0):.2f}",
-    ]
-    if descripcion:
-        var2_lines.append(descripcion)
-    if extra_info:
-        var2_lines.append(extra_info)
-    var2_lines += [
-        f"Premios estimados:",
-        f"🎉 Bingo S/. {_pool['prize_amount']:.2f}  ⭕ Letra O S/. {_pool['o_amount']:.2f}  🔷 Letra U S/. {_pool['u_amount']:.2f}  ⭐ Linea S/. {_pool['linea_amount']:.2f}",
-        f"Asegura tu lugar antes de que se agoten!",
-    ]
-    var2 = "\n".join(var2_lines)
+    # Build {{2}} variable: bingo name + date + price + prizes on one line
+    _pool = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
+    precio_str = f"S/. {btype.get('precio', 0.0):.2f}"
+    prizes_str = (f"Bingo S/. {_pool['prize_amount']:.2f} | "
+                  f"Letra O S/. {_pool['o_amount']:.2f} | "
+                  f"Letra U S/. {_pool['u_amount']:.2f} | "
+                  f"Linea S/. {_pool['linea_amount']:.2f}")
+    desc = (s.get("descripcion") or "").strip()
+    var2 = f"{btype.get('nombre','Bingo')} - {dt_str} - Cartilla {precio_str}"
+    if desc:
+        var2 += f" - {desc}"
+    var2 += f" | Premios: {prizes_str}"
 
     is_sandbox = "14155238886" in TWILIO_WA_FROM
 
