@@ -4666,15 +4666,10 @@ def api_whatsapp_broadcast_session(sid):
     dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
     url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
 
-    # Build {{2}} variable — single line (template variables don't support newlines)
+    # Build template variables
     _pool = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
     desc  = (s.get("descripcion") or "").strip()
-    var2  = (f"{btype.get('nombre','Bingo')} | {dt_str} | "
-             f"Cartilla S/. {btype.get('precio',0.0):.2f} | "
-             f"Bingo S/. {_pool['prize_amount']:.2f} "
-             f"O S/. {_pool['o_amount']:.2f} "
-             f"U S/. {_pool['u_amount']:.2f} "
-             f"Linea S/. {_pool['linea_amount']:.2f}")
+    var2  = f"{btype.get('nombre','Bingo')} | {dt_str} | Cartilla S/. {btype.get('precio',0.0):.2f}"
     if desc:
         var2 += f" | {desc}"
     if extra_info:
@@ -4695,7 +4690,14 @@ def api_whatsapp_broadcast_session(sid):
             ok, err = enviar_whatsapp(
                 phone, "",
                 content_sid=TWILIO_WA_TEMPLATE_SID,
-                content_variables={"1": nombre, "2": var2, "3": url_cartillas}
+                content_variables={
+                    "1": nombre,
+                    "2": var2,
+                    "3": f"{_pool['prize_amount']:.2f}",
+                    "4": f"{_pool['o_amount']:.2f}",
+                    "5": f"{_pool['u_amount']:.2f}",
+                    "6": f"{_pool['linea_amount']:.2f}",
+                }
             )
         if ok:
             sent += 1
