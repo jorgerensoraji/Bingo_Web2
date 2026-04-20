@@ -510,9 +510,10 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
                            f'font-size:.72rem;font-weight:700">{n}</span>')
         balls_html += '</div></div>'
 
-    won = cartilla_result.get("bingo")
-    linea = cartilla_result.get("linea")
-    marked = cartilla_result.get("marked", 0)
+    won          = cartilla_result.get("bingo")
+    linea        = cartilla_result.get("linea")
+    linea_no_win = cartilla_result.get("linea_no_win")
+    marked       = cartilla_result.get("marked", 0)
     if won:
         result_banner = ('<div style="background:rgba(0,229,180,.15);border:2px solid #00e5b4;'
                          'border-radius:12px;padding:14px;text-align:center;margin-bottom:16px">'
@@ -521,7 +522,13 @@ def _email_resumen_bingo(nombre: str, bingo_nombre: str, drawn: list,
     elif linea:
         result_banner = ('<div style="background:rgba(246,195,67,.12);border:2px solid #f6c343;'
                          'border-radius:12px;padding:14px;text-align:center;margin-bottom:16px">'
-                         '<div style="font-size:1.4rem;font-weight:900;color:#f6c343">⭐ ¡Completaste la Letra I!</div>'
+                         '<div style="font-size:1.4rem;font-weight:900;color:#f6c343">⭐ ¡Ganaste la Letra I!</div>'
+                         '</div>')
+    elif linea_no_win:
+        result_banner = ('<div style="background:rgba(246,195,67,.06);border:1px solid rgba(246,195,67,.3);'
+                         'border-radius:12px;padding:14px;text-align:center;margin-bottom:16px">'
+                         '<div style="font-size:1.1rem;font-weight:700;color:#f6c343">⭐ Tu cartilla completó Letra I</div>'
+                         '<div style="font-size:.8rem;color:#8dbdd6;margin-top:4px">Otro jugador reclamó el premio primero. ¡Suerte en el próximo!</div>'
                          '</div>')
     else:
         result_banner = ('<div style="background:rgba(26,49,72,.5);border:1px solid #1a3148;'
@@ -654,6 +661,16 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                     if best_result is None or (r.get("linea") and not best_result.get("linea")):
                         best_result = r
                 first_result = best_result or check_winner(clist[0]["grid"], drawn)
+                # Only show linea banner if this player is an actual linea winner
+                player_cids = {c["id"] for c in clist}
+                is_linea_winner = any(
+                    w.get("id") in player_cids and w.get("tipo") == "linea"
+                    for w in (winners or [])
+                )
+                if first_result and first_result.get("linea") and not first_result.get("bingo") and not is_linea_winner:
+                    first_result = dict(first_result)
+                    first_result["linea"]        = False
+                    first_result["linea_no_win"] = True
                 for c in clist:
                     buf = cartilla_to_png(c, drawn)
                     b64 = base64.b64encode(buf.read()).decode()
