@@ -1730,12 +1730,16 @@ async function cargarPorCodigo() {
       if (d1.grid) { saveAndLoad([{ id: d1.id, session_id: d1.session_id || '' }]); return; }
     }
 
-    // 2. Try as voucher code — redirect to /cartillas to generate the cartilla
-    const r2 = await fetch('/api/voucher/check', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ code }),
-    });
+    // 2. Try as voucher code — load existing cartillas or redirect to generate
+    const r2 = await fetch('/api/voucher/' + encodeURIComponent(code) + '/cartillas');
     if (r2.ok) {
+      const d2 = await r2.json();
+      if (d2.cartillas && d2.cartillas.length > 0) {
+        // Already has cartillas — load them directly (works even after game starts)
+        saveAndLoad(d2.cartillas.map(id => ({ id: id, session_id: d2.session_id || '' })));
+        return;
+      }
+      // Approved but no cartillas yet — go generate
       window.location.href = '/cartillas?code=' + encodeURIComponent(code);
       return;
     }

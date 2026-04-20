@@ -2282,6 +2282,18 @@ def api_voucher_check():
         "cartillas_generadas":       len(vinfo.get("cartillas", [])),
     }})
 
+@app.route("/api/voucher/<code>/cartillas")
+@rate_limit(max_calls=20, window_seconds=60)
+def api_voucher_get_cartillas(code):
+    """Return existing cartilla IDs for an approved voucher (no game-state check)."""
+    code = code.strip().upper()
+    v = get_voucher_info(code)
+    if not v:
+        return jsonify({"error": "not_found"}), 404
+    if v.get("payment_status") not in ("approved", "manual_approved"):
+        return jsonify({"error": "payment_pending"}), 400
+    return jsonify({"ok": True, "cartillas": v.get("cartillas", []), "session_id": v.get("session_id", "")})
+
 @app.route("/api/voucher/status", methods=["POST"])
 @rate_limit(max_calls=30, window_seconds=60)
 def api_voucher_status():
