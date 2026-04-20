@@ -4666,18 +4666,28 @@ def api_whatsapp_broadcast_session(sid):
     dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
     url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
 
-    # Build {{2}} variable: bingo name + date + price + prizes on one line
+    # Build {{2}} variable with bingo details and prizes
     _pool = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
-    precio_str = f"S/. {btype.get('precio', 0.0):.2f}"
-    prizes_str = (f"Bingo S/. {_pool['prize_amount']:.2f} | "
-                  f"Letra O S/. {_pool['o_amount']:.2f} | "
-                  f"Letra U S/. {_pool['u_amount']:.2f} | "
-                  f"Linea S/. {_pool['linea_amount']:.2f}")
-    desc = (s.get("descripcion") or "").strip()
-    var2 = f"{btype.get('nombre','Bingo')} - {dt_str} - Cartilla {precio_str}"
+    desc  = (s.get("descripcion") or "").strip()
+    emoji = btype.get("emoji", "🎯")
+    var2_lines = [
+        f"{emoji} {btype.get('nombre', 'Bingo')}",
+        f"Fecha: {dt_str}",
+        f"Cartilla: S/. {btype.get('precio', 0.0):.2f}",
+    ]
     if desc:
-        var2 += f" - {desc}"
-    var2 += f" | Premios: {prizes_str}"
+        var2_lines.append(desc)
+    if extra_info:
+        var2_lines.append(extra_info)
+    var2_lines += [
+        "",
+        "Premios estimados:",
+        f"Bingo S/. {_pool['prize_amount']:.2f}",
+        f"Letra O S/. {_pool['o_amount']:.2f}",
+        f"Letra U S/. {_pool['u_amount']:.2f}",
+        f"Linea S/. {_pool['linea_amount']:.2f}",
+    ]
+    var2 = "\n".join(var2_lines)
 
     # Test mode: send only to one number
     if test_phone:
