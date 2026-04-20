@@ -4670,23 +4670,18 @@ def api_whatsapp_broadcast_session(sid):
     emoji     = btype.get("emoji", "🎯")
     descripcion = (s.get("descripcion") or "").strip()
     var2_lines = [
-        f"{emoji} *{btype.get('nombre', 'Bingo')}*",
-        f"📅 {dt_str}",
-        f"🎫 Precio cartilla: S/. {btype.get('precio', 0.0):.2f}",
+        f"{emoji} {btype.get('nombre', 'Bingo')}",
+        f"Fecha: {dt_str}",
+        f"Precio cartilla: S/. {btype.get('precio', 0.0):.2f}",
     ]
     if descripcion:
-        var2_lines.append(f"📝 {descripcion}")
+        var2_lines.append(descripcion)
     if extra_info:
-        var2_lines.append(f"🔥 {extra_info}")
+        var2_lines.append(extra_info)
     var2_lines += [
-        f"",
-        f"💰 *Premios estimados:*",
-        f"🎉 Bingo → S/. {_pool['prize_amount']:.2f}",
-        f"⭕ Letra O → S/. {_pool['o_amount']:.2f}",
-        f"🔷 Letra U → S/. {_pool['u_amount']:.2f}",
-        f"⭐ Línea → S/. {_pool['linea_amount']:.2f}",
-        f"",
-        f"_¡Asegura tu lugar antes de que se agoten!_ 🙌",
+        f"Premios estimados:",
+        f"🎉 Bingo S/. {_pool['prize_amount']:.2f}  ⭕ Letra O S/. {_pool['o_amount']:.2f}  🔷 Letra U S/. {_pool['u_amount']:.2f}  ⭐ Linea S/. {_pool['linea_amount']:.2f}",
+        f"Asegura tu lugar antes de que se agoten!",
     ]
     var2 = "\n".join(var2_lines)
 
