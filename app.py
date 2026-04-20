@@ -4665,6 +4665,31 @@ def api_whatsapp_broadcast_session(sid):
     dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
     url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
 
+    # Build rich {{2}} variable with bingo info and prizes
+    _pool     = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
+    emoji     = btype.get("emoji", "🎯")
+    descripcion = (s.get("descripcion") or "").strip()
+    var2_lines = [
+        f"{emoji} *{btype.get('nombre', 'Bingo')}*",
+        f"📅 {dt_str}",
+        f"🎫 Precio cartilla: S/. {btype.get('precio', 0.0):.2f}",
+    ]
+    if descripcion:
+        var2_lines.append(f"📝 {descripcion}")
+    if extra_info:
+        var2_lines.append(f"🔥 {extra_info}")
+    var2_lines += [
+        f"",
+        f"💰 *Premios estimados:*",
+        f"🎉 Bingo → S/. {_pool['prize_amount']:.2f}",
+        f"⭕ Letra O → S/. {_pool['o_amount']:.2f}",
+        f"🔷 Letra U → S/. {_pool['u_amount']:.2f}",
+        f"⭐ Línea → S/. {_pool['linea_amount']:.2f}",
+        f"",
+        f"_¡Asegura tu lugar antes de que se agoten!_ 🙌",
+    ]
+    var2 = "\n".join(var2_lines)
+
     is_sandbox = "14155238886" in TWILIO_WA_FROM
 
     sent = 0; failed = 0; errors = []
@@ -4675,7 +4700,7 @@ def api_whatsapp_broadcast_session(sid):
             ok, err = enviar_whatsapp(
                 phone, "",
                 content_sid=TWILIO_WA_TEMPLATE_SID,
-                content_variables={"1": nombre, "2": dt_str, "3": url_cartillas}
+                content_variables={"1": nombre, "2": var2, "3": url_cartillas}
             )
         if ok:
             sent += 1
