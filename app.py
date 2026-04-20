@@ -4640,6 +4640,7 @@ def api_whatsapp_broadcast_session(sid):
 
     data_req   = request.get_json() or {}
     extra_info = (data_req.get("extra_info") or "").strip()
+    test_phone = (data_req.get("test_phone") or "").strip()
     btype      = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     url_base   = request.host_url.rstrip("/")
     body       = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info)
@@ -4677,6 +4678,11 @@ def api_whatsapp_broadcast_session(sid):
     if desc:
         var2 += f" - {desc}"
     var2 += f" | Premios: {prizes_str}"
+
+    # Test mode: send only to one number
+    if test_phone:
+        normalized = _normalize_phone(test_phone, TWILIO_COUNTRY)
+        phone_names = {normalized: "Test"}
 
     is_sandbox = "14155238886" in TWILIO_WA_FROM
 

@@ -1212,6 +1212,28 @@ recalcTHouse();
       </div>
     </div>
 
+    <!-- Test phone -->
+    <div style="margin-bottom:16px;background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.25);
+         border-radius:10px;padding:12px 14px">
+      <label style="display:block;font-size:.75rem;color:#25d366;letter-spacing:1px;
+                    text-transform:uppercase;margin-bottom:6px">
+        🧪 Probar WhatsApp — enviar solo a este número
+      </label>
+      <div style="display:flex;gap:8px">
+        <input id="bc-test-phone" type="tel" placeholder="+51999999999"
+          style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(37,211,102,.4);
+                 background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
+                 font-size:.88rem;outline:none;box-sizing:border-box"/>
+        <button onclick="testWhatsApp()"
+                style="padding:8px 16px;border:none;border-radius:8px;
+                       background:#25d366;color:#fff;font-family:'Outfit',sans-serif;
+                       font-weight:700;font-size:.85rem;cursor:pointer;white-space:nowrap">
+          🧪 Test
+        </button>
+      </div>
+      <div id="bc-test-result" style="font-size:.75rem;margin-top:6px;color:var(--muted)"></div>
+    </div>
+
     <!-- WhatsApp not configured notice -->
     <div id="bc-wa-warning" style="display:none;background:rgba(37,211,102,.06);
          border:1px solid rgba(37,211,102,.25);border-radius:10px;padding:10px 14px;
@@ -1312,7 +1334,27 @@ async function openBroadcast(sid) {
 function closeBroadcast() {
   document.getElementById('broadcast-modal').style.display = 'none';
   document.getElementById('bc-extra').value = '';
+  document.getElementById('bc-test-phone').value = '';
+  document.getElementById('bc-test-result').textContent = '';
   _bcSid = null;
+}
+
+async function testWhatsApp() {
+  if (!_bcSid) return;
+  const phone = document.getElementById('bc-test-phone').value.trim();
+  if (!phone) { document.getElementById('bc-test-result').textContent = '⚠️ Ingresa un número'; return; }
+  const result = document.getElementById('bc-test-result');
+  result.textContent = '⏳ Enviando...';
+  try {
+    const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ extra_info: document.getElementById('bc-extra').value.trim(), test_phone: phone }),
+    });
+    const data = await res.json();
+    if (data.sent > 0) result.style.color = '#25d366', result.textContent = '✅ Enviado a ' + phone;
+    else result.style.color = '#f87171', result.textContent = '❌ ' + (data.errors?.[0] || 'Error desconocido');
+  } catch(e) { result.style.color = '#f87171'; result.textContent = '❌ Error de red'; }
 }
 
 async function sendBroadcast() {
