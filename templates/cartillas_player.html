@@ -1749,23 +1749,29 @@ async function loadMyCartillas() {
     if (histPanel) histPanel.style.display = 'none';
     return;
   }
-  // Fetch each cartilla to verify existence and get session_status
+  // Fetch each cartilla to verify existence and get session_status.
+  // IMPORTANT: network errors use ok:'network_error' — we never remove a cartilla
+  // from localStorage just because of a momentary connection failure.
   const checks = await Promise.all(
     arr.map(entry => {
       const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
       return fetch(`/api/cartilla/${cid}`)
         .then(r => r.ok ? r.json().then(d => ({id:cid, ok:true, session_status: d.session_status, session_nombre: d.session_nombre})) : {id:cid, ok:false})
-        .catch(() => ({id:cid, ok:false}));
+        .catch(() => ({id:cid, ok:'network_error'}));
     })
   );
-  const validChecks = checks.filter(x => x.ok);
+  const validChecks = checks.filter(x => x.ok === true || x.ok === 'network_error');
   const validIds = new Set(validChecks.map(x => x.id));
   const statusMap = {}; const nombreMap = {};
   validChecks.forEach(x => { statusMap[x.id] = x.session_status; nombreMap[x.id] = x.session_nombre; });
 
+  // Only remove from localStorage when the server explicitly says the cartilla
+  // doesn't exist (ok:false = 404). Never remove on network errors.
+  const confirmedInvalid = checks.filter(x => x.ok === false);
+  const invalidIds = new Set(confirmedInvalid.map(x => x.id));
   const validArr = arr.filter(e => {
     const cid = (typeof e === 'object' && e !== null) ? e.id : e;
-    return validIds.has(cid);
+    return !invalidIds.has(cid);
   });
   if (validArr.length !== arr.length) {
     localStorage.setItem('my_cartillas', JSON.stringify(validArr));
@@ -1824,7 +1830,7 @@ async function loadMyCartillas() {
 function removeMyCartilla(cid) {
   try{
     let arr=JSON.parse(localStorage.getItem('my_cartillas')||'[]');
-    arr=arr.filter(c=>c!==cid);
+    arr=arr.filter(c=>(typeof c==='object'&&c!==null?c.id:c)!==cid);
     localStorage.setItem('my_cartillas',JSON.stringify(arr));
     loadMyCartillas(); showToast('🗑️ Eliminada de tu lista');
   }catch(e){}

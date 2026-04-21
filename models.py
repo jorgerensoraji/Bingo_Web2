@@ -42,6 +42,8 @@ class Voucher(Base):
     cartillas_ids        = Column(Text,        default="[]")
     max_cartillas        = Column(Integer,     default=1)
     created              = Column(String(30),  default="")
+    email_subscribed     = Column(Boolean,     default=True)
+    whatsapp_subscribed  = Column(Boolean,     default=True)
 
     # Indexes for common query patterns
     __table_args__ = (
@@ -88,6 +90,8 @@ class Voucher(Base):
             "max_cartillas":          self.max_cartillas or 1,
             "created":                self.created,
             "has_pin":                bool(self.access_pin),
+            "email_subscribed":       bool(self.email_subscribed if self.email_subscribed is not None else True),
+            "whatsapp_subscribed":    bool(self.whatsapp_subscribed if self.whatsapp_subscribed is not None else True),
         }
 
 
@@ -285,21 +289,25 @@ class Contact(Base):
     """Manual contacts for broadcast — people not yet in the Voucher table."""
     __tablename__ = "contacts"
 
-    id            = Column(Integer, primary_key=True, autoincrement=True)
-    nombre        = Column(String(120), default="")
-    email         = Column(String(100), default="")
-    phone         = Column(String(25),  default="")   # E.164 format e.g. +51987654321
-    referral_code = Column(String(12),  default="", index=True)
-    created       = Column(String(30),  default="")
+    id                  = Column(Integer, primary_key=True, autoincrement=True)
+    nombre              = Column(String(120), default="")
+    email               = Column(String(100), default="")
+    phone               = Column(String(25),  default="")   # E.164 format e.g. +51987654321
+    referral_code       = Column(String(12),  default="", index=True)
+    created             = Column(String(30),  default="")
+    email_subscribed    = Column(Boolean,     default=True)
+    whatsapp_subscribed = Column(Boolean,     default=True)
 
     def to_dict(self) -> dict:
         return {
-            "id":            self.id,
-            "nombre":        self.nombre        or "",
-            "email":         self.email         or "",
-            "phone":         self.phone         or "",
-            "referral_code": self.referral_code or "",
-            "created":       self.created       or "",
+            "id":                   self.id,
+            "nombre":               self.nombre        or "",
+            "email":                self.email         or "",
+            "phone":                self.phone         or "",
+            "referral_code":        self.referral_code or "",
+            "created":              self.created       or "",
+            "email_subscribed":     bool(self.email_subscribed if self.email_subscribed is not None else True),
+            "whatsapp_subscribed":  bool(self.whatsapp_subscribed if self.whatsapp_subscribed is not None else True),
         }
 
 

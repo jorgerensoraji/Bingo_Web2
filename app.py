@@ -128,6 +128,24 @@ def _verify_quick_token(action: str, code: str, token: str) -> bool:
     expected = _quick_token(action, code)
     return _hmac.compare_digest(expected, (token or ""))
 
+def _unsub_token(channel: str, value: str) -> str:
+    """Signed token for unsubscribe/resubscribe links — no DB needed."""
+    msg = f"unsub:{channel}:{value}".encode()
+    return _hmac.new(_raw_key.encode(), msg, _hashlib.sha256).hexdigest()[:32]
+
+def _verify_unsub_token(channel: str, value: str, token: str) -> bool:
+    return _hmac.compare_digest(_unsub_token(channel, value), (token or ""))
+
+def _make_unsub_url(url_base: str, channel: str, value: str) -> str:
+    import urllib.parse
+    sig = _unsub_token(channel, value)
+    return f"{url_base}/unsubscribe?" + urllib.parse.urlencode({"ch": channel, "v": value, "sig": sig})
+
+def _make_resub_url(url_base: str, channel: str, value: str) -> str:
+    import urllib.parse
+    sig = _unsub_token(channel, value)
+    return f"{url_base}/resubscribe?" + urllib.parse.urlencode({"ch": channel, "v": value, "sig": sig})
+
 def is_setup_pending() -> bool:
     """True when user passed password check but hasn't enrolled 2FA yet."""
     return bool(session.get("totp_setup_pending"))
@@ -4152,7 +4170,7 @@ def api_winner_claim_o():
 
 # ─── Email broadcast ──────────────────────────────────────────────────────────
 
-def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info: str = "") -> str:
+def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info: str = "", unsub_url: str = "") -> str:
     nombre_bingo = btype.get("nombre", "Bingo Pro")
     emoji        = btype.get("emoji", "🎯")
     precio       = btype.get("precio", 0.0)
@@ -4265,6 +4283,7 @@ def _email_broadcast(session_dict: dict, btype: dict, url_base: str, extra_info:
     Bingo Pro Web v9.0 · {EMAIL_NOMBRE}<br>
     <span style="color:#0f2030">Recibiste este email porque participaste en un Bingo anterior.</span><br>
     <span style="color:#0f2030">Por favor no respondas a este correo — esta dirección no está monitoreada.</span>
+    {'<br><a href="' + unsub_url + '" style="color:#2a4a64;font-size:.7rem;text-decoration:underline">Cancelar suscripción de emails</a>' if unsub_url else ''}
   </p>
 
 </div></body></html>"""
@@ -4330,16 +4349,21 @@ def api_broadcast_session(sid):
     btype    = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     url_base = request.host_url.rstrip("/")
     asunto   = f"🎱 ¡Nuevo Bingo! {btype['nombre']} — {s.get('datetime_iso','')[:10]} | Bingo Pro"
-    html     = _email_broadcast(s, btype, url_base, extra_info=extra_info)
 
-    # Collect all unique emails (players + manual contacts)
+    # Collect unique subscribed emails (players + manual contacts)
     with db_session() as db:
-        v_emails = [r.email for r in db.query(Voucher.email).filter(Voucher.email != "").distinct().all()]
-        c_emails = [r.email for r in db.query(Contact.email).filter(Contact.email != "").all()]
+        v_emails = [r.email for r in db.query(Voucher.email).filter(
+            Voucher.email != "", Voucher.email_subscribed != False
+        ).distinct().all()]
+        c_emails = [r.email for r in db.query(Contact.email).filter(
+            Contact.email != "", Contact.email_subscribed != False
+        ).all()]
     emails = list({(e or "").strip().lower() for e in v_emails + c_emails if e and e.strip()})
 
     sent = 0; failed = 0; errors = []
     for email in emails:
+        unsub_url = _make_unsub_url(url_base, "email", email)
+        html = _email_broadcast(s, btype, url_base, extra_info=extra_info, unsub_url=unsub_url)
         ok, err = enviar_email(email, asunto, html)
         if ok:
             sent += 1
@@ -4460,6 +4484,96 @@ def api_public_subscribe():
         db.commit()
     return jsonify({"ok": True, "already": False})
 
+def _unsub_page(channel: str, value: str, action: str, url_base: str) -> str:
+    """Render a simple unsubscribe/resubscribe confirmation page."""
+    ch_label = "emails" if channel == "email" else "mensajes de WhatsApp"
+    if action == "unsub":
+        title = "Suscripción cancelada"
+        icon  = "🔕"
+        msg   = f"Ya no recibirás {ch_label} de Bingo Pro."
+        resub_url = _make_resub_url(url_base, channel, value)
+        action_link = f'<p style="margin-top:16px"><a href="{resub_url}" style="color:#00e5b4;font-size:.9rem">¿Cambié de opinion — volver a suscribirme</a></p>'
+    else:
+        title = "Suscripción reactivada"
+        icon  = "🔔"
+        msg   = f"Volviste a suscribirte a {ch_label} de Bingo Pro."
+        unsub_url = _make_unsub_url(url_base, channel, value)
+        action_link = f'<p style="margin-top:16px"><a href="{unsub_url}" style="color:#4a6b85;font-size:.85rem">Cancelar suscripción</a></p>'
+    return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — Bingo Pro</title>
+<style>body{{font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;display:flex;
+align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}}
+.box{{max-width:420px;width:100%;background:#0d1825;border:1px solid #1a3148;border-radius:20px;
+padding:36px 28px;text-align:center}}</style></head>
+<body><div class="box">
+<div style="font-size:3rem;margin-bottom:12px">{icon}</div>
+<h1 style="color:#00e5b4;font-size:1.5rem;margin:0 0 12px">{title}</h1>
+<p style="color:#a0b8cc;margin:0">{msg}</p>
+{action_link}
+<p style="margin-top:28px"><a href="/cartillas" style="color:#4a6b85;font-size:.8rem">Volver a Bingo Pro</a></p>
+</div></body></html>"""
+
+
+@app.route("/unsubscribe")
+def page_unsubscribe():
+    channel = request.args.get("ch", "")
+    value   = (request.args.get("v") or "").strip()
+    sig     = (request.args.get("sig") or "").strip()
+    if channel not in ("email", "wa") or not value or not _verify_unsub_token(channel, value, sig):
+        return "Enlace inválido o expirado.", 400
+    url_base = request.host_url.rstrip("/")
+    with db_session() as db:
+        if channel == "email":
+            db.query(Voucher).filter(Voucher.email == value).update({"email_subscribed": False})
+            db.query(Contact).filter(Contact.email == value).update({"email_subscribed": False})
+        else:
+            db.query(Voucher).filter(Voucher.celular == value).update({"whatsapp_subscribed": False})
+            db.query(Contact).filter(Contact.phone == value).update({"whatsapp_subscribed": False})
+        db.commit()
+    return _unsub_page(channel, value, "unsub", url_base)
+
+
+@app.route("/resubscribe")
+def page_resubscribe():
+    channel = request.args.get("ch", "")
+    value   = (request.args.get("v") or "").strip()
+    sig     = (request.args.get("sig") or "").strip()
+    if channel not in ("email", "wa") or not value or not _verify_unsub_token(channel, value, sig):
+        return "Enlace inválido o expirado.", 400
+    url_base = request.host_url.rstrip("/")
+    with db_session() as db:
+        if channel == "email":
+            db.query(Voucher).filter(Voucher.email == value).update({"email_subscribed": True})
+            db.query(Contact).filter(Contact.email == value).update({"email_subscribed": True})
+        else:
+            db.query(Voucher).filter(Voucher.celular == value).update({"whatsapp_subscribed": True})
+            db.query(Contact).filter(Contact.phone == value).update({"whatsapp_subscribed": True})
+        db.commit()
+    return _unsub_page(channel, value, "resub", url_base)
+
+
+@app.route("/api/admin/contacts/<int:cid>/subscription", methods=["POST"])
+def api_contact_subscription(cid):
+    chk = admin_required()
+    if chk: return chk
+    data    = request.get_json() or {}
+    channel = data.get("channel", "")
+    value   = bool(data.get("subscribed", True))
+    if channel not in ("email", "wa"):
+        return jsonify({"error": "channel must be email or wa"}), 400
+    with db_session() as db:
+        c = db.query(Contact).filter_by(id=cid).first()
+        if not c:
+            return jsonify({"error": "not found"}), 404
+        if channel == "email":
+            c.email_subscribed = value
+        else:
+            c.whatsapp_subscribed = value
+        db.commit()
+        return jsonify({"contact": c.to_dict()})
+
+
 @app.route("/api/admin/contacts/<int:cid>", methods=["DELETE"])
 def api_contact_delete(cid):
     chk = admin_required()
@@ -4557,7 +4671,7 @@ def _normalize_phone(raw: str, default_country: str = "+51") -> str:
     # Assume local number — prepend country code
     return default_country + digits
 
-def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info: str = "") -> str:
+def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info: str = "", unsub_url: str = "") -> str:
     nombre_bingo = btype.get("nombre", "Bingo Pro")
     emoji        = btype.get("emoji", "🎯")
     precio       = btype.get("precio", 0.0)
@@ -4595,6 +4709,8 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
         f"",
         f"_¡Asegura tu lugar antes de que se agoten!_ 🙌",
     ]
+    if unsub_url:
+        lines += [f"", f"_Para cancelar avisos: {unsub_url}_"]
     return "\n".join(lines)
 
 TWILIO_WA_TEMPLATE_SID = os.environ.get("TWILIO_WA_TEMPLATE_SID", "HX57b3e729f20e7c5212f722d1890a1246")
@@ -4643,16 +4759,17 @@ def api_whatsapp_broadcast_session(sid):
     test_phone = (data_req.get("test_phone") or "").strip()
     btype      = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     url_base   = request.host_url.rstrip("/")
-    body       = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info)
 
-    # Collect unique phone numbers with names (players + manual contacts)
+    # Collect unique subscribed phone numbers with names (players + manual contacts)
     phone_names = {}  # phone -> first name
     with db_session() as db:
         v_rows = db.query(Voucher.celular, Voucher.nombres).filter(
-            Voucher.celular != "", Voucher.celular.isnot(None)
+            Voucher.celular != "", Voucher.celular.isnot(None),
+            Voucher.whatsapp_subscribed != False
         ).all()
         c_rows = db.query(Contact.phone, Contact.nombre).filter(
-            Contact.phone != "", Contact.phone.isnot(None)
+            Contact.phone != "", Contact.phone.isnot(None),
+            Contact.whatsapp_subscribed != False
         ).all()
 
     all_rows = [(r.celular, r.nombres) for r in v_rows] + [(r.phone, r.nombre) for r in c_rows]
@@ -4684,6 +4801,9 @@ def api_whatsapp_broadcast_session(sid):
 
     sent = 0; failed = 0; errors = []
     for phone, nombre in phone_names.items():
+        unsub_url = _make_unsub_url(url_base, "wa", phone)
+        body = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info,
+                                 unsub_url=unsub_url if is_sandbox else "")
         if is_sandbox:
             ok, err = enviar_whatsapp(phone, body)
         else:

@@ -195,10 +195,10 @@ textarea.inp{width:100%;resize:vertical;min-height:120px;box-sizing:border-box;f
       <div style="overflow-x:auto">
         <table>
           <thead>
-            <tr><th>#</th><th>Nombre</th><th>Email</th><th>WhatsApp</th><th>Agregado</th><th></th></tr>
+            <tr><th>#</th><th>Nombre</th><th>Email</th><th>WhatsApp</th><th>Suscripciones</th><th>Agregado</th><th></th></tr>
           </thead>
           <tbody id="contacts-body">
-            <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
@@ -290,10 +290,16 @@ function switchInner(name,btn){
 // ═══════════════════════════════════════════════════
 let allContacts=[];
 
+function subBadge(on, label, title){
+  return on===false
+    ? `<span class="badge" style="background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)" title="${title} desactivado">🔕 ${label}</span>`
+    : `<span class="badge" style="background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3)" title="${title} activo">✅ ${label}</span>`;
+}
+
 function renderContacts(data){
   const tbody=document.getElementById('contacts-body');
   if(!data.length){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Sin contactos todavía</td></tr>';
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Sin contactos todavía</td></tr>';
     document.getElementById('c-count').textContent=''; return;
   }
   tbody.innerHTML=data.map((c,i)=>`
@@ -302,10 +308,30 @@ function renderContacts(data){
       <td><strong>${esc(c.nombre)||'<span style="color:var(--muted)">—</span>'}</strong></td>
       <td>${c.email?`<a href="mailto:${esc(c.email)}" style="color:var(--accent);text-decoration:none">${esc(c.email)}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td>${c.phone?`<span style="color:#25d366">${esc(c.phone)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding-top:10px">
+        <span onclick="toggleSub('contact',${c.id},'email',${c.email_subscribed})" style="cursor:pointer" title="Click para cambiar">
+          ${subBadge(c.email_subscribed,'Email','Email')}
+        </span>
+        <span onclick="toggleSub('contact',${c.id},'wa',${c.whatsapp_subscribed})" style="cursor:pointer" title="Click para cambiar">
+          ${subBadge(c.whatsapp_subscribed,'WA','WhatsApp')}
+        </span>
+      </td>
       <td style="color:var(--muted)">${(c.created||'').slice(0,10)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteContact(${c.id})">🗑</button></td>
     </tr>`).join('');
   document.getElementById('c-count').textContent=`Mostrando ${data.length} de ${allContacts.length} contactos`;
+}
+
+async function toggleSub(type, id, channel, current){
+  const newVal = !current;
+  try{
+    const url = type==='contact' ? `/api/admin/contacts/${id}/subscription` : `/api/admin/voucher/${id}/subscription`;
+    const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({channel,subscribed:newVal})});
+    if(!res.ok){showToast('❌ Error al actualizar');return;}
+    showToast(newVal?'✅ Suscripción activada':'🔕 Suscripción desactivada');
+    loadContacts();
+  }catch(e){showToast('❌ Error');}
 }
 
 function filterContacts(){

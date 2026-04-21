@@ -53,6 +53,10 @@ def _migrate():
         "ALTER TABLE vouchers ADD COLUMN max_cartillas INTEGER DEFAULT 1",
         "ALTER TABLE vouchers ADD COLUMN referral_code_used VARCHAR(12) DEFAULT ''",
         "ALTER TABLE contacts ADD COLUMN referral_code VARCHAR(12) DEFAULT ''",
+        "ALTER TABLE vouchers ADD COLUMN email_subscribed BOOLEAN DEFAULT 1",
+        "ALTER TABLE vouchers ADD COLUMN whatsapp_subscribed BOOLEAN DEFAULT 1",
+        "ALTER TABLE contacts ADD COLUMN email_subscribed BOOLEAN DEFAULT 1",
+        "ALTER TABLE contacts ADD COLUMN whatsapp_subscribed BOOLEAN DEFAULT 1",
     ]
     with engine.connect() as conn:
         for sql in new_columns:

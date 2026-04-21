@@ -1298,11 +1298,13 @@ async function loadAllCartillas() {
     })
     .map(function(r) { return r.value; });
 
-  // Filtrar por sesión activa — si hay sesión activa, sólo cartillas de esa sesión
+  // Filtrar por sesión activa — sólo cuando el juego está EN VIVO (liveSessionId definido).
+  // Si sólo hay una sesión programada (next_session_id) pero no hay juego en curso,
+  // mostramos todas las cartillas para que el jugador pueda verlas antes de que empiece.
   let wrongSession = 0;
-  if (activeSessionId) {
+  if (liveSessionId) {
     myCartillas = all.filter(function(c) {
-      if (c.session_id && c.session_id !== activeSessionId) {
+      if (c.session_id && c.session_id !== liveSessionId) {
         wrongSession++;
         return false;
       }
