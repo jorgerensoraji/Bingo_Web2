@@ -110,6 +110,8 @@ input:focus,select:focus,textarea:focus,input[type=email]:focus,input[type=tel]:
 .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.7rem; font-weight:700; }
 .badge-bingo { background:rgba(0,229,180,.2); color:var(--accent); }
 .badge-linea { background:rgba(246,195,67,.2); color:var(--warning); }
+.badge-u     { background:rgba(59,130,246,.2); color:#7bb3fa; }
+.badge-o     { background:rgba(236,72,153,.2); color:#f472b6; }
 .badge-none  { background:rgba(30,58,80,.5); color:var(--muted); }
 
 /* TABS */

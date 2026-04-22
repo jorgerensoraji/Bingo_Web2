@@ -61,19 +61,26 @@ function renderTable(list) {
   tbody.innerHTML = list.map(c => {
     const r      = checkResults[c.id] || {};
     const bingo  = r.bingo;
-    const linea  = r.linea && !r.bingo;
+    const linea  = r.linea     && !r.bingo;
+    const uPat   = r.u_pattern && !r.bingo;
+    const oPat   = r.o_pattern && !r.bingo;
     const marked = r.marked ?? '—';
     const total  = r.total  ?? 15;
     const badge  = bingo
       ? `<span class="badge badge-bingo">🎉 BINGO</span>`
       : linea
-        ? `<span class="badge badge-linea">⭐ LÍNEA</span>`
-        : `<span class="badge badge-none">—</span>`;
+        ? `<span class="badge badge-linea">⭐ LETRA I</span>`
+        : uPat
+          ? `<span class="badge badge-u">🔷 LETRA U</span>`
+          : oPat
+            ? `<span class="badge badge-o">⭕ LETRA O</span>`
+            : `<span class="badge badge-none">—</span>`;
+    const statusVal = bingo ? 'bingo' : linea ? 'linea' : uPat ? 'u' : oPat ? 'o' : 'none';
     const dateStr = c.created ? c.created.slice(0,16).replace('T',' ') : '—';
 
     return `<tr data-id="${c.id}"
                 data-nombre="${escHtml(c.nombre).toLowerCase()}"
-                data-status="${bingo ? 'bingo' : linea ? 'linea' : 'none'}">
+                data-status="${statusVal}">
       <td><span class="id-badge">${c.id}</span></td>
       <td style="font-weight:600;">${escHtml(c.nombre)}</td>
       <td style="color:var(--muted);font-size:.78rem;">${dateStr}</td>
