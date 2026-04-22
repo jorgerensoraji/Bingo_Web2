@@ -1762,145 +1762,155 @@ def guia_jugador_page():
 
 @app.route("/guia/pdf")
 def guia_pdf():
-    """Generate the Guía del Jugador as a PDF and return it base64-encoded."""
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER
-    import io, base64
+    """Generate the Guia del Jugador as a PDF and return it base64-encoded."""
+    try:
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER
+        import io as _io, base64 as _b64
 
-    buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4,
-                            topMargin=2*cm, bottomMargin=2*cm,
-                            leftMargin=2*cm, rightMargin=2*cm)
-    styles = getSampleStyleSheet()
+        buf = _io.BytesIO()
+        doc = SimpleDocTemplate(buf, pagesize=A4,
+                                topMargin=2*cm, bottomMargin=2*cm,
+                                leftMargin=2*cm, rightMargin=2*cm)
+        styles = getSampleStyleSheet()
 
-    def sty(name, **kw):
-        return ParagraphStyle(name, parent=styles['Normal'], **kw)
+        # Use unique names per request to avoid duplicate-style errors in reportlab registry
+        import time as _t
+        _uid = str(int(_t.time() * 1000))[-6:]
 
-    s_title   = sty('GT', fontSize=22, textColor=colors.HexColor('#007a60'),
-                    fontName='Helvetica-Bold', spaceAfter=4, alignment=TA_CENTER)
-    s_sub     = sty('GS', fontSize=10, textColor=colors.grey,
-                    spaceAfter=18, alignment=TA_CENTER)
-    s_section = sty('GH', fontSize=14, textColor=colors.HexColor('#007a60'),
-                    fontName='Helvetica-Bold', spaceBefore=18, spaceAfter=8)
-    s_step    = sty('GStep', fontSize=11, textColor=colors.HexColor('#111111'),
-                    fontName='Helvetica-Bold', spaceBefore=10, spaceAfter=3)
-    s_body    = sty('GBody', fontSize=9, textColor=colors.HexColor('#333333'),
-                    leading=14, spaceAfter=4)
-    s_faq_q   = sty('GFQ', fontSize=10, fontName='Helvetica-Bold',
-                    textColor=colors.HexColor('#111111'), spaceBefore=8, spaceAfter=2)
-    s_faq_a   = sty('GFA', fontSize=9, textColor=colors.HexColor('#555555'),
-                    leading=13, spaceAfter=2, leftIndent=10)
-    s_footer  = sty('GFoot', fontSize=8, textColor=colors.grey, alignment=TA_CENTER)
+        def sty(name, **kw):
+            return ParagraphStyle(name + _uid, parent=styles['Normal'], **kw)
 
-    cfg = _load_config()
-    org = cfg.nombre_organizador if cfg else 'Bingo Pro'
-    story = []
+        s_title   = sty('GT', fontSize=22, textColor=colors.HexColor('#007a60'),
+                        fontName='Helvetica-Bold', spaceAfter=4, alignment=TA_CENTER)
+        s_sub     = sty('GS', fontSize=10, textColor=colors.grey,
+                        spaceAfter=18, alignment=TA_CENTER)
+        s_section = sty('GH', fontSize=14, textColor=colors.HexColor('#007a60'),
+                        fontName='Helvetica-Bold', spaceBefore=18, spaceAfter=8)
+        s_step    = sty('GStep', fontSize=11, textColor=colors.HexColor('#111111'),
+                        fontName='Helvetica-Bold', spaceBefore=10, spaceAfter=3)
+        s_body    = sty('GBody', fontSize=9, textColor=colors.HexColor('#333333'),
+                        leading=14, spaceAfter=4)
+        s_faq_q   = sty('GFQ', fontSize=10, fontName='Helvetica-Bold',
+                        textColor=colors.HexColor('#111111'), spaceBefore=8, spaceAfter=2)
+        s_faq_a   = sty('GFA', fontSize=9, textColor=colors.HexColor('#555555'),
+                        leading=13, spaceAfter=2, leftIndent=10)
+        s_footer  = sty('GFoot', fontSize=8, textColor=colors.grey, alignment=TA_CENTER)
 
-    story.append(Paragraph(f'Guia del Jugador — {org}', s_title))
-    story.append(Paragraph('Todo lo que necesitas saber para jugar al bingo paso a paso.', s_sub))
-    story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#00c49a'), spaceAfter=16))
+        cfg = _load_config()
+        org = (cfg.nombre_organizador if cfg else 'Bingo Pro').encode('ascii', 'ignore').decode()
 
-    # ── BINGO CON PAGO ──
-    story.append(Paragraph('BINGO CON PAGO — Paso a Paso', s_section))
-    paid_steps = [
-        ('1. Entra a la pagina y haz clic en "Comprar cartilla"',
-         'Ve a <b>ganabingoperu.com</b> y toca el boton verde "COMPRAR AHORA", o entra directamente a <b>ganabingoperu.com/cartillas</b> y haz clic en "Registrarme para jugar".'),
-        ('2. Llena tus datos personales',
-         'Ingresa tu Nombres, Apellidos, <b>Correo electronico</b> (ahi recibiras tu codigo) y Celular/WhatsApp. Revisa bien el correo antes de continuar.'),
-        ('3. Elige el Bingo y realiza tu pago',
-         'Selecciona el bingo y elige el metodo de pago: <b>Yape, Plin, Efectivo, BCP o BBVA</b>. Transfiere el monto indicado y anota el <b>numero de operacion</b> que aparece en tu app despues de pagar.'),
-        ('4. Confirma y envia tu solicitud',
-         'Revisa el resumen con todos tus datos. Marca "Acepto los terminos y condiciones" y toca "Enviar solicitud de participacion".'),
-        ('5. Espera la aprobacion del organizador',
-         'El organizador verifica tu pago. Recibiras un <b>correo electronico</b> con tu codigo de voucher y un enlace directo. Revisa tambien tu carpeta de Spam. En ese correo tambien estara tu <b>codigo de referidos</b> personal.'),
-        ('6. Genera tu cartilla con el codigo',
-         '<b>Desde el correo:</b> Toca el enlace directo — funciona desde cualquier dispositivo.<br/><b>Manualmente:</b> Ve a ganabingoperu.com/cartillas, busca "Ya tienes tu codigo?" e ingresa tu codigo de 6 letras.'),
-        ('7. A jugar! Tu cartilla se marca sola',
-         'Entra a <b>ganabingoperu.com</b> y haz clic en <b>"Cargar mis cartillas"</b>. Tu cartilla se marcara automaticamente con cada bolilla.<br/><br/>Los 4 premios son:<br/>- Letra I: los 5 numeros de la segunda columna (I)<br/>- Letra U: columnas extremas completas + fila inferior<br/>- Letra O: todo el borde exterior de la cartilla<br/>- Bingo/Apagon: todos los 24 numeros de tu cartilla'),
-    ]
-    for title, body in paid_steps:
-        story.append(Paragraph(title, s_step))
-        story.append(Paragraph(body, s_body))
+        story = []
+        story.append(Paragraph(f'Guia del Jugador - {org}', s_title))
+        story.append(Paragraph('Todo lo que necesitas saber para jugar al bingo paso a paso.', s_sub))
+        story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#00c49a'), spaceAfter=16))
 
-    story.append(Spacer(1, 8))
-    story.append(HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey, spaceAfter=12))
+        # ── BINGO CON PAGO ──
+        story.append(Paragraph('BINGO CON PAGO - Paso a Paso', s_section))
+        paid_steps = [
+            ('1. Entra a la pagina y haz clic en Comprar cartilla',
+             'Ve a <b>ganabingoperu.com</b> y toca el boton verde COMPRAR AHORA, o entra a <b>ganabingoperu.com/cartillas</b> y haz clic en Registrarme para jugar.'),
+            ('2. Llena tus datos personales',
+             'Ingresa tu Nombres, Apellidos, <b>Correo electronico</b> (ahi recibiras tu codigo) y Celular/WhatsApp. Revisa bien el correo antes de continuar.'),
+            ('3. Elige el Bingo y realiza tu pago',
+             'Selecciona el bingo y elige el metodo de pago: <b>Yape, Plin, Efectivo, BCP o BBVA</b>. Transfiere el monto indicado y anota el <b>numero de operacion</b> que aparece en tu app despues de pagar.'),
+            ('4. Confirma y envia tu solicitud',
+             'Revisa el resumen con todos tus datos. Marca Acepto los terminos y condiciones y toca Enviar solicitud de participacion.'),
+            ('5. Espera la aprobacion del organizador',
+             'El organizador verifica tu pago. Recibiras un <b>correo electronico</b> con tu codigo de voucher y un enlace directo. Revisa tambien tu carpeta de Spam. En ese correo tambien estara tu <b>codigo de referidos</b> personal.'),
+            ('6. Genera tu cartilla con el codigo',
+             '<b>Desde el correo:</b> Toca el enlace directo, funciona desde cualquier dispositivo y celular.<br/><b>Manualmente:</b> Ve a ganabingoperu.com/cartillas, busca Ya tienes tu codigo? e ingresa tu codigo de 6 letras.'),
+            ('7. A jugar! Tu cartilla se marca sola',
+             'Entra a <b>ganabingoperu.com</b> y haz clic en <b>Cargar mis cartillas</b>. Tu cartilla se marcara automaticamente con cada bolilla.<br/><br/>Los 4 premios disponibles:<br/>- Letra I: los 5 numeros de la segunda columna (I)<br/>- Letra U: columnas extremas completas + fila inferior<br/>- Letra O: todo el borde exterior de la cartilla<br/>- Bingo/Apagon: todos los 24 numeros de tu cartilla'),
+        ]
+        for title, body in paid_steps:
+            story.append(Paragraph(title, s_step))
+            story.append(Paragraph(body, s_body))
 
-    # ── BINGO GRATIS ──
-    story.append(Paragraph('BINGO GRATIS — Paso a Paso', s_section))
-    free_steps = [
-        ('1. Entra a /cartillas y registrate',
-         'Ve a <b>ganabingoperu.com/cartillas</b>. En los bingos gratis no hay seccion de pago.'),
-        ('2. Llena tus datos personales',
-         'Ingresa nombre, apellidos, correo electronico y celular. Haz clic en "Siguiente".'),
-        ('3. Elige el Bingo (sin pago)',
-         'Solo veras el selector de bingo. Selecciona el bingo gratuito y continua.'),
-        ('4. Confirma y envia tu solicitud',
-         'El monto sera S/. 0.00 (Gratis). Acepta los terminos y envia tu solicitud.'),
-        ('5. Recibe tu codigo y genera tu cartilla',
-         'La aprobacion puede ser inmediata. Recibiras un correo con tu codigo y un enlace directo para generar tu cartilla.'),
-        ('6. A jugar!',
-         'Cuando el bingo empiece, entra a <b>ganabingoperu.com</b> y haz clic en "Cargar mis cartillas". Si cambias de dispositivo, ingresa tu codigo en la seccion "Ya tienes tu codigo?" de la pantalla principal.'),
-    ]
-    for title, body in free_steps:
-        story.append(Paragraph(title, s_step))
-        story.append(Paragraph(body, s_body))
+        story.append(Spacer(1, 8))
+        story.append(HRFlowable(width='100%', thickness=0.5, color=colors.HexColor('#cccccc'), spaceAfter=12))
 
-    story.append(Spacer(1, 8))
-    story.append(HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey, spaceAfter=12))
+        # ── BINGO GRATIS ──
+        story.append(Paragraph('BINGO GRATIS - Paso a Paso', s_section))
+        free_steps = [
+            ('1. Entra a /cartillas y registrate',
+             'Ve a <b>ganabingoperu.com/cartillas</b>. En los bingos gratis no hay seccion de pago.'),
+            ('2. Llena tus datos personales',
+             'Ingresa nombre, apellidos, correo electronico y celular. Haz clic en Siguiente.'),
+            ('3. Elige el Bingo (sin pago)',
+             'Solo veras el selector de bingo. Selecciona el bingo gratuito y continua.'),
+            ('4. Confirma y envia tu solicitud',
+             'El monto sera S/. 0.00 (Gratis). Acepta los terminos y envia tu solicitud.'),
+            ('5. Recibe tu codigo y genera tu cartilla',
+             'La aprobacion puede ser inmediata. Recibiras un correo con tu codigo y un enlace directo para generar tu cartilla.'),
+            ('6. A jugar!',
+             'Cuando el bingo empiece, entra a <b>ganabingoperu.com</b> y haz clic en Cargar mis cartillas. Si cambias de dispositivo, ingresa tu codigo en Ya tienes tu codigo? de la pantalla principal.'),
+        ]
+        for title, body in free_steps:
+            story.append(Paragraph(title, s_step))
+            story.append(Paragraph(body, s_body))
 
-    # ── PROGRAMA REFERIDOS ──
-    story.append(Paragraph('PROGRAMA REFERIDOS — Invita y Gana', s_section))
-    ref_steps = [
-        ('1. Recibe tu codigo de referidos',
-         'Llega automaticamente en el correo de aprobacion de tu primer bingo. Es un codigo unico como JORG-K4X2.'),
-        ('2. Comparte tu codigo con amigos',
-         'Diles que lo escriban en el campo "Codigo de referido" cuando paguen su cartilla. El campo valida en tiempo real.'),
-        ('3. Confirma el referido por correo',
-         'Cuando el admin aprueba a tu amigo, recibes un correo preguntando si lo conoces. Haz clic en "Confirmar referido".'),
-        ('4. A las 5 confirmaciones recibe tu cartilla gratis!',
-         'Con 5 referidos confirmados, el sistema genera automaticamente una cartilla gratis de Bingo 2 Soles y te la envia por correo. El ciclo se repite cada 5 nuevos confirmados.'),
-    ]
-    for title, body in ref_steps:
-        story.append(Paragraph(title, s_step))
-        story.append(Paragraph(body, s_body))
+        story.append(Spacer(1, 8))
+        story.append(HRFlowable(width='100%', thickness=0.5, color=colors.HexColor('#cccccc'), spaceAfter=12))
 
-    story.append(Spacer(1, 8))
-    story.append(HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey, spaceAfter=12))
+        # ── PROGRAMA REFERIDOS ──
+        story.append(Paragraph('PROGRAMA REFERIDOS - Invita y Gana', s_section))
+        ref_steps = [
+            ('1. Recibe tu codigo de referidos',
+             'Llega automaticamente en el correo de aprobacion de tu primer bingo. Es un codigo unico como JORG-K4X2.'),
+            ('2. Comparte tu codigo con amigos',
+             'Diles que lo escriban en el campo Codigo de referido cuando paguen su cartilla. El campo valida en tiempo real.'),
+            ('3. Confirma el referido por correo',
+             'Cuando el admin aprueba a tu amigo, recibes un correo preguntando si lo conoces. Haz clic en Confirmar referido.'),
+            ('4. A las 5 confirmaciones recibe tu cartilla gratis!',
+             'Con 5 referidos confirmados, el sistema genera automaticamente una cartilla gratis de Bingo 2 Soles y te la envia por correo. El ciclo se repite cada 5 nuevos confirmados.'),
+        ]
+        for title, body in ref_steps:
+            story.append(Paragraph(title, s_step))
+            story.append(Paragraph(body, s_body))
 
-    # ── FAQ ──
-    story.append(Paragraph('PREGUNTAS FRECUENTES', s_section))
-    faqs = [
-        ('Como cargo mis cartillas en el juego?',
-         'En ganabingoperu.com haz clic en el boton "Cargar mis cartillas". Si es la primera vez en ese dispositivo, primero ingresa tu codigo en "Ya tienes tu codigo?" en la misma pantalla.'),
-        ('Aparece "tus cartillas son de otro Bingo" — que hago?',
-         'Las cartillas guardadas son de un bingo anterior. El sistema las borrara automaticamente y abrira el campo para ingresar el codigo del bingo actual. Usa el enlace del correo de aprobacion del bingo actual.'),
-        ('Puedo jugar desde otro celular o computadora?',
-         'Si. Usa el enlace directo del correo de aprobacion (funciona desde cualquier dispositivo) o ingresa tu codigo de cartilla en "Ya tienes tu codigo?" en la pantalla del juego.'),
-        ('No recibi el correo con mi codigo, que hago?',
-         '1. Revisa tu carpeta de Spam. 2. Ve a /cartillas y usa la opcion "Reenviar correo". 3. Si el problema sigue, contacta al organizador por WhatsApp.'),
-        ('Puedo jugar desde mi celular?',
-         'Si, el sitio funciona en celulares, tablets y computadoras. No necesitas descargar ninguna app.'),
-        ('Puedo tener mas de una cartilla?',
-         'Depende del organizador. Si esta habilitado, podras elegir la cantidad al generar.'),
-        ('Que pasa si cierro la pagina durante el juego?',
-         'No te preocupes. Al volver a ganabingoperu.com e ingresar tu codigo, tu cartilla reaparece con todos los numeros ya marcados.'),
-        ('Cuantos referidos necesito para una cartilla gratis?',
-         '5 referidos confirmados = 1 cartilla gratis de Bingo 2 Soles. El ciclo se repite cada 5 nuevos confirmados.'),
-    ]
-    for q, a in faqs:
-        story.append(Paragraph(f'• {q}', s_faq_q))
-        story.append(Paragraph(a, s_faq_a))
+        story.append(Spacer(1, 8))
+        story.append(HRFlowable(width='100%', thickness=0.5, color=colors.HexColor('#cccccc'), spaceAfter=12))
 
-    story.append(Spacer(1, 20))
-    story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#00c49a'), spaceAfter=8))
-    story.append(Paragraph(f'Mas dudas: ganabingoperu.com/ayuda — {org}', s_footer))
+        # ── FAQ ──
+        story.append(Paragraph('PREGUNTAS FRECUENTES', s_section))
+        faqs = [
+            ('Como cargo mis cartillas en el juego?',
+             'En ganabingoperu.com haz clic en el boton Cargar mis cartillas. Si es la primera vez en ese dispositivo, primero ingresa tu codigo en Ya tienes tu codigo? en la misma pantalla.'),
+            ('Aparece "tus cartillas son de otro Bingo", que hago?',
+             'Las cartillas guardadas son de un bingo anterior. El sistema las borrara automaticamente y abrira el campo para ingresar el codigo del bingo actual. Usa el enlace del correo de aprobacion del bingo actual.'),
+            ('Puedo jugar desde otro celular o computadora?',
+             'Si. Usa el enlace directo del correo de aprobacion (funciona desde cualquier dispositivo) o ingresa tu codigo de cartilla en Ya tienes tu codigo? en la pantalla del juego.'),
+            ('No recibi el correo con mi codigo, que hago?',
+             '1. Revisa tu carpeta de Spam. 2. Ve a /cartillas y usa la opcion Reenviar correo. 3. Si el problema sigue, contacta al organizador por WhatsApp.'),
+            ('Puedo jugar desde mi celular?',
+             'Si, el sitio funciona en celulares, tablets y computadoras. No necesitas descargar ninguna app.'),
+            ('Puedo tener mas de una cartilla?',
+             'Depende del organizador. Si esta habilitado, podras elegir la cantidad al generar.'),
+            ('Que pasa si cierro la pagina durante el juego?',
+             'No te preocupes. Al volver a ganabingoperu.com e ingresar tu codigo, tu cartilla reaparece con todos los numeros ya marcados.'),
+            ('Cuantos referidos necesito para una cartilla gratis?',
+             '5 referidos confirmados = 1 cartilla gratis de Bingo 2 Soles. El ciclo se repite cada 5 nuevos confirmados.'),
+        ]
+        for q, a in faqs:
+            story.append(Paragraph('* ' + q, s_faq_q))
+            story.append(Paragraph(a, s_faq_a))
 
-    doc.build(story)
-    buf.seek(0)
-    pdf_b64 = base64.b64encode(buf.read()).decode('utf-8')
-    return jsonify({"pdf": pdf_b64})
+        story.append(Spacer(1, 20))
+        story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#00c49a'), spaceAfter=8))
+        story.append(Paragraph(f'Mas dudas: ganabingoperu.com/ayuda - {org}', s_footer))
+
+        doc.build(story)
+        buf.seek(0)
+        pdf_b64 = _b64.b64encode(buf.read()).decode('utf-8')
+        return jsonify({"pdf": pdf_b64})
+
+    except Exception as e:
+        import traceback
+        app.logger.error("guia_pdf error: %s\n%s", e, traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/admin/login")
 def admin_login_page():
