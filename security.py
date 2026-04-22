@@ -107,6 +107,7 @@ def apply_security_headers(response):
         "img-src 'self' data: blob:; "
         "media-src 'self' blob:; "
         "connect-src 'self'; "
+        "frame-src https://www.youtube.com; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self';"
