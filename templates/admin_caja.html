@@ -1261,9 +1261,10 @@ function openPayModal(idxOrObj){
   const p=(typeof idxOrObj==='number')?_ganadoresData[idxOrObj]:idxOrObj;
   if(!p) return;
   _pendingTarget=p;
-  const isBingo=(p.tipo||'bingo')==='bingo';
-  const prizeShow=isBingo?(p.prize||0):(p.linea_prize||0);
-  const tipoLabel=isBingo?'🏆 BINGO':'⭐ LETRA I';
+  const tipo=(p.tipo||'bingo');
+  const TIPO_LABELS={bingo:'🏆 BINGO',linea:'⭐ LETRA I',u:'🔷 LETRA U',o:'⭕ LETRA O'};
+  const tipoLabel=TIPO_LABELS[tipo]||'🏆 BINGO';
+  const prizeShow=tipo==='bingo'?(p.prize||0):tipo==='linea'?(p.linea_prize||0):tipo==='u'?(p.u_prize||0):(p.o_prize||0);
   document.getElementById('modal-pay-sub').innerHTML=
     `<strong>${esc(p.nombre)} ${esc(p.apellidos||'')}</strong> · Cartilla <strong>${esc(p.cartilla_id)}</strong><br>`+
     `${tipoLabel} · Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeShow)}</span>`+

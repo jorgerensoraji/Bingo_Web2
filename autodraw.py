@@ -435,6 +435,8 @@ def _tick_auto_start():
             gross    = len(paid) * btype.get("precio", 0.0)
             prize_pool = round(gross * btype.get("prize_pct", 0.70), 2)
             linea_pool = round(gross * btype.get("linea_pct", 0.10), 2)
+            u_pool     = round(gross * btype.get("u_pct",    0.13), 2)
+            o_pool     = round(gross * btype.get("o_pct",    0.15), 2)
 
             s["status"]     = "active"
             s["started_at"] = now_iso
@@ -443,6 +445,8 @@ def _tick_auto_start():
                 "gross":         round(gross, 2),
                 "prize_amount":  prize_pool,
                 "linea_amount":  linea_pool,
+                "u_amount":      u_pool,
+                "o_amount":      o_pool,
             }
             changed = True
 
@@ -453,6 +457,8 @@ def _tick_auto_start():
                 game.bingo_type  = btype_id
                 game.prize_pool  = prize_pool
                 game.linea_pool  = linea_pool
+                game.u_pool      = u_pool
+                game.o_pool      = o_pool
                 game.preparing   = False
                 game.prepare_at  = None
                 game.save_to_disk()
