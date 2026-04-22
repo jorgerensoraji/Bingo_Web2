@@ -1317,7 +1317,27 @@ async function loadAllCartillas() {
   cartillaStates = {};
 
   if (wrongSession > 0 && !myCartillas.length) {
-    showToast('❌ Tus cartillas son de otro Bingo y no pueden usarse en el juego actual.', 5000);
+    // Clear stale cartillas from this session — they're from a different bingo
+    try {
+      var all_stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+      var stale_ids = new Set(all.map(function(c){ return c.id; }));
+      // Keep only cartillas that are NOT from the wrong session (e.g. ones with no session_id)
+      var remaining = all_stored.filter(function(e){
+        var cid = (typeof e === 'object' && e !== null) ? e.id : e;
+        return !stale_ids.has(cid);
+      });
+      localStorage.setItem('my_cartillas', JSON.stringify(remaining));
+    } catch(e) {}
+    // Open the code-entry panel so the player can enter their code for THIS bingo
+    var ycBody  = document.getElementById('yc-body');
+    var ycArrow = document.getElementById('yc-arrow');
+    var ycInput = document.getElementById('yc-input');
+    if (ycBody && ycBody.style.display === 'none') {
+      ycBody.style.display = 'block';
+      if (ycArrow) ycArrow.textContent = '▲ Ocultar';
+    }
+    if (ycInput) ycInput.focus();
+    showToast('⚠️ Esas cartillas son de otro Bingo. Ingresa el código de este Bingo.', 6000);
     return;
   }
   if (wrongSession > 0) {
