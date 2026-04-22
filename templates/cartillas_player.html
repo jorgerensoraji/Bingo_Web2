@@ -1752,18 +1752,27 @@ async function loadMyCartillas() {
   // Fetch each cartilla to verify existence and get session_status.
   // IMPORTANT: network errors use ok:'network_error' — we never remove a cartilla
   // from localStorage just because of a momentary connection failure.
+  // Fetch current session state to know which sessions are current/next
+  let _liveSid = null, _nextSid = null;
+  try {
+    const _st = await (await fetch('/api/state')).json();
+    _liveSid = _st.session_id || null;
+    _nextSid = _st.prepare_sid || _st.next_session_id || null;
+  } catch(e) {}
+  const _currentSids = new Set([_liveSid, _nextSid].filter(Boolean));
+
   const checks = await Promise.all(
     arr.map(entry => {
       const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
       return fetch(`/api/cartilla/${cid}`)
-        .then(r => r.ok ? r.json().then(d => ({id:cid, ok:true, session_status: d.session_status, session_nombre: d.session_nombre})) : {id:cid, ok:false})
+        .then(r => r.ok ? r.json().then(d => ({id:cid, ok:true, session_status: d.session_status, session_nombre: d.session_nombre, session_id: d.session_id||''})) : {id:cid, ok:false})
         .catch(() => ({id:cid, ok:'network_error'}));
     })
   );
   const validChecks = checks.filter(x => x.ok === true || x.ok === 'network_error');
   const validIds = new Set(validChecks.map(x => x.id));
-  const statusMap = {}; const nombreMap = {};
-  validChecks.forEach(x => { statusMap[x.id] = x.session_status; nombreMap[x.id] = x.session_nombre; });
+  const statusMap = {}; const nombreMap = {}; const sidMap = {};
+  validChecks.forEach(x => { statusMap[x.id] = x.session_status; nombreMap[x.id] = x.session_nombre; sidMap[x.id] = x.session_id||''; });
 
   // Only remove from localStorage when the server explicitly says the cartilla
   // doesn't exist (ok:false = 404). Never remove on network errors.
@@ -1783,7 +1792,26 @@ async function loadMyCartillas() {
     return;
   }
 
-  const LIVE_STATUSES = ['active', 'preparing'];
+  // Determine which cartillas are stale (wrong/old pending session, not current or next)
+  const staleIds = new Set(
+    arr
+      .filter(e => {
+        const cid = (typeof e==='object'&&e)?e.id:e;
+        const st  = statusMap[cid];
+        const sid = sidMap[cid];
+        // Stale = pending session that is neither the live nor the next scheduled session
+        return st === 'pending' && sid && _currentSids.size > 0 && !_currentSids.has(sid);
+      })
+      .map(e => (typeof e==='object'&&e)?e.id:e)
+  );
+  // Remove stale cartillas from localStorage so they don't keep reappearing
+  if (staleIds.size > 0) {
+    try {
+      const _arr2 = arr.filter(e => !staleIds.has((typeof e==='object'&&e)?e.id:e));
+      localStorage.setItem('my_cartillas', JSON.stringify(_arr2));
+      arr = _arr2;
+    } catch(e) {}
+  }
 
   function renderCard(entry, isHistorial) {
     const cid = (typeof entry === 'object' && entry !== null) ? entry.id : entry;
@@ -1812,8 +1840,22 @@ async function loadMyCartillas() {
     </div>`;
   }
 
-  const active    = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; const st = statusMap[cid]; return st !== 'finished'; });
-  const historial = arr.filter(e => { const cid = (typeof e==='object'&&e)?e.id:e; return statusMap[cid] === 'finished'; });
+  // Active: session is live/preparing, OR pending and is the current/next session, OR no session_id
+  // Historial: finished, OR pending but belongs to an old session (stale, already removed above)
+  const active = arr.filter(e => {
+    const cid = (typeof e==='object'&&e)?e.id:e;
+    const st  = statusMap[cid];
+    const sid = sidMap[cid];
+    if (st === 'finished') return false;
+    if (!sid) return true;                              // admin-generated, no session
+    if (st === 'active' || st === 'preparing') return true;
+    if (st === 'pending') return _currentSids.size === 0 || _currentSids.has(sid);
+    return true;                                        // null/unknown status — keep
+  });
+  const historial = arr.filter(e => {
+    const cid = (typeof e==='object'&&e)?e.id:e;
+    return statusMap[cid] === 'finished';
+  });
 
   listEl.innerHTML = active.length
     ? active.map(e => renderCard(e, false)).join('')

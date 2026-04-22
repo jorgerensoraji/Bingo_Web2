@@ -1316,18 +1316,23 @@ async function loadAllCartillas() {
 
   cartillaStates = {};
 
-  if (wrongSession > 0 && !myCartillas.length) {
-    // Clear stale cartillas from this session — they're from a different bingo
+  // Always clean wrong-session cartillas from localStorage when a live game is running,
+  // whether or not the player has valid ones too — prevents them showing on /cartillas page.
+  if (wrongSession > 0 && liveSessionId) {
     try {
-      var all_stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-      var stale_ids = new Set(all.map(function(c){ return c.id; }));
-      // Keep only cartillas that are NOT from the wrong session (e.g. ones with no session_id)
-      var remaining = all_stored.filter(function(e){
+      var _stored   = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+      var _validIds = new Set(myCartillas.map(function(c){ return c.id; }));
+      var _allIds   = new Set(all.map(function(c){ return c.id; }));
+      var _cleaned  = _stored.filter(function(e){
         var cid = (typeof e === 'object' && e !== null) ? e.id : e;
-        return !stale_ids.has(cid);
+        // Keep: not fetched from server (network issue) OR belongs to current session
+        return !_allIds.has(cid) || _validIds.has(cid);
       });
-      localStorage.setItem('my_cartillas', JSON.stringify(remaining));
+      localStorage.setItem('my_cartillas', JSON.stringify(_cleaned));
     } catch(e) {}
+  }
+
+  if (wrongSession > 0 && !myCartillas.length) {
     // Open the code-entry panel so the player can enter their code for THIS bingo
     var ycBody  = document.getElementById('yc-body');
     var ycArrow = document.getElementById('yc-arrow');
