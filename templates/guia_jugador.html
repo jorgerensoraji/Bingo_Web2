@@ -162,6 +162,29 @@
 .pat-h { height:13px; border-radius:3px; }
 .pat-f { height:13px; border-radius:3px; background:rgba(246,195,67,.25); }
 
+/* ── Video tutorial ── */
+.video-wrap {
+  margin: 20px 0 28px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden;
+}
+.video-label {
+  padding: 14px 20px 10px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem;
+  letter-spacing: 2px; color: var(--accent);
+  display: flex; align-items: center; gap: 8px;
+}
+.video-label span { font-family: 'Outfit', sans-serif; font-size: .78rem; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.video-shorts {
+  display: flex; justify-content: center;
+  padding: 0 20px 20px;
+}
+.video-shorts iframe {
+  border-radius: 12px; border: none;
+  width: 100%; max-width: 340px;
+  aspect-ratio: 9/16;
+}
+
 /* ── Download button ── */
 .dl-btn {
   display:inline-flex; align-items:center; gap:8px;
@@ -192,6 +215,21 @@
 
   <div class="guide-title">📖 Guía del Jugador</div>
   <div class="guide-sub">Todo lo que necesitas saber para jugar al bingo paso a paso.</div>
+
+  <!-- Video tutorial -->
+  <div class="video-wrap">
+    <div class="video-label">🎬 Video Tutorial <span>— Cómo comprar tu cartilla</span></div>
+    <div class="video-shorts">
+      <iframe
+        src="https://www.youtube.com/embed/cJ9IKPGtswM"
+        title="Cómo comprar tu cartilla de Bingo"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy">
+      </iframe>
+    </div>
+  </div>
+
   <div style="margin-bottom:8px">
     <button class="dl-btn" onclick="descargarGuiaPDF(this)">📄 Descargar Guía en PDF</button>
     <span id="dl-status" style="font-size:.78rem;color:var(--muted);margin-left:10px;display:none"></span>
