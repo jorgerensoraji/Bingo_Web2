@@ -1040,9 +1040,11 @@ async function descargarGuiaPDF(btn) {
     btn.textContent = '✅ PDF descargado';
     setTimeout(() => { btn.textContent = '📄 Descargar Guía en PDF'; btn.disabled = false; }, 3000);
   } catch(e) {
+    const msg = e && e.message ? e.message : String(e);
     btn.textContent = '❌ Error — intenta de nuevo';
+    btn.title = msg;
     btn.disabled = false;
-    console.error(e);
+    console.error('PDF error:', msg, e);
   }
 }
 </script>

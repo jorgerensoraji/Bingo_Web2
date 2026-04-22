@@ -1800,7 +1800,7 @@ def guia_pdf():
         s_footer  = sty('GFoot', fontSize=8, textColor=colors.grey, alignment=TA_CENTER)
 
         cfg = _load_config()
-        org = (cfg.nombre_organizador if cfg else 'Bingo Pro').encode('ascii', 'ignore').decode()
+        org = (cfg.get('nombre_organizador') or 'Bingo Pro').encode('ascii', 'ignore').decode()
 
         story = []
         story.append(Paragraph(f'Guia del Jugador - {org}', s_title))
