@@ -3470,6 +3470,7 @@ def api_pay_winner():
     data         = request.get_json() or {}
     session_id   = (data.get("session_id")  or "").strip()
     cartilla_id  = (data.get("cartilla_id") or "").strip().upper()
+    tipo         = (data.get("tipo")        or "bingo").strip()
     paid_ref     = (data.get("paid_ref")    or "").strip()[:100]
     paid_method  = (data.get("paid_method") or "efectivo").strip()
     paid_note    = (data.get("paid_note")   or "").strip()[:300]
@@ -3486,9 +3487,9 @@ def api_pay_winner():
     paid_at_iso = now_peru().isoformat()
     updated = False
 
-    # Update permanent winners table (all tipos for this cartilla in that session)
+    # Update only the matching tipo winner row for this cartilla
     with db_session() as db:
-        winner_rows = db.query(Winner).filter_by(session_id=session_id, cartilla_id=cartilla_id).all()
+        winner_rows = db.query(Winner).filter_by(session_id=session_id, cartilla_id=cartilla_id, tipo=tipo).all()
         for wr in winner_rows:
             wr.paid        = True
             wr.paid_at     = paid_at_iso

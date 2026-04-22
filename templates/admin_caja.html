@@ -1270,7 +1270,7 @@ function openPayModal(idxOrObj){
     `${tipoLabel} · Premio: <span style="color:var(--accent);font-weight:900">${fmt(prizeShow)}</span>`+
     (p.yape_plin?` · Yape/Plin: <strong>${esc(p.yape_plin)}</strong>`:'')+
     (p.celular?` · Tel: <strong>${esc(p.celular)}</strong>`:'');
-  const prizeVal=isBingo?(p.prize||p.prize_amount||0):(p.linea_prize||p.u_prize||p.o_prize||p.prize_amount||0);
+  const prizeVal=tipo==='bingo'?(p.prize||p.prize_amount||0):(p.linea_prize||p.u_prize||p.o_prize||p.prize_amount||0);
   document.getElementById('pay-prize').value=prizeVal;
   document.getElementById('pay-method').value=p.paid_method||'yape';
   document.getElementById('pay-ref').value=p.paid_ref||'';
@@ -1300,7 +1300,7 @@ async function confirmPay(){
   try{
     const res=await fetch('/api/admin/winner_payments/pay',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({session_id:_pendingTarget.session_id,cartilla_id:_pendingTarget.cartilla_id,prize_amount,paid_method,paid_ref,paid_note})});
+      body:JSON.stringify({session_id:_pendingTarget.session_id,cartilla_id:_pendingTarget.cartilla_id,tipo:_pendingTarget.tipo||'bingo',prize_amount,paid_method,paid_ref,paid_note})});
     const data=await res.json();
     if(!res.ok){ showToast('❌ '+(data.error||'Error')); return; }
     showToast('✅ Pago registrado');
