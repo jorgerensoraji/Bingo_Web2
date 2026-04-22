@@ -151,6 +151,26 @@
 /* ── Pane toggle ── */
 .guide-pane { display:none; }
 .guide-pane.active { display:block; }
+
+/* ── Pattern mini-grid ── */
+.pat-wrap { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:16px 0; }
+@media(max-width:440px){ .pat-wrap { grid-template-columns:1fr 1fr; } }
+.pat-card { background:#041015; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px; }
+.pat-label { font-size:.7rem; font-weight:700; text-align:center; margin-bottom:7px; }
+.pat-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:2px; }
+.pat-c { height:13px; border-radius:3px; background:rgba(255,255,255,.07); }
+.pat-h { height:13px; border-radius:3px; }
+.pat-f { height:13px; border-radius:3px; background:rgba(246,195,67,.25); }
+
+/* ── Download button ── */
+.dl-btn {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(0,229,180,.12); border:1px solid rgba(0,229,180,.4);
+  color:var(--accent); font-weight:700; font-size:.88rem;
+  padding:10px 20px; border-radius:10px; cursor:pointer;
+  transition:background .2s; text-decoration:none;
+}
+.dl-btn:hover { background:rgba(0,229,180,.22); }
 </style>
 </head>
 <body>
@@ -172,6 +192,10 @@
 
   <div class="guide-title">📖 Guía del Jugador</div>
   <div class="guide-sub">Todo lo que necesitas saber para jugar al bingo paso a paso.</div>
+  <div style="margin-bottom:8px">
+    <button class="dl-btn" onclick="descargarGuiaPDF(this)">📄 Descargar Guía en PDF</button>
+    <span id="dl-status" style="font-size:.78rem;color:var(--muted);margin-left:10px;display:none"></span>
+  </div>
 
   <!-- Mode selector -->
   <div class="mode-tabs">
@@ -429,6 +453,10 @@
             • <strong>Desde el correo:</strong> Toca el enlace directo del correo de aprobación — te lleva directamente a generar tu cartilla.<br>
             • <strong>Manualmente:</strong> Ve a <strong>ganabingoperu.com/cartillas</strong>, busca la sección <strong>"¿Ya tienes tu código?"</strong> e ingresa tu código de 6 letras.
           </p>
+          <div class="tip-box">
+            <div class="tip-icon">📱</div>
+            <div>¿Cambias de celular o computadora? Usa el <strong>enlace directo del correo</strong> — funciona desde cualquier dispositivo. Si no tienes el enlace, ingresa tu código en <strong>"🔑 ¿Ya tienes tu código?"</strong> en la pantalla principal del juego.</div>
+          </div>
 
           <div class="mock-screen">
             <div class="mock-bar">ganabingoperu.com/cartillas</div>
@@ -461,14 +489,62 @@
           </div>
         </div>
         <div class="step-body">
-          <p>Una vez generada tu cartilla, entra a <strong>ganabingoperu.com</strong>. Tu cartilla aparecerá en la columna derecha y se irá marcando <strong>automáticamente</strong> conforme caigan las bolillas.</p>
+          <p>Una vez generada tu cartilla, entra a <strong>ganabingoperu.com</strong>. Haz clic en el botón <strong style="color:var(--accent)">🎴 Cargar mis cartillas</strong> (columna derecha) y tu cartilla aparecerá marcándose <strong>automáticamente</strong> conforme caigan las bolillas.</p>
           <p>¡Solo tienes que estar atento! Si completas un patrón ganador, el sistema te lo indica y puedes reclamar tu premio. Hay <strong>4 premios</strong> disponibles:</p>
           <p>
-            • <strong style="color:#f6c343">⭐ Línea (Letra I)</strong> — Completa los 5 números de la columna I.<br>
-            • <strong style="color:#3b82f6">🔷 Letra U</strong> — Las dos columnas de los extremos + fila inferior.<br>
+            • <strong style="color:#f6c343">⭐ Línea (Letra I)</strong> — Los 5 números de la columna I (segunda columna).<br>
+            • <strong style="color:#3b82f6">🔷 Letra U</strong> — Columnas extremas completas + fila inferior.<br>
             • <strong style="color:#ec4899">⭕ Letra O</strong> — Todo el borde exterior de la cartilla.<br>
-            • <strong style="color:var(--accent)">🎉 Bingo / Apagón</strong> — Completa todos los números de tu cartilla.
+            • <strong style="color:var(--accent)">🎉 Bingo / Apagón</strong> — Todos los 24 números de tu cartilla.
           </p>
+
+          <!-- Pattern visuals -->
+          <div class="pat-wrap">
+            <div class="pat-card">
+              <div class="pat-label" style="color:#f6c343">⭐ LETRA I</div>
+              <div class="pat-grid">
+                <div class="pat-c"></div><div class="pat-h" style="background:rgba(246,195,67,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div>
+                <div class="pat-c"></div><div class="pat-h" style="background:rgba(246,195,67,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div>
+                <div class="pat-c"></div><div class="pat-h" style="background:rgba(246,195,67,.5)"></div><div class="pat-f"></div><div class="pat-c"></div><div class="pat-c"></div>
+                <div class="pat-c"></div><div class="pat-h" style="background:rgba(246,195,67,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div>
+                <div class="pat-c"></div><div class="pat-h" style="background:rgba(246,195,67,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div>
+              </div>
+            </div>
+            <div class="pat-card">
+              <div class="pat-label" style="color:#3b82f6">🔷 LETRA U</div>
+              <div class="pat-grid">
+                <div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div>
+                <div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div>
+                <div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-c"></div><div class="pat-f"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div>
+                <div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div>
+                <div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div><div class="pat-h" style="background:rgba(59,130,246,.5)"></div>
+              </div>
+            </div>
+            <div class="pat-card">
+              <div class="pat-label" style="color:#ec4899">⭕ LETRA O</div>
+              <div class="pat-grid">
+                <div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div>
+                <div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div>
+                <div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-c"></div><div class="pat-f"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div>
+                <div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-c"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div>
+                <div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div><div class="pat-h" style="background:rgba(236,72,153,.5)"></div>
+              </div>
+            </div>
+            <div class="pat-card">
+              <div class="pat-label" style="color:var(--accent)">🎉 BINGO / APAGÓN</div>
+              <div class="pat-grid">
+                <div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div>
+                <div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div>
+                <div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-f"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div>
+                <div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div>
+                <div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div><div class="pat-h" style="background:rgba(0,229,180,.4)"></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:-4px;margin-bottom:12px">
+            <span style="display:inline-block;width:12px;height:10px;background:rgba(246,195,67,.25);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Casilla central FREE (siempre marcada)
+          </div>
+
           <p>El monto en soles (S/.) de cada premio se muestra en pantalla antes de empezar y también llega en el correo de aprobación.</p>
 
           <div class="mock-screen">
@@ -833,6 +909,27 @@
     <div style="display:flex;flex-direction:column;gap:14px">
 
       <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿Cómo cargo mis cartillas en el juego?</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+          En la pantalla principal del bingo (<strong>ganabingoperu.com</strong>), busca y haz clic en el botón <strong style="color:var(--accent)">🎴 Cargar mis cartillas</strong>. Si es la primera vez en ese dispositivo, primero ingresa tu código en la sección <strong>"🔑 ¿Ya tienes tu código?"</strong> que aparece en la misma pantalla.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">Aparece el mensaje "tus cartillas son de otro Bingo" ¿qué hago?</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+          Significa que las cartillas guardadas en tu dispositivo pertenecen a un bingo anterior y no sirven para el bingo actual. El sistema las borrará automáticamente y abrirá el campo para que ingreses el código del bingo actual. Si aún no tienes cartilla para este bingo, ve a <strong>/cartillas</strong> con el enlace del correo de aprobación de este bingo.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
+        <div style="font-weight:700;margin-bottom:5px">¿Puedo jugar desde otro celular o computadora?</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+          Sí. Usa el <strong>enlace directo del correo de aprobación</strong> — funciona desde cualquier dispositivo. Si no tienes el enlace a mano, ingresa el ID de tu cartilla o tu código de voucher en la sección <strong>"🔑 ¿Ya tienes tu código?"</strong> de la pantalla del juego.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px">
         <div style="font-weight:700;margin-bottom:5px">No recibí el correo con mi código ¿qué hago?</div>
         <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
           1. Revisa tu carpeta de <strong>Spam / Correo no deseado</strong>.<br>
@@ -897,6 +994,56 @@ function showMode(mode) {
   document.getElementById('btn-paid').className = 'mode-btn' + (mode === 'paid' ? ' active-paid' : '');
   document.getElementById('btn-free').className = 'mode-btn' + (mode === 'free' ? ' active-free' : '');
   document.getElementById('btn-ref').className  = 'mode-btn'  + (mode === 'ref'  ? ' active-ref'  : '');
+}
+
+async function descargarGuiaPDF(btn) {
+  const statusEl = document.getElementById('dl-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando PDF…';
+  if (statusEl) statusEl.style.display = 'none';
+
+  try {
+    // Check localStorage cache first
+    const cached = localStorage.getItem('guia_pdf_b64');
+    const cachedDate = localStorage.getItem('guia_pdf_date');
+    const oneDayAgo = Date.now() - 86400000;
+    let b64 = null;
+
+    if (cached && cachedDate && parseInt(cachedDate) > oneDayAgo) {
+      b64 = cached;
+      if (statusEl) { statusEl.textContent = '(desde caché)'; statusEl.style.display = 'inline'; }
+    } else {
+      const res  = await fetch('/guia/pdf');
+      const data = await res.json();
+      if (!res.ok || !data.pdf) throw new Error(data.error || 'Error generando PDF');
+      b64 = data.pdf;
+      try {
+        localStorage.setItem('guia_pdf_b64',   b64);
+        localStorage.setItem('guia_pdf_date',  String(Date.now()));
+      } catch(e) { /* localStorage lleno — continúa sin guardar */ }
+    }
+
+    // Decode base64 and trigger download
+    const bytes  = atob(b64);
+    const arr    = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob   = new Blob([arr], { type: 'application/pdf' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = 'Guia_del_Jugador_BingoPro.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    btn.textContent = '✅ PDF descargado';
+    setTimeout(() => { btn.textContent = '📄 Descargar Guía en PDF'; btn.disabled = false; }, 3000);
+  } catch(e) {
+    btn.textContent = '❌ Error — intenta de nuevo';
+    btn.disabled = false;
+    console.error(e);
+  }
 }
 </script>
 </body>
