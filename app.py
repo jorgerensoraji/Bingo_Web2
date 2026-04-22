@@ -1490,7 +1490,7 @@ def load_all_cartillas(session_id: str = None) -> list:
         q = db.query(Cartilla)
         if session_id:
             q = q.filter_by(session_id=session_id)
-        return [c.to_dict() for c in q.order_by(Cartilla.created).all()]
+        return [c.to_dict() for c in q.order_by(Cartilla.created.desc()).all()]
 
 def load_cartilla(cid: str) -> dict | None:
     with db_session() as db:
