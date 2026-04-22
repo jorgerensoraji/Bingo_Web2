@@ -3848,7 +3848,16 @@ def api_save_manual():
     if vinfo and vinfo.get("email"):
         _send_cartilla_email_async(vinfo, [c], request.host_url.rstrip("/"))
 
-    return jsonify({"status": "ok", "cartilla": c})
+    # Compute how many cartillas are still pending for this voucher
+    remaining = 0
+    if vinfo and code:
+        vinfo2    = get_voucher_info(code)          # fresh read after marking
+        btype2    = BINGO_TYPES.get(vinfo2.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
+        max_c2    = vinfo2.get("max_cartillas") or btype2.get("max_cartillas_per_voucher", 1)
+        ya_c2     = len(vinfo2.get("cartillas") or [])
+        remaining = max(0, max_c2 - ya_c2)
+
+    return jsonify({"status": "ok", "cartilla": c, "remaining": remaining})
 
 @app.route("/api/cartilla/list")
 def api_list_cartillas_legacy():

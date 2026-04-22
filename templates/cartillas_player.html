@@ -1676,13 +1676,14 @@ async function saveManual() {
     saveMyCartilla(data.cartilla.id, data.cartilla.session_id);
     showToast(`✅ Cartilla ${data.cartilla.id} guardada`);
     clearPicker(); loadMyCartillas();
-    await showSuccessPanel([data.cartilla]);
+    await showSuccessPanel([data.cartilla], data.remaining || 0);
   } catch(e) { showToast('❌ Error de conexión'); }
 }
 
 // ── Panel de éxito post-generación ────────────────────
-async function showSuccessPanel(cartillas) {
+async function showSuccessPanel(cartillas, remaining) {
   if (!cartillas || !cartillas.length) return;
+  remaining = remaining || 0;
   const sid = (cartillas[0] && cartillas[0].session_id) ? cartillas[0].session_id : null;
   let sesionHtml = '';
   if (sid) {
@@ -1715,6 +1716,16 @@ async function showSuccessPanel(cartillas) {
   const ids = cartillas.map(c => (typeof c === 'object' && c !== null) ? c.id : c).join(', ');
   document.getElementById('success-cartilla-panel')?.remove();
 
+  // Build action buttons: if still cartillas pending, show "Generar otra" instead of "Ir al Juego"
+  const remainingHtml = remaining > 0
+    ? `<div style="background:rgba(246,195,67,.1);border:1px solid var(--warning);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.85rem;color:var(--warning)">
+         ⚠️ Aún te quedan <strong>${remaining}</strong> cartilla${remaining>1?'s':''} por generar con tu código.
+       </div>
+       <button id="close-success-panel" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">✋ Generar siguiente cartilla</button>
+       <a href="/" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">🎮 Ir al Juego de todas formas</a>`
+    : `<a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
+       <button id="close-success-panel" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">Cerrar</button>`;
+
   const overlay = document.createElement('div');
   overlay.id = 'success-cartilla-panel';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(7,13,20,.92);z-index:800;display:flex;align-items:center;justify-content:center;padding:24px';
@@ -1725,8 +1736,7 @@ async function showSuccessPanel(cartillas) {
       <div style="font-size:.82rem;color:var(--muted)">${cartillas.length > 1 ? 'IDs de tus cartillas' : 'ID de tu cartilla'}</div>
       <div style="font-size:1.3rem;font-weight:900;color:var(--text);margin:6px 0">${esc(ids)}</div>
       ${sesionHtml}
-      <a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
-      <button id="close-success-panel" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">Cerrar</button>
+      ${remainingHtml}
     </div>`;
   document.body.appendChild(overlay);
   document.getElementById('close-success-panel').onclick = () => overlay.remove();
