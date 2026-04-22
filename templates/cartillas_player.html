@@ -1721,8 +1721,7 @@ async function showSuccessPanel(cartillas, remaining) {
     ? `<div style="background:rgba(246,195,67,.1);border:1px solid var(--warning);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.85rem;color:var(--warning)">
          ⚠️ Aún te quedan <strong>${remaining}</strong> cartilla${remaining>1?'s':''} por generar con tu código.
        </div>
-       <button id="close-success-panel" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">✋ Generar siguiente cartilla</button>
-       <a href="/" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">🎮 Ir al Juego de todas formas</a>`
+       <button id="close-success-panel" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">✋ Generar siguiente cartilla</button>`
     : `<a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
        <button id="close-success-panel" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">Cerrar</button>`;
 
