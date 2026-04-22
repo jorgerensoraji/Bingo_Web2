@@ -1792,15 +1792,15 @@ async function loadMyCartillas() {
     return;
   }
 
-  // Determine which cartillas are stale (wrong/old pending session, not current or next)
+  // Determine which cartillas are stale (wrong/old scheduled session, not current or next)
   const staleIds = new Set(
     arr
       .filter(e => {
         const cid = (typeof e==='object'&&e)?e.id:e;
         const st  = statusMap[cid];
         const sid = sidMap[cid];
-        // Stale = pending session that is neither the live nor the next scheduled session
-        return st === 'pending' && sid && _currentSids.size > 0 && !_currentSids.has(sid);
+        // Stale = scheduled session that is neither the live nor the next scheduled session
+        return st === 'scheduled' && sid && _currentSids.size > 0 && !_currentSids.has(sid);
       })
       .map(e => (typeof e==='object'&&e)?e.id:e)
   );
@@ -1849,7 +1849,7 @@ async function loadMyCartillas() {
     if (st === 'finished') return false;
     if (!sid) return true;                              // admin-generated, no session
     if (st === 'active' || st === 'preparing') return true;
-    if (st === 'pending') return _currentSids.size === 0 || _currentSids.has(sid);
+    if (st === 'scheduled') return _currentSids.size === 0 || _currentSids.has(sid);
     return true;                                        // null/unknown status — keep
   });
   const historial = arr.filter(e => {
