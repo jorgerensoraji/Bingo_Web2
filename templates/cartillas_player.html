@@ -1500,8 +1500,9 @@ async function generateAuto() {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (data.error === 'max_cartillas_reached') {
-        // Cartilla already generated — load it into localStorage so the player can play
+      // For both 'max_cartillas_reached' and 'game_started': the player may already
+      // have cartillas — try to load them before showing any error.
+      if (data.error === 'max_cartillas_reached' || data.error === 'game_started') {
         try {
           const r2   = await fetch('/api/cartillas/by_access', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
           const d2   = await r2.json();
@@ -1514,13 +1515,17 @@ async function generateAuto() {
             return;
           }
         } catch(e) {}
-        showToast('⚠️ Ya generaste tu cartilla. Entra al juego con el código que recibiste.');
+        // No existing cartillas found
+        if (data.error === 'game_started') {
+          showToast('⛔ El juego ya empezó y no tienes cartilla para este Bingo.');
+        } else {
+          showToast('⚠️ Ya generaste tu cartilla. Entra al juego con el código que recibiste.');
+        }
         return;
       }
       const msgs = {
         bad_code:        '❌ Código inválido.',
         payment_pending: '⏳ Pago pendiente de aprobación.',
-        game_started:    '⛔ El juego ya empezó.',
       };
       showToast(msgs[data.error] || '❌ ' + data.error);
       return;
