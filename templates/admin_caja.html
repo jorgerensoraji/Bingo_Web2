@@ -742,7 +742,7 @@ function renderByType(sesiones){
   const byType={};
   sesiones.forEach(s=>{
     const k=s.bingo_type||'?';
-    if(!byType[k]) byType[k]={count:0,jugadores:0,recaudado:0,premios:0,ganancia:0};
+    if(!byType[k]) byType[k]={count:0,jugadores:0,recaudado:0,premios:0,ganancia:0,nombre:s.bingo_nombre||null};
     byType[k].count++;
     byType[k].jugadores+=s.jugadores||0;
     byType[k].recaudado+=s.recaudado||0;
@@ -752,10 +752,11 @@ function renderByType(sesiones){
   const el=document.getElementById('by-type-content');
   el.innerHTML=Object.entries(byType).map(([k,v])=>{
     const bt=getBT(k);
+    const displayNombre=v.nombre||bt.nombre;
     const margen=v.recaudado>0?Math.round((v.ganancia/v.recaudado)*100):0;
     return `<div class="by-type-row">
       <span style="color:${bt.color};font-weight:700;font-size:.95rem;min-width:130px">
-        ${bt.emoji} ${esc(bt.nombre)}
+        ${bt.emoji} ${esc(displayNombre)}
       </span>
       <span style="color:var(--muted);font-size:.8rem">${v.count} bingo(s) · ${v.jugadores} jugadores</span>
       <span style="color:var(--accent)"><strong>${fmt(v.recaudado)}</strong> recaudado</span>
