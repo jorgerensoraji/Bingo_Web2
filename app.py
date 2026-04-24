@@ -2613,82 +2613,6 @@ def _wa_rechazar(args: list) -> str:
         v.rejected_reason = "Rechazado por admin vía WhatsApp"
     return f"❌ *Rechazado: {code}*\n👤 {nombre}"
 
-def _wa_ganadores() -> str:
-    with db_session() as db:
-        rows = (db.query(Winner)
-                .filter_by(paid=False)
-                .order_by(Winner.claimed_at.desc())
-                .limit(10).all())
-        data = [{"id": w.id, "nombre": w.nombre or "", "tipo": w.tipo or "bingo",
-                 "prize": w.prize_amount or 0, "cartilla": w.cartilla_id or "",
-                 "session": w.session_id or ""} for w in rows]
-    if not data:
-        return "✅ No hay premios pendientes de pago."
-    tipo_lbl = {"bingo": "BINGO", "linea": "Letra I", "u": "Letra U", "o": "Letra O"}
-    lines = [f"🏆 *Ganadores sin pagar ({len(data)}):*"]
-    for w in data:
-        lines.append(f"• *{w['nombre']}* — {tipo_lbl.get(w['tipo'], w['tipo'])} — S/.{w['prize']:.2f} — cartilla {w['cartilla']}")
-    lines.append("\n_Responde: pagar [nombre] [monto]_")
-    return "\n".join(lines)
-
-def _wa_pagar(args: list) -> str:
-    if len(args) < 3:
-        return "Uso: *pagar [nombre] [monto] [num_operacion]*\nEj: pagar Boris 33.82 98765432"
-    # Last arg = op number, second to last = amount, rest = name
-    op_number = args[-1]
-    try:
-        amount = round(float(args[-2].replace(',', '.')), 2)
-    except ValueError:
-        return "❌ Monto inválido. Ej: pagar Boris 33.82 98765432"
-    nombre_q = " ".join(args[:-2]).lower().strip()
-
-    with db_session() as db:
-        rows = (db.query(Winner)
-                .filter_by(paid=False)
-                .order_by(Winner.claimed_at.desc())
-                .all())
-        matches = [w for w in rows if nombre_q in (w.nombre or "").lower()]
-        if not matches:
-            return f"❌ No se encontró ganador sin pagar con nombre '{nombre_q}'"
-        if len(matches) > 1:
-            tipo_lbl = {"bingo": "BINGO", "linea": "Letra I", "u": "Letra U", "o": "Letra O"}
-            lines = [f"⚠️ Varios ganadores con ese nombre:"]
-            for w in matches:
-                lines.append(f"• *{w.nombre}* — {tipo_lbl.get(w.tipo, w.tipo)} — S/.{w.prize_amount:.2f}")
-            lines.append("\n_Sé más específico en el nombre_")
-            return "\n".join(lines)
-        w = matches[0]
-        w.paid         = True
-        w.paid_at      = now_peru().isoformat()
-        w.paid_method  = "WA bot"
-        w.paid_ref     = op_number
-        w.paid_note    = f"Registrado vía WhatsApp · op {op_number}"
-        w.prize_amount = amount
-        nombre_out = w.nombre or ""
-        tipo_out   = w.tipo or "bingo"
-        sid        = w.session_id or ""
-        cid        = w.cartilla_id or ""
-        # Sync sessions.winners_final JSON
-        sx = db.query(BingoSession).filter_by(id=sid).first()
-        if sx and sx.winners_final:
-            try:
-                wf = json.loads(sx.winners_final)
-                for wr in wf:
-                    if wr.get("id") == cid and wr.get("tipo") == tipo_out:
-                        wr["paid"] = True
-                        wr["paid_at"] = w.paid_at
-                        wr["prize_amount"] = amount
-                sx.winners_final = json.dumps(wf, ensure_ascii=False)
-            except Exception:
-                pass
-
-    tipo_lbl = {"bingo": "BINGO", "linea": "Letra I", "u": "Letra U", "o": "Letra O"}
-    return (f"💸 *Pago registrado*\n"
-            f"👤 {nombre_out} — {tipo_lbl.get(tipo_out, tipo_out)}\n"
-            f"💰 S/.{amount:.2f} · op {op_number}\n"
-            f"🎫 Cartilla {cid}\n"
-            f"✅ Guardado")
-
 def _wa_ayuda() -> str:
     return (
         "🤖 *Bingo Pro Bot*\n\n"
@@ -2697,8 +2621,6 @@ def _wa_ayuda() -> str:
         "• *aprobar [num_op] [monto]* — aprobar por monto\n"
         "• *aprobar [codigo]* — aprobar por código directo\n"
         "• *rechazar [codigo]* — rechazar pago\n"
-        "• *ganadores* — ver premios sin pagar\n"
-        "• *pagar [nombre] [monto] [num_op]* — registrar pago a ganador\n"
         "• *ayuda* — esta lista"
     )
 
@@ -2714,10 +2636,6 @@ def _handle_wa_command(text: str, url_base: str) -> str:
         return _wa_aprobar(args, url_base)
     if cmd in ("rechazar", "r", "no"):
         return _wa_rechazar(args)
-    if cmd in ("ganadores", "g", "premios"):
-        return _wa_ganadores()
-    if cmd in ("pagar", "pay"):
-        return _wa_pagar(args)
     if cmd in ("ayuda", "help", "?", "hola", "hi", "inicio", "start"):
         return _wa_ayuda()
     return f"Comando desconocido: '{cmd}'\n\n" + _wa_ayuda()
