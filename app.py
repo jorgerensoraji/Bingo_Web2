@@ -726,7 +726,8 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                 winners_lines = ["  • Sin ganadores registrados"]
 
             # Email to admin
-            if EMAIL_FROM and email_configurado():
+            admin_notify_email = (_load_config().get("admin_notify_email") or "").strip() or EMAIL_FROM
+            if admin_notify_email and email_configurado():
                 winners_html = "".join(
                     f'<li style="margin-bottom:6px"><strong style="color:#00e5b4">{l.strip()}</strong></li>'
                     for l in winners_lines
@@ -738,11 +739,11 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
 <ul style="padding-left:20px">{winners_html}</ul>
 <p style="color:#4a6b85;font-size:.8rem">Jugadores notificados: {sent_count}</p>
 </body></html>"""
-                ok_adm, err_adm = enviar_email(EMAIL_FROM, f"🎱 Resumen Admin — {bingo_nombre_admin}", admin_html, winner_attachments)
+                ok_adm, err_adm = enviar_email(admin_notify_email, f"🎱 Resumen Admin — {bingo_nombre_admin}", admin_html, winner_attachments)
                 if ok_adm:
-                    _log_email_event("OK", f"Resumen admin [{sid}] enviado a {EMAIL_FROM}")
+                    _log_email_event("OK", f"Resumen admin [{sid}] enviado a {admin_notify_email}")
                 else:
-                    _log_email_event("ERROR", f"Fallo resumen admin [{sid}] a {EMAIL_FROM}: {err_adm}")
+                    _log_email_event("ERROR", f"Fallo resumen admin [{sid}] a {admin_notify_email}: {err_adm}")
 
             # WhatsApp to admin
             if ADMIN_WHATSAPP:
@@ -5113,7 +5114,8 @@ def api_admin_save_config():
     data = request.get_json() or {}
     cfg  = _load_config()
     for field in ("nombre_organizador", "whatsapp", "facebook", "instagram",
-                  "telefono_extra", "mensaje_contacto", "instrucciones_pago"):
+                  "telefono_extra", "mensaje_contacto", "instrucciones_pago",
+                  "admin_notify_email"):
         if field in data:
             cfg[field] = str(data[field])[:300]
     if "linea_premio_activo" in data:

@@ -81,7 +81,11 @@ textarea.input { resize:vertical; min-height:80px; line-height:1.5 }
         <label class="label">Nombre del organizador / grupo</label>
         <input id="cfg-nombre" class="input" placeholder="Ej: Bingo Familiar Ramirez">
 
-        <label class="label">📱 Número de WhatsApp</label>
+        <label class="label">📧 Email de notificaciones admin</label>
+        <input id="cfg-admin-email" class="input" placeholder="Ej: tumail@gmail.com — recibe resumen al finalizar cada bingo">
+        <div style="font-size:.76rem;color:var(--muted);margin-top:4px">Recibirás el resumen de ganadores + cartillas cuando termine una sesión.</div>
+
+        <label class="label" style="margin-top:14px">📱 Número de WhatsApp</label>
         <div style="display:flex;gap:8px">
           <input id="cfg-wa" class="input" placeholder="Ej: 51987654321 (con código de país)" style="flex:1">
         </div>
@@ -172,6 +176,7 @@ async function loadConfig() {
     const cfg = await res.json();
 
     document.getElementById('cfg-nombre').value       = cfg.nombre_organizador || '';
+    document.getElementById('cfg-admin-email').value  = cfg.admin_notify_email || '';
     document.getElementById('cfg-wa').value           = cfg.whatsapp || '';
     document.getElementById('cfg-msg').value          = cfg.mensaje_contacto  || '';
     document.getElementById('cfg-fb').value           = cfg.facebook  || '';
@@ -314,6 +319,7 @@ function updateContactPreview() {
 async function saveConfig() {
   const payload = {
     nombre_organizador: document.getElementById('cfg-nombre').value.trim(),
+    admin_notify_email: document.getElementById('cfg-admin-email').value.trim(),
     whatsapp:           document.getElementById('cfg-wa').value.trim(),
     facebook:           document.getElementById('cfg-fb').value.trim(),
     instagram:          document.getElementById('cfg-ig').value.trim(),
