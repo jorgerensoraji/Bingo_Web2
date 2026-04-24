@@ -1349,29 +1349,48 @@ async function loadAllCartillas() {
   }
 
   if (wrongSession > 0 && !myCartillas.length) {
-    // Try to find the session time for the player's cartillas
     var otherSid = null;
     for (var _i = 0; _i < all.length; _i++) {
       if (all[_i].session_id && all[_i].session_id !== liveSessionId) {
         otherSid = all[_i].session_id; break;
       }
     }
+    function _openCodePanel() {
+      var ycBody  = document.getElementById('yc-body');
+      var ycArrow = document.getElementById('yc-arrow');
+      var ycInput = document.getElementById('yc-input');
+      if (ycBody && ycBody.style.display === 'none') {
+        ycBody.style.display = 'block';
+        if (ycArrow) ycArrow.textContent = '▲ Ocultar';
+      }
+      if (ycInput) ycInput.focus();
+    }
     if (otherSid) {
       fetch('/api/session/' + otherSid)
         .then(function(r) { return r.json(); })
         .then(function(sd) {
-          var dt = (sd.datetime_iso || sd.date || '').replace('T', ' ').slice(0, 16);
-          var hora = dt.slice(11, 16) || '';
-          var msg = hora
-            ? '⏰ Tus cartillas son para el Bingo que empieza a las ' + hora + '. ¡Vuelve a esa hora!'
-            : '⏰ Tus cartillas son para otro Bingo. ¡Vuelve a la hora programada!';
-          showToast(msg, 8000);
+          var status = sd.status || 'finished';
+          if (status === 'scheduled' || status === 'preparing') {
+            // Future session — tell player when to come back
+            var dt   = (sd.datetime_iso || '').replace('T', ' ').slice(0, 16);
+            var hora = dt.slice(11, 16) || '';
+            var msg  = hora
+              ? '⏰ Tus cartillas son para el Bingo que empieza a las ' + hora + '. ¡Vuelve a esa hora!'
+              : '⏰ Tus cartillas son para otro Bingo programado. ¡Vuelve a la hora indicada!';
+            showToast(msg, 8000);
+          } else {
+            // Finished/cancelled session — open panel so player can buy for current session
+            showToast('⚠️ Esas cartillas son de un Bingo ya finalizado. Ingresa tu código para este Bingo.', 6000);
+            _openCodePanel();
+          }
         })
         .catch(function() {
           showToast('⚠️ Esas cartillas son de otro Bingo. Ingresa el código de este Bingo.', 6000);
+          _openCodePanel();
         });
     } else {
       showToast('⚠️ Esas cartillas son de otro Bingo. Ingresa el código de este Bingo.', 6000);
+      _openCodePanel();
     }
     return;
   }
