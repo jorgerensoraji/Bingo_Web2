@@ -592,7 +592,7 @@ async function refresh() {
 
       // Cartillas
       const cAct  = (x.cartillas||[]).length;
-      const cMax  = bt.max_cartillas||5;
+      const cMax  = x.max_cartillas || bt.max_cartillas || 5;
       const cHtml = `<span style="color:${cAct>0?'var(--accent)':'var(--muted)'}">
         ${cAct}/${cMax}</span>`;
 
