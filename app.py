@@ -705,6 +705,58 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                 else:
                     _log_email_event("ERROR", f"Fallo resumen bingo [{sid}] a {email}: {err}")
             _log_email_event("OK", f"Resúmenes bingo [{sid}]: {sent_count} emails enviados, {len(no_voucher)} cartillas sin email")
+
+            # ── Notify admin ──────────────────────────────────────────────
+            # Build winners summary text
+            tipo_labels = {"bingo": "BINGO", "linea": "Letra I", "u": "Letra U", "o": "Letra O"}
+            bingo_nombre_admin = ""
+            with db_session() as db2:
+                from models import BingoSession
+                s = db2.query(BingoSession).filter_by(id=sid).first()
+                if s:
+                    bingo_nombre_admin = s.bingo_nombre or s.id
+            winners_lines = []
+            if winners:
+                for w in winners:
+                    tipo  = tipo_labels.get(w.get("tipo","bingo"), w.get("tipo",""))
+                    name  = w.get("nombre") or w.get("nombres") or "Jugador"
+                    cid   = w.get("id") or w.get("cartilla_id","")
+                    winners_lines.append(f"  • {tipo}: {name} (cartilla {cid})")
+            else:
+                winners_lines = ["  • Sin ganadores registrados"]
+
+            # Email to admin
+            if EMAIL_FROM and email_configurado():
+                winners_html = "".join(
+                    f'<li style="margin-bottom:6px"><strong style="color:#00e5b4">{l.strip()}</strong></li>'
+                    for l in winners_lines
+                )
+                admin_html = f"""<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#0a1628;font-family:Arial,sans-serif;color:#ddeeff">
+<h2 style="color:#00e5b4">🎱 Resumen Admin — {bingo_nombre_admin}</h2>
+<p>Sesión <strong>{sid}</strong> finalizada. Bolas sorteadas: <strong>{len(drawn)}</strong></p>
+<h3 style="color:#ffd700">🏆 Ganadores</h3>
+<ul style="padding-left:20px">{winners_html}</ul>
+<p style="color:#4a6b85;font-size:.8rem">Jugadores notificados: {sent_count}</p>
+</body></html>"""
+                ok_adm, err_adm = enviar_email(EMAIL_FROM, f"🎱 Resumen Admin — {bingo_nombre_admin}", admin_html, winner_attachments)
+                if ok_adm:
+                    _log_email_event("OK", f"Resumen admin [{sid}] enviado a {EMAIL_FROM}")
+                else:
+                    _log_email_event("ERROR", f"Fallo resumen admin [{sid}] a {EMAIL_FROM}: {err_adm}")
+
+            # WhatsApp to admin
+            if ADMIN_WHATSAPP:
+                wa_lines = "\n".join(winners_lines)
+                wa_body  = (
+                    f"🎱 *Bingo finalizado*: {bingo_nombre_admin}\n"
+                    f"Sesión: {sid} | Bolas: {len(drawn)}\n\n"
+                    f"🏆 *Ganadores:*\n{wa_lines}\n\n"
+                    f"Jugadores notificados: {sent_count}"
+                )
+                ok_wa, err_wa = enviar_whatsapp(ADMIN_WHATSAPP, wa_body)
+                if not ok_wa:
+                    _log_email_event("ERROR", f"WhatsApp admin [{sid}] fallo: {err_wa}")
+
         except Exception as e:
             import traceback
             _log_email_event("EXCEPTION", f"_send_fin_bingo_emails_async: {e} | {traceback.format_exc()}")
