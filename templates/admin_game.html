@@ -139,14 +139,6 @@
         ⏹ Finalizar Bingo
       </button>
 
-      <!-- Cancelar forzado -->
-      <button onclick="cancelarSesionForzado()" style="
-        width:100%;padding:10px;border:none;border-radius:9px;
-        background:var(--danger);color:white;
-        font-family:'Outfit',sans-serif;font-weight:900;font-size:.88rem;cursor:pointer;">
-        🛑 Cancelar Bingo (forzado)
-      </button>
-
       <!-- Limpiar estado residual (sin sesión activa) -->
       <div id="btn-limpiar-wrap" style="display:none;margin-top:6px">
         <button onclick="limpiarEstado()" style="
@@ -161,8 +153,7 @@
       </div>
 
       <div style="font-size:.7rem;color:var(--muted);margin-top:8px;line-height:1.5">
-        <strong>Finalizar</strong>: cierra el juego y registra ganadores.<br>
-        <strong>Cancelar forzado</strong>: anula el Bingo completamente. Úsalo solo en emergencias.
+        <strong>Finalizar</strong>: cierra el juego y registra ganadores.
       </div>
     </div>
 
