@@ -87,9 +87,9 @@ app = Flask(__name__)
 app.after_request(apply_security_headers)
 
 @app.before_request
-def redirect_www():
-    if request.host.startswith('www.'):
-        return redirect(request.url.replace('://www.', '://', 1), 301)
+def redirect_to_www():
+    if not request.host.startswith('www.') and 'localhost' not in request.host and '127.0.0.1' not in request.host:
+        return redirect(request.url.replace('://', '://www.', 1), 301)
 
 # ─── Seguridad ────────────────────────────────────────────────────────────────
 _raw_key = os.environ.get("SECRET_KEY", "")
