@@ -742,6 +742,7 @@
     <div class="header-title">🎱 Bingo Pro <span class="badge">En Vivo</span></div>
     <div class="header-sub">
       <span style="font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:2px;color:var(--accent)">Diverti Perú</span>
+      <span id="peru-clock-header" style="margin-left:10px;font-size:.72rem;color:#4a6b85;letter-spacing:1px">🇵🇪 --:--:-- hora Perú</span>
     </div>
   </div>
   <div class="header-right">
@@ -793,6 +794,7 @@
     <div class="cd-bar" id="cd-bar" style="width:100%"></div>
   </div>
   <div class="cd-entry">segundos para el inicio</div>
+  <div style="font-size:.72rem;color:#4a6b85;margin-top:4px">🇵🇪 Hora Perú: <span id="peru-clock-cd">--:--:--</span></div>
 
   <!-- Prize breakdown panel -->
   <div id="cd-prizes" style="
@@ -1798,6 +1800,23 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(waModalOpen, 800);
   }
 });
+
+// ── Peru time clock ──────────────────────────────────────
+(function() {
+  var fmt = new Intl.DateTimeFormat('es-PE', {
+    timeZone: 'America/Lima',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+  function tick() {
+    var t = fmt.format(new Date());
+    var h = document.getElementById('peru-clock-header');
+    var c = document.getElementById('peru-clock-cd');
+    if (h) h.textContent = '🇵🇪 ' + t + ' hora Perú';
+    if (c) c.textContent = t;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
 
 // Auto-load cartilla when arriving from email link (?code=VOUCHER_CODE)
 (function() {
