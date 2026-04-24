@@ -795,6 +795,12 @@ async function syncState() {
       return;
     }
 
+    // Hide buy banner during countdown — game is about to start, no new purchases allowed
+    if (data.preparing) {
+      var buyBanner = document.getElementById('banner-comprar');
+      if (buyBanner) buyBanner.style.display = 'none';
+    }
+
     const newNums = serverDrawn.filter(function(n) { return !drawnLocal.includes(n); });
     drawnLocal = serverDrawn;
 

@@ -2279,6 +2279,20 @@ def api_approve_voucher(code):
     # Fire referral confirmation email if this voucher had a referral code
     _trigger_referral_on_approval(v_dict, request.host_url.rstrip("/"))
 
+    # Auto-generate cartillas if session is in countdown and player has none
+    sid      = v_dict.get("session_id", "")
+    s        = get_session(sid) if sid else None
+    if s and s.get("status") == "preparing" and not v_dict.get("cartillas"):
+        btype_id = v_dict.get("bingo_type", "1sol")
+        max_c    = v_dict.get("max_cartillas") or 1
+        nombre   = (v_dict.get("nombres") or "Jugador").strip()[:40]
+        for _ in range(max_c):
+            grid = generate_cartilla_grid_75()
+            c    = save_cartilla(nombre, grid, voucher_code=code,
+                                 session_id=sid, bingo_type=btype_id,
+                                 generada_por_admin=True)
+            mark_voucher_cartilla(code, c["id"])
+
     return jsonify({"status": "ok", "voucher": v_dict, "email_result": email_result})
 
 @app.route("/api/admin/voucher/<code>/reject", methods=["POST"])
@@ -2463,6 +2477,12 @@ def api_voucher_check():
     if not ok:
         return jsonify({"ok": False, "error": err}), 400
     vinfo = get_voucher_info(code)
+    # Block new cartilla generation during countdown
+    sid = vinfo.get("session_id", "") if vinfo else ""
+    if sid:
+        s = get_session(sid)
+        if s and s.get("status") == "preparing":
+            return jsonify({"ok": False, "error": "El juego está por comenzar. Ya no se aceptan nuevas cartillas. ¡Revisa tu email con tu enlace personal!"}), 400
     btype = BINGO_TYPES.get(vinfo.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     return jsonify({"ok": True, "voucher": {
         "bingo_type":                vinfo.get("bingo_type"),

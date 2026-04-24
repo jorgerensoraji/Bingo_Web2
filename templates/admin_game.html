@@ -278,6 +278,7 @@ function showToast(msg) {
 // ── Poll state: resume button + sesión activa ─────────
 window._activeSesionId = null;
 
+let _adminLastSeen = null;
 setInterval(async function() {
   try {
     const res  = await fetch('/api/state');
@@ -290,6 +291,15 @@ setInterval(async function() {
     // Detectar pausa por ganador (sin esperar al próximo sorteo)
     if (data.paused && typeof showPausedBanner === 'function') {
       showPausedBanner(data.winners || [], data.linea_winners || [], data.u_winners || [], data.o_winners || []);
+    }
+
+    // Show auto-draw ball animation for admin when a new ball was drawn automatically
+    const serverLast = data.last || null;
+    if (serverLast && serverLast !== _adminLastSeen && typeof updateDisplay === 'function') {
+      _adminLastSeen = serverLast;
+      updateDisplay(serverLast, data.words || '');
+      if (typeof markCell === 'function') markCell(serverLast);
+      if (typeof updateRecent === 'function') updateRecent();
     }
 
 
