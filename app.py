@@ -13,8 +13,9 @@ CHANGES v8.0 (SQLite migration):
   ✅ Foundation ready for payment webhooks (v8.2)
 """
 
-import asyncio, base64, hashlib, json, os, random, re, secrets, socket, tempfile
+import asyncio, base64, hashlib, json, logging, os, random, re, secrets, socket, tempfile
 import threading, time, uuid
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
 from security import (
     apply_security_headers, get_csrf_token, csrf_required,
     check_ip_allowed, record_failed_login, record_success_login,
