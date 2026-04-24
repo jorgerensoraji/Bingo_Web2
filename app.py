@@ -2365,12 +2365,43 @@ def api_reject_voucher(code):
         v.rejected_reason = data.get("reason", "")
     return jsonify({"status": "ok"})
 
-@app.route("/admin/quick/approve/<code>")
+@app.route("/admin/quick/approve/<code>", methods=["GET", "POST"])
 def quick_approve(code):
     code  = code.strip().upper()
     token = request.args.get("token", "")
     if not _verify_quick_token("approve", code, token):
         return _quick_result("error", "Enlace inválido o expirado.")
+    if request.method == "GET":
+        # Show confirmation page — prevents WhatsApp link preview from auto-approving
+        with db_session() as db:
+            v = db.query(Voucher).filter_by(code=code).first()
+            if not v:
+                return _quick_result("error", f"Voucher {code} no encontrado.")
+            if v.payment_status in ("manual_approved", "approved"):
+                return _quick_result("already", f"El voucher {code} ya estaba aprobado.", code)
+            nombres = f"{v.nombres} {v.apellidos}".strip()
+            precio  = f"S/. {v.precio:.2f}" if v.precio else ""
+        return f"""<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aprobar pago</title>
+<style>
+  body{{font-family:system-ui,sans-serif;background:#070d14;color:#ddeeff;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box}}
+  .card{{background:#0d1825;border:1px solid #1a3148;border-radius:16px;padding:28px 24px;max-width:420px;width:100%}}
+  h2{{color:#00e5b4;margin:0 0 8px;font-size:1.3rem}}
+  p{{color:#4a6b85;font-size:.87rem;margin:0 0 20px}}
+  button{{margin-top:14px;width:100%;padding:13px;border:none;border-radius:10px;
+          background:#00e5b4;color:#070d14;font-size:1rem;font-weight:700;cursor:pointer}}
+  button:hover{{background:#00c9a0}}
+</style></head>
+<body><div class="card">
+  <h2>✅ Aprobar voucher {code}</h2>
+  <p>👤 {nombres}<br>💰 {precio}</p>
+  <form method="POST">
+    <button type="submit">Confirmar aprobación</button>
+  </form>
+</div></body></html>"""
+    # POST — do the actual approval
     v_dict = {}
     with db_session() as db:
         v = db.query(Voucher).filter_by(code=code).first()
