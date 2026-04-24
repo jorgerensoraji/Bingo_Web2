@@ -5257,6 +5257,7 @@ def _startup():
         mark_voucher_fn       = mark_voucher_cartilla,
         url_base              = url_base_startup,
         compute_prize_pool_fn = compute_prize_pool,
+        send_fin_emails_fn    = _send_fin_bingo_emails_async,
     )
     autodraw.start_scheduler()
 

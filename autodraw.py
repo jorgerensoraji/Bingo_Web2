@@ -44,7 +44,7 @@ def init(game_obj, game_lock_obj, load_all_cartillas_fn,
          bingo_types_dict, cartillas_dir_path,
          save_cartilla_fn=None, generate_grid_fn=None,
          mark_voucher_fn=None, url_base="",
-         compute_prize_pool_fn=None):
+         compute_prize_pool_fn=None, send_fin_emails_fn=None):
     """
     Called once from app.py after all objects are initialized.
     Stores references so the scheduler can operate on live data.
@@ -67,6 +67,7 @@ def init(game_obj, game_lock_obj, load_all_cartillas_fn,
     _ctx["mark_voucher"]        = mark_voucher_fn
     _ctx["url_base"]            = url_base
     _ctx["compute_prize_pool"]  = compute_prize_pool_fn
+    _ctx["send_fin_emails"]     = send_fin_emails_fn
 
 # ── Audit log ─────────────────────────────────────────────────────────────────
 _audit : list = []
@@ -296,7 +297,7 @@ def _notify_winners(winners: list, session_id: str, url_base: str = ""):
     threading.Thread(target=_send, daemon=True).start()
 
 def _auto_finish_session(session_id: str):
-    """Finalize a session — mark as finished, save winners."""
+    """Finalize a session — mark as finished, save winners, send summary emails."""
     game      = _ctx["game"]
     game_lock = _ctx["game_lock"]
     load_ss   = _ctx["load_sessions"]
@@ -305,6 +306,7 @@ def _auto_finish_session(session_id: str):
 
     with game_lock:
         winners_final = list(game.winners_log)
+        drawn_final   = list(game.drawn)
 
     with ss_lock:
         ss = load_ss()
@@ -320,6 +322,12 @@ def _auto_finish_session(session_id: str):
     stop_session(session_id)
     _log("session_auto_finished", {"session_id": session_id,
                                    "winners": len(winners_final)})
+
+    # Send summary email with cartilla image to every player
+    send_fin = _ctx.get("send_fin_emails")
+    url_base = _ctx.get("url_base", "")
+    if send_fin and drawn_final:
+        send_fin(session_id, drawn_final, url_base, winners_final)
 
 # ── Main scheduler loop ───────────────────────────────────────────────────────
 def _scheduler_loop():
