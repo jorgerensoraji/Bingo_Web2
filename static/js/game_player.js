@@ -713,8 +713,11 @@ async function syncState() {
     const prevSid      = activeSessionId;
     const prevLiveSid  = liveSessionId;
     if (data.session_id) { activeSessionId = data.session_id; liveSessionId = data.session_id; }
-    else if (data.prepare_sid) activeSessionId = data.prepare_sid;
-    else if (data.next_session_id) activeSessionId = data.next_session_id;
+    else {
+      liveSessionId = null;  // game is not live — clear so loadAllCartillas doesn't filter by stale liveSessionId
+      if (data.prepare_sid) activeSessionId = data.prepare_sid;
+      else if (data.next_session_id) activeSessionId = data.next_session_id;
+    }
 
     // Auto-load cartillas as soon as any session becomes known (scheduled, preparing, or active)
     const storedCartillas = (function() { try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) { return []; } })();
