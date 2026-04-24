@@ -732,16 +732,12 @@ async function syncState() {
 
     if (activeSessionId && myCartillas.length) {
       var before = myCartillas.length;
-      // When there's an active/preparing session, strictly only keep cartillas for that session
       myCartillas = myCartillas.filter(function(c) {
         return c.session_id === activeSessionId;
       });
       cartillaStates = {};
       if (myCartillas.length < before) {
-        var removed = before - myCartillas.length;
-        showToast('⚠️ ' + removed + ' cartilla(s) son de otro Bingo y fueron desactivadas.', 5000);
-        updateMyCartillaAutoMark(true);
-        // Also update localStorage to remove stale cartillas
+        // Remove stale cartillas from localStorage
         try {
           var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
           stored = stored.filter(function(e) {
@@ -750,6 +746,15 @@ async function syncState() {
           });
           localStorage.setItem('my_cartillas', JSON.stringify(stored));
         } catch(e) {}
+        updateMyCartillaAutoMark(true);
+        // Open code panel so player can enter their code for the current session
+        var ycBody  = document.getElementById('yc-body');
+        var ycArrow = document.getElementById('yc-arrow');
+        if (ycBody && ycBody.style.display === 'none') {
+          ycBody.style.display = 'block';
+          if (ycArrow) ycArrow.textContent = '▲ Ocultar';
+        }
+        showToast('⚠️ Hay un nuevo Bingo activo. Ingresa tu código para participar.', 6000);
       }
     }
 
