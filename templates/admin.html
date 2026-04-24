@@ -579,7 +579,7 @@ async function refresh() {
     tb.innerHTML = list.map(x => {
       const who  = [x.nombres, x.apellidos].filter(Boolean).join(' ');
       const dt   = (x.created||'').replace('T',' ').slice(0,16);
-      const bt   = BINGO_TYPES[x.bingo_type]||BINGO_TYPES['1sol']||{};
+      const bt   = BINGO_TYPES[x.bingo_type]||BINGO_TYPES['1sol'];
       const pst  = x.payment_status||'pending';
 
       const pstLabel = {

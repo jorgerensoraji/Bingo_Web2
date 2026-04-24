@@ -713,11 +713,8 @@ async function syncState() {
     const prevSid      = activeSessionId;
     const prevLiveSid  = liveSessionId;
     if (data.session_id) { activeSessionId = data.session_id; liveSessionId = data.session_id; }
-    else {
-      liveSessionId = null;  // game is not live — clear so loadAllCartillas doesn't filter by stale liveSessionId
-      if (data.prepare_sid) activeSessionId = data.prepare_sid;
-      else if (data.next_session_id) activeSessionId = data.next_session_id;
-    }
+    else if (data.prepare_sid) activeSessionId = data.prepare_sid;
+    else if (data.next_session_id) activeSessionId = data.next_session_id;
 
     // Auto-load cartillas as soon as any session becomes known (scheduled, preparing, or active)
     const storedCartillas = (function() { try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) { return []; } })();
@@ -772,8 +769,6 @@ async function syncState() {
     // Session finished by admin → reset player UI
     if (data.session_finished) {
       handleSessionFinished();
-      // Still update activeSessionId for any upcoming scheduled session
-      if (data.next_session_id) { activeSessionId = data.next_session_id; liveSessionId = null; }
       return;
     }
     // New session started after a finish — allow future finish events to be handled
@@ -1251,8 +1246,8 @@ function removeClaimButtons() {
 }
 
 async function loadAllCartillas() {
-  // Don't load if the last session finished AND there's no new session yet
-  if (sessionFinishedShown && !activeSessionId) {
+  // Don't load if session is already finished
+  if (sessionFinishedShown) {
     showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
     return;
   }
