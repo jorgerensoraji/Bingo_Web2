@@ -2442,6 +2442,190 @@ def quick_reject(code):
   </form>
 </div></body></html>"""
 
+# ─── WhatsApp Bot (Admin Commands) ───────────────────────────────────────────
+
+def _wa_twiml(text: str):
+    from flask import Response as _FR
+    if not text:
+        return _FR("<?xml version='1.0'?><Response/>", mimetype='text/xml')
+    safe = text.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+    xml  = f"<?xml version='1.0' encoding='UTF-8'?><Response><Message>{safe}</Message></Response>"
+    return _FR(xml, mimetype='text/xml')
+
+def _wa_pendientes() -> str:
+    with db_session() as db:
+        vs = (db.query(Voucher)
+              .filter_by(payment_status="pending_review")
+              .order_by(Voucher.created.desc())
+              .limit(15).all())
+        rows = [{"code": v.code, "nombre": v.nombres or "",
+                 "precio": v.precio, "bingo": v.bingo_nombre or ""} for v in vs]
+    if not rows:
+        return "✅ No hay pagos pendientes."
+    lines = [f"📋 *Pendientes ({len(rows)}):*"]
+    for r in rows:
+        lines.append(f"• *{r['code']}* — {r['nombre']} — S/.{r['precio']:.2f} — {r['bingo']}")
+    lines.append("\n_Responde: aprobar [num_op] [monto]_")
+    return "\n".join(lines)
+
+def _wa_aprobar(args: list, url_base: str) -> str:
+    if not args:
+        return "Uso: *aprobar [num_op] [monto]*\nEj: aprobar 12345678 6.00\nO: aprobar CODIGO"
+    op_number = None
+    amount    = None
+    code      = None
+    if len(args) == 1:
+        tok = args[0].replace(',', '.')
+        try:
+            amount = round(float(tok), 2)
+        except ValueError:
+            code = tok.upper()
+    else:
+        op_number = args[0]
+        try:
+            amount = round(float(args[1].replace(',', '.')), 2)
+        except ValueError:
+            return "❌ Monto inválido. Ej: aprobar 12345678 6.00"
+
+    with db_session() as db:
+        if code:
+            vs = db.query(Voucher).filter_by(code=code, payment_status="pending_review").all()
+            if not vs:
+                already = db.query(Voucher).filter_by(code=code).first()
+                if already and already.payment_status in ("approved", "manual_approved"):
+                    return f"⚠️ {code} ya estaba aprobado."
+                return f"❌ Voucher {code} no encontrado o ya procesado."
+        else:
+            vs = (db.query(Voucher)
+                  .filter_by(payment_status="pending_review")
+                  .filter(Voucher.precio >= amount - 0.01, Voucher.precio <= amount + 0.01)
+                  .order_by(Voucher.created)
+                  .all())
+        if not vs:
+            return f"❌ No hay pagos pendientes de S/.{amount:.2f}"
+        if len(vs) > 1:
+            lines = [f"⚠️ Hay {len(vs)} pagos de S/.{amount:.2f}. ¿Cuál?"]
+            for v in vs:
+                lines.append(f"• *{v.code}* — {v.nombres}")
+            lines.append("\n_Responde: aprobar [codigo]_")
+            return "\n".join(lines)
+        v        = vs[0]
+        target   = v.code
+        nombre   = v.nombres or "Jugador"
+        precio   = v.precio
+        bingo_n  = v.bingo_nombre or ""
+        max_c    = v.max_cartillas or 1
+        sid      = v.session_id or ""
+        email    = v.email or ""
+        btype_id = v.bingo_type or "1sol"
+        note     = f"op:{op_number}" if op_number else "WA bot"
+        v.payment_status = "manual_approved"
+        v.approved_at    = now_peru().isoformat()
+        v.approved_note  = note
+        db.flush()
+        v_dict = v.to_dict()
+
+    # Email to player
+    email_ok = False
+    if email:
+        asunto = f"🎱 Tu código para {bingo_n} — Bingo Pro"
+        ok, _  = enviar_email(email, asunto, _email_codigo_voucher(v_dict, url_base))
+        if ok:
+            with db_session() as db2:
+                v2 = db2.query(Voucher).filter_by(code=target).first()
+                if v2:
+                    v2.email_codigo_enviado = True
+                    v2.email_enviado_at     = now_peru().isoformat()
+            email_ok = True
+
+    _trigger_referral_on_approval(v_dict, url_base)
+
+    # Auto-generate cartillas if session is in countdown
+    s = get_session(sid) if sid else None
+    if s and s.get("status") == "preparing" and not v_dict.get("cartillas"):
+        for _ in range(max_c):
+            grid = generate_cartilla_grid_75()
+            c    = save_cartilla(nombre, grid, voucher_code=target,
+                                 session_id=sid, bingo_type=btype_id,
+                                 generada_por_admin=True)
+            mark_voucher_cartilla(target, c["id"])
+
+    op_txt    = f" · op {op_number}" if op_number else ""
+    email_txt = " · ✉️ email enviado" if email_ok else ""
+    return (f"✅ *Aprobado: {target}*\n"
+            f"👤 {nombre} · S/.{precio:.2f} · {max_c} cartilla{'s' if max_c>1 else ''}\n"
+            f"🎱 {bingo_n}{op_txt}{email_txt}")
+
+def _wa_rechazar(args: list) -> str:
+    if not args:
+        return "Uso: *rechazar [codigo]*\nEj: rechazar GSLAYA"
+    code = args[0].upper()
+    with db_session() as db:
+        v = db.query(Voucher).filter_by(code=code).first()
+        if not v:
+            return f"❌ Voucher {code} no encontrado."
+        if v.payment_status == "rejected":
+            return f"⚠️ {code} ya estaba rechazado."
+        if v.payment_status in ("approved", "manual_approved"):
+            return f"⚠️ {code} ya aprobado — no se puede rechazar."
+        nombre = v.nombres or "Jugador"
+        v.payment_status  = "rejected"
+        v.rejected_at     = now_peru().isoformat()
+        v.rejected_reason = "Rechazado por admin vía WhatsApp"
+    return f"❌ *Rechazado: {code}*\n👤 {nombre}"
+
+def _wa_ayuda() -> str:
+    return (
+        "🤖 *Bingo Pro Bot*\n\n"
+        "*Comandos:*\n"
+        "• *pendientes* — ver pagos por aprobar\n"
+        "• *aprobar [num_op] [monto]* — aprobar por monto\n"
+        "• *aprobar [codigo]* — aprobar por código directo\n"
+        "• *rechazar [codigo]* — rechazar pago\n"
+        "• *ayuda* — esta lista"
+    )
+
+def _handle_wa_command(text: str, url_base: str) -> str:
+    parts = text.strip().split()
+    if not parts:
+        return _wa_ayuda()
+    cmd  = parts[0].lower()
+    args = parts[1:]
+    if cmd in ("pendientes", "p"):
+        return _wa_pendientes()
+    if cmd in ("aprobar", "a", "ok"):
+        return _wa_aprobar(args, url_base)
+    if cmd in ("rechazar", "r", "no"):
+        return _wa_rechazar(args)
+    if cmd in ("ayuda", "help", "?", "hola", "hi", "inicio", "start"):
+        return _wa_ayuda()
+    return f"Comando desconocido: '{cmd}'\n\n" + _wa_ayuda()
+
+@app.route("/api/whatsapp/webhook", methods=["POST"])
+def whatsapp_webhook():
+    """Twilio webhook — receives incoming WhatsApp messages from admin."""
+    import re as _re
+    from_raw   = request.form.get("From", "")
+    body       = (request.form.get("Body") or "").strip()
+
+    def norm(p): return _re.sub(r'\D', '', p or '')
+    admin_norm = norm(ADMIN_WHATSAPP)
+    from_norm  = norm(from_raw)
+
+    if not admin_norm or from_norm != admin_norm:
+        return _wa_twiml("")   # ignore messages from non-admin numbers
+
+    url_base = request.host_url.rstrip("/")
+    try:
+        reply = _handle_wa_command(body, url_base)
+    except Exception as e:
+        import traceback
+        logging.error(f"[WA BOT] {e}\n{traceback.format_exc()}")
+        reply = f"⚠️ Error interno: {e}"
+    return _wa_twiml(reply)
+
+# ─────────────────────────────────────────────────────────────────────────────
+
 def _quick_result(status: str, message: str, code: str = "") -> str:
     icons   = {"approved": "✅", "rejected": "❌", "already": "ℹ️", "error": "⚠️"}
     colors  = {"approved": "#00e5b4", "rejected": "#e74c3c", "already": "#f6c343", "error": "#f6c343"}
