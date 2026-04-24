@@ -707,7 +707,14 @@ function buildActions(s) {
 
   let btns = '';
   if (s.status === 'scheduled') {
+    const autoOn = s.auto_start;
     btns = `
+      <button class="btn btn-sm ${autoOn ? 'btn-ok' : 'btn-ghost'}"
+              onclick="toggleAutoStart('${s.id}', ${!autoOn})"
+              title="Inicio automático: 5 min antes se generan cartillas, se envían emails y arranca solo"
+              style="${autoOn ? '' : 'border-color:rgba(0,229,180,.4);color:#4a6b85'}">
+        🤖 Auto Inicio ${autoOn ? '✅ ON' : 'OFF'}
+      </button>
       <button class="btn btn-warn btn-sm" onclick="prepararInicio('${s.id}')">
         ⏰ Preparar
       </button>
@@ -831,6 +838,20 @@ async function cancelarPreparacion(sid) {
   const res = await fetch(`/api/admin/session/${sid}/cancel_prepare`, { method: 'POST' });
   if (res.ok) { showToast('✅ Countdown cancelado'); loadSessions(); }
   else showToast('❌ Error al cancelar');
+}
+
+async function toggleAutoStart(sid, enable) {
+  const res  = await fetch(`/api/admin/session/${sid}/auto_start`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ auto_start: enable })
+  });
+  if (res.ok) {
+    showToast(enable ? '🤖 Auto Inicio ACTIVADO — el juego arrancará solo 5 min antes de la hora' : '🤖 Auto Inicio desactivado');
+    loadSessions();
+  } else {
+    showToast('❌ Error al cambiar Auto Inicio');
+  }
 }
 
 // ═══════════════════════════════════════════════════════
