@@ -86,6 +86,11 @@ except ImportError:
 app = Flask(__name__)
 app.after_request(apply_security_headers)
 
+@app.before_request
+def redirect_www():
+    if request.host.startswith('www.'):
+        return redirect(request.url.replace('://www.', '://', 1), 301)
+
 # ─── Seguridad ────────────────────────────────────────────────────────────────
 _raw_key = os.environ.get("SECRET_KEY", "")
 if not _raw_key:
