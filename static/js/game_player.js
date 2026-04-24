@@ -730,16 +730,26 @@ async function syncState() {
       updateMyCartillaAutoMark(true);
     }
 
-    if (activeSessionId && activeSessionId !== prevSid && myCartillas.length) {
+    if (activeSessionId && myCartillas.length) {
       var before = myCartillas.length;
+      // When there's an active/preparing session, strictly only keep cartillas for that session
       myCartillas = myCartillas.filter(function(c) {
-        return !c.session_id || c.session_id === activeSessionId;
+        return c.session_id === activeSessionId;
       });
       cartillaStates = {};
       if (myCartillas.length < before) {
         var removed = before - myCartillas.length;
         showToast('⚠️ ' + removed + ' cartilla(s) son de otro Bingo y fueron desactivadas.', 5000);
         updateMyCartillaAutoMark(true);
+        // Also update localStorage to remove stale cartillas
+        try {
+          var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+          stored = stored.filter(function(e) {
+            var sid = typeof e === 'object' ? (e.session_id || '') : '';
+            return sid === activeSessionId;
+          });
+          localStorage.setItem('my_cartillas', JSON.stringify(stored));
+        } catch(e) {}
       }
     }
 

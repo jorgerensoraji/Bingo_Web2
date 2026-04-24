@@ -5256,6 +5256,7 @@ def _startup():
         generate_grid_fn      = generate_cartilla_grid_75,
         mark_voucher_fn       = mark_voucher_cartilla,
         url_base              = url_base_startup,
+        compute_prize_pool_fn = compute_prize_pool,
     )
     autodraw.start_scheduler()
 

@@ -43,7 +43,8 @@ def init(game_obj, game_lock_obj, load_all_cartillas_fn,
          save_sessions_ref, enviar_email_fn, email_templates,
          bingo_types_dict, cartillas_dir_path,
          save_cartilla_fn=None, generate_grid_fn=None,
-         mark_voucher_fn=None, url_base=""):
+         mark_voucher_fn=None, url_base="",
+         compute_prize_pool_fn=None):
     """
     Called once from app.py after all objects are initialized.
     Stores references so the scheduler can operate on live data.
@@ -61,10 +62,11 @@ def init(game_obj, game_lock_obj, load_all_cartillas_fn,
     _ctx["email_templates"]   = email_templates
     _ctx["BINGO_TYPES"]       = bingo_types_dict
     _ctx["CARTILLAS_DIR"]     = cartillas_dir_path
-    _ctx["save_cartilla"]     = save_cartilla_fn
-    _ctx["generate_grid"]     = generate_grid_fn
-    _ctx["mark_voucher"]      = mark_voucher_fn
-    _ctx["url_base"]          = url_base
+    _ctx["save_cartilla"]       = save_cartilla_fn
+    _ctx["generate_grid"]       = generate_grid_fn
+    _ctx["mark_voucher"]        = mark_voucher_fn
+    _ctx["url_base"]            = url_base
+    _ctx["compute_prize_pool"]  = compute_prize_pool_fn
 
 # ── Audit log ─────────────────────────────────────────────────────────────────
 _audit : list = []
@@ -547,28 +549,39 @@ def _tick_auto_start():
                 continue
 
             # Time to auto-start this session
-            sid        = s["id"]
-            btype_id   = s.get("bingo_type", "1sol")
-            btype      = BINGO_TYPES.get(btype_id, {})
+            sid      = s["id"]
+            btype_id = s.get("bingo_type", "1sol")
 
-            # Compute prize pool
-            with vs_lock:
-                all_vs = load_vs()
-            paid = [v for v in all_vs
-                    if v.get("session_id")    == sid
-                    and v.get("bingo_type")   == btype_id
-                    and v.get("payment_status") in ("approved","manual_approved")]
-            gross    = len(paid) * btype.get("precio", 0.0)
-            prize_pool = round(gross * btype.get("prize_pct", 0.70), 2)
-            linea_pool = round(gross * btype.get("linea_pct", 0.10), 2)
-            u_pool     = round(gross * btype.get("u_pct",    0.13), 2)
-            o_pool     = round(gross * btype.get("o_pct",    0.15), 2)
+            # Use compute_prize_pool to respect premio_fijo
+            cp_fn = _ctx.get("compute_prize_pool")
+            if cp_fn:
+                pools = cp_fn(sid, btype_id)
+            else:
+                btype  = BINGO_TYPES.get(btype_id, {})
+                with vs_lock:
+                    all_vs = load_vs()
+                paid_count = len([v for v in all_vs
+                    if v.get("session_id") == sid
+                    and v.get("bingo_type") == btype_id
+                    and v.get("payment_status") in ("approved","manual_approved")])
+                gross = paid_count * btype.get("precio", 0.0)
+                pools = {
+                    "total_players": paid_count, "gross": gross,
+                    "prize_amount":  round(gross * btype.get("prize_pct", 0.70), 2),
+                    "linea_amount":  round(gross * btype.get("linea_pct", 0.10), 2),
+                    "u_amount":      round(gross * btype.get("u_pct",    0.13), 2),
+                    "o_amount":      round(gross * btype.get("o_pct",    0.15), 2),
+                }
+            prize_pool = pools["prize_amount"]
+            linea_pool = pools["linea_amount"]
+            u_pool     = pools["u_amount"]
+            o_pool     = pools["o_amount"]
 
             s["status"]     = "active"
             s["started_at"] = now_iso
             s["prize_info"] = {
-                "total_players": len(paid),
-                "gross":         round(gross, 2),
+                "total_players": pools["total_players"],
+                "gross":         round(pools["gross"], 2),
                 "prize_amount":  prize_pool,
                 "linea_amount":  linea_pool,
                 "u_amount":      u_pool,
@@ -613,25 +626,36 @@ def _tick_auto_start():
 
             sid      = s["id"]
             btype_id = s.get("bingo_type", "1sol")
-            btype    = BINGO_TYPES.get(btype_id, {})
 
-            with vs_lock:
-                all_vs = load_vs()
-            paid = [v for v in all_vs
-                    if v.get("session_id")    == sid
-                    and v.get("bingo_type")   == btype_id
-                    and v.get("payment_status") in ("approved", "manual_approved")]
-            gross      = len(paid) * btype.get("precio", 0.0)
-            prize_pool = round(gross * btype.get("prize_pct", 0.70), 2)
-            linea_pool = round(gross * btype.get("linea_pct", 0.10), 2)
-            u_pool     = round(gross * btype.get("u_pct",    0.13), 2)
-            o_pool     = round(gross * btype.get("o_pct",    0.15), 2)
+            cp_fn = _ctx.get("compute_prize_pool")
+            if cp_fn:
+                pools = cp_fn(sid, btype_id)
+            else:
+                btype = BINGO_TYPES.get(btype_id, {})
+                with vs_lock:
+                    all_vs = load_vs()
+                paid_count = len([v for v in all_vs
+                    if v.get("session_id") == sid
+                    and v.get("bingo_type") == btype_id
+                    and v.get("payment_status") in ("approved","manual_approved")])
+                gross = paid_count * btype.get("precio", 0.0)
+                pools = {
+                    "total_players": paid_count, "gross": gross,
+                    "prize_amount":  round(gross * btype.get("prize_pct", 0.70), 2),
+                    "linea_amount":  round(gross * btype.get("linea_pct", 0.10), 2),
+                    "u_amount":      round(gross * btype.get("u_pct",    0.13), 2),
+                    "o_amount":      round(gross * btype.get("o_pct",    0.15), 2),
+                }
+            prize_pool = pools["prize_amount"]
+            linea_pool = pools["linea_amount"]
+            u_pool     = pools["u_amount"]
+            o_pool     = pools["o_amount"]
 
             s["status"]     = "active"
             s["started_at"] = now_peru().isoformat()
             s["prize_info"] = {
-                "total_players": len(paid),
-                "gross":         round(gross, 2),
+                "total_players": pools["total_players"],
+                "gross":         round(pools["gross"], 2),
                 "prize_amount":  prize_pool,
                 "linea_amount":  linea_pool,
                 "u_amount":      u_pool,
