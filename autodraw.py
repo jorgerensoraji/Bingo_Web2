@@ -41,7 +41,9 @@ def init(game_obj, game_lock_obj, load_all_cartillas_fn,
          check_winner_fn, save_sessions_fn, load_sessions_fn,
          sessions_lock_obj, load_vouchers_fn, vouchers_lock_obj,
          save_sessions_ref, enviar_email_fn, email_templates,
-         bingo_types_dict, cartillas_dir_path):
+         bingo_types_dict, cartillas_dir_path,
+         save_cartilla_fn=None, generate_grid_fn=None,
+         mark_voucher_fn=None, url_base=""):
     """
     Called once from app.py after all objects are initialized.
     Stores references so the scheduler can operate on live data.
@@ -59,6 +61,10 @@ def init(game_obj, game_lock_obj, load_all_cartillas_fn,
     _ctx["email_templates"]   = email_templates
     _ctx["BINGO_TYPES"]       = bingo_types_dict
     _ctx["CARTILLAS_DIR"]     = cartillas_dir_path
+    _ctx["save_cartilla"]     = save_cartilla_fn
+    _ctx["generate_grid"]     = generate_grid_fn
+    _ctx["mark_voucher"]      = mark_voucher_fn
+    _ctx["url_base"]          = url_base
 
 # ── Audit log ─────────────────────────────────────────────────────────────────
 _audit : list = []
@@ -339,6 +345,7 @@ def _scheduler_loop():
     while _scheduler_running:
         try:
             _tick_auto_draw()
+            _tick_prepare()
             _tick_auto_start()
         except Exception as e:
             logger.error(f"Scheduler tick error: {e}", exc_info=True)
@@ -392,6 +399,125 @@ def _tick_auto_draw():
             # Auto-finish when last ball
             if result["count"] >= 75:
                 _auto_finish_session(sid)
+
+_PREPARE_SECS = 300  # 5 minutes before game
+
+def _tick_prepare():
+    """
+    5 minutes before a scheduled session:
+    - Auto-generate cartillas for approved players who have none
+    - Set session to 'preparing' state (5-min countdown)
+    - Send email to every approved player with their personal game link (?code=)
+    Only fires once per session (tracked by 'prepare_sent' flag).
+    """
+    load_ss  = _ctx.get("load_sessions")
+    save_ss  = _ctx.get("save_sessions")
+    ss_lock  = _ctx.get("sessions_lock")
+    load_vs  = _ctx.get("load_vouchers")
+    vs_lock  = _ctx.get("vouchers_lock")
+    enviar   = _ctx.get("enviar_email")
+    game     = _ctx.get("game")
+    game_lock= _ctx.get("game_lock")
+    save_cart= _ctx.get("save_cartilla")
+    gen_grid = _ctx.get("generate_grid")
+    mark_v   = _ctx.get("mark_voucher")
+    tmpl_fn  = (_ctx.get("email_templates") or {}).get("aviso_inicio")
+    url_base = _ctx.get("url_base", "")
+    BINGO_TYPES = _ctx.get("BINGO_TYPES", {})
+
+    if not all([load_ss, save_ss, ss_lock, load_vs, vs_lock]):
+        return
+
+    now_unix = time.time()
+
+    with ss_lock:
+        ss = load_ss()
+        changed = False
+        for s in ss:
+            if s.get("status") != "scheduled":
+                continue
+            if not s.get("auto_start"):
+                continue
+            if s.get("prepare_sent"):
+                continue
+
+            dt_iso = s.get("datetime_iso", "9999")
+            try:
+                dt = datetime.fromisoformat(dt_iso).replace(tzinfo=_PERU_TZ)
+                dt_unix = dt.timestamp()
+            except Exception:
+                continue
+
+            # Only trigger if game starts within the next 5 minutes (and hasn't started yet)
+            secs_until = dt_unix - now_unix
+            if secs_until > _PREPARE_SECS or secs_until < 0:
+                continue
+
+            sid      = s["id"]
+            btype_id = s.get("bingo_type", "1sol")
+
+            s["prepare_sent"] = True
+            s["status"]       = "preparing"
+            s["prepare_at"]   = str(now_unix)
+            s["prepare_secs"] = _PREPARE_SECS
+            changed = True
+
+            # Update in-memory game state so frontend countdown works
+            with game_lock:
+                game.preparing    = True
+                game.prepare_at   = now_unix
+                game.prepare_secs = _PREPARE_SECS
+                game.prepare_sid  = sid
+                if btype_id:
+                    game.bingo_type = btype_id
+                game.save_to_disk()
+
+            _log("session_preparing", {"session_id": sid, "secs": _PREPARE_SECS})
+
+            # Load approved vouchers
+            with vs_lock:
+                all_vs = load_vs()
+
+            approved = [v for v in all_vs
+                        if v.get("session_id") == sid
+                        and v.get("payment_status") in ("approved", "manual_approved")]
+
+            emails_to_send = []
+            for v in approved:
+                code      = v.get("code", "")
+                cartillas = v.get("cartillas", [])
+
+                # Auto-generate missing cartillas
+                if not cartillas and code and save_cart and gen_grid and mark_v:
+                    max_c  = v.get("max_cartillas") or 1
+                    nombre = (v.get("nombres") or "Jugador").strip()[:40]
+                    for _ in range(max_c):
+                        grid = gen_grid()
+                        c    = save_cart(nombre, grid, voucher_code=code,
+                                         session_id=sid, bingo_type=btype_id,
+                                         generada_por_admin=True)
+                        mark_v(code, c["id"])
+                    _log("cartillas_auto_generated", {"code": code, "count": max_c})
+
+                if v.get("email"):
+                    emails_to_send.append(v)
+
+            # Send prep emails in background
+            if enviar and tmpl_fn and emails_to_send:
+                s_snap = dict(s)
+                def _send(vlist=emails_to_send, snap=s_snap, ub=url_base):
+                    for v in vlist:
+                        code   = v.get("code", "")
+                        asunto = f"⏰ ¡El bingo empieza en 5 minutos! — {snap.get('bingo_nombre', 'Bingo Pro')}"
+                        body   = tmpl_fn(v, snap, ub, _PREPARE_SECS, code)
+                        enviar(v["email"], asunto, body)
+                        time.sleep(0.25)
+                threading.Thread(target=_send, daemon=True).start()
+                _log("prep_emails_queued", {"session_id": sid, "count": len(emails_to_send)})
+
+        if changed:
+            save_ss(ss)
+
 
 def _tick_auto_start():
     """Auto-start sessions whose datetime has arrived and have auto_start=True."""
@@ -467,12 +593,73 @@ def _tick_auto_start():
             auto_cfg = s.get("auto_draw_config", {})
             configure_session(
                 sid,
-                interval      = auto_cfg.get("interval", 15),
+                interval      = auto_cfg.get("interval", 10),
                 voice         = auto_cfg.get("voice", "es-PE-CamilaNeural"),
                 auto_finish   = auto_cfg.get("auto_finish", True),
                 winners_limit = auto_cfg.get("winners_limit", 1),
             )
             _log("session_auto_started", {"session_id": sid, "players": len(paid)})
+
+        # Also handle preparing → active when the countdown has finished
+        for s in ss:
+            if s.get("status") != "preparing":
+                continue
+            if not s.get("auto_start"):
+                continue
+            prepare_at   = float(s.get("prepare_at") or 0)
+            prepare_secs = int(s.get("prepare_secs") or _PREPARE_SECS)
+            if time.time() < prepare_at + prepare_secs:
+                continue
+
+            sid      = s["id"]
+            btype_id = s.get("bingo_type", "1sol")
+            btype    = BINGO_TYPES.get(btype_id, {})
+
+            with vs_lock:
+                all_vs = load_vs()
+            paid = [v for v in all_vs
+                    if v.get("session_id")    == sid
+                    and v.get("bingo_type")   == btype_id
+                    and v.get("payment_status") in ("approved", "manual_approved")]
+            gross      = len(paid) * btype.get("precio", 0.0)
+            prize_pool = round(gross * btype.get("prize_pct", 0.70), 2)
+            linea_pool = round(gross * btype.get("linea_pct", 0.10), 2)
+            u_pool     = round(gross * btype.get("u_pct",    0.13), 2)
+            o_pool     = round(gross * btype.get("o_pct",    0.15), 2)
+
+            s["status"]     = "active"
+            s["started_at"] = now_peru().isoformat()
+            s["prize_info"] = {
+                "total_players": len(paid),
+                "gross":         round(gross, 2),
+                "prize_amount":  prize_pool,
+                "linea_amount":  linea_pool,
+                "u_amount":      u_pool,
+                "o_amount":      o_pool,
+            }
+            changed = True
+
+            with game_lock:
+                game.reset()
+                game.session_id  = sid
+                game.bingo_type  = btype_id
+                game.prize_pool  = prize_pool
+                game.linea_pool  = linea_pool
+                game.u_pool      = u_pool
+                game.o_pool      = o_pool
+                game.preparing   = False
+                game.prepare_at  = None
+                game.save_to_disk()
+
+            auto_cfg = s.get("auto_draw_config", {})
+            configure_session(
+                sid,
+                interval      = auto_cfg.get("interval", 10),
+                voice         = auto_cfg.get("voice", "es-PE-CamilaNeural"),
+                auto_finish   = auto_cfg.get("auto_finish", True),
+                winners_limit = auto_cfg.get("winners_limit", 1),
+            )
+            _log("session_auto_started_from_prepare", {"session_id": sid, "players": len(paid)})
 
         if changed:
             save_ss(ss)

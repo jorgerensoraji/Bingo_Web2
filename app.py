@@ -379,11 +379,12 @@ def _email_pago_recibido(voucher_dict: dict, plain_pin: str = "") -> str:
   <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
-def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, segundos: int) -> str:
+def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, segundos: int, code: str = "") -> str:
     bt       = BINGO_TYPES.get(sesion_dict.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     nombre   = voucher_dict.get("nombres", "Jugador")
     dt_str   = sesion_dict.get("datetime_iso", "").replace("T", " ")[:16]
-    url_juego= f"{url_base}/"
+    _code    = (code or voucher_dict.get("code", "")).strip().upper()
+    url_juego= f"{url_base}/?code={_code}" if _code else f"{url_base}/"
     mins     = segundos // 60
     tiempo_txt = (f"{mins} minuto{'s' if mins != 1 else ''}" if segundos >= 60 else f"{segundos} segundos")
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
@@ -400,9 +401,9 @@ def _email_aviso_inicio(voucher_dict: dict, sesion_dict: dict, url_base: str, se
   </div>
   <div style="background:#0d1825;border:1px solid #1a3148;border-radius:12px;padding:14px;font-size:.82rem;color:#4a6b85">
     <div style="margin-bottom:6px">📅 Sesión: <strong style="color:#ddeeff">{dt_str}</strong></div>
-    <div>🌐 URL: <a href="{url_juego}" style="color:#00e5b4">{url_juego}</a></div>
+    <div>🌐 URL: <a href="{url_juego}" style="color:#00e5b4">{url_base}/</a></div>
   </div>
-  <p style="text-align:center;color:#1a3148;font-size:.72rem;margin-top:20px">Bingo Pro Web v8.0 · {EMAIL_NOMBRE}</p>
+  <p style="text-align:center;color:#1a3148;font-size:.72rem;margin-top:20px">Bingo Pro Web v9.0 · {EMAIL_NOMBRE}</p>
   <p style="text-align:center;color:#1a3148;font-size:.70rem;margin:4px 0 0">Por favor no respondas a este correo — esta dirección no está monitoreada.</p>
 </div></body></html>"""
 
@@ -1214,7 +1215,8 @@ def _save_sessions(session_list: list) -> None:
                 for key in (
                     "bingo_type", "bingo_nombre", "bingo_color", "bingo_precio",
                     "datetime_iso", "date", "time", "descripcion",
-                    "max_players", "status", "created"
+                    "max_players", "status", "created",
+                    "prepare_at", "prepare_secs",
                 ):
                     if key in item and hasattr(row, key):
                         setattr(row, key, item.get(key))
@@ -5199,7 +5201,7 @@ def _startup():
     _seed_bingo_types()
     _reload_bingo_types()
     print("\n" + "=" * 58)
-    print("  BINGO PRO WEB v8.0  (SQLite backend)")
+    print("  BINGO PRO WEB v9.0  (SQLite backend)")
     print("=" * 58)
     ip = get_local_ip()
     print(f"  Red WiFi  ->  http://{ip}:5000")
@@ -5212,6 +5214,30 @@ def _startup():
     if not email_configurado():
         print("  ADVERTENCIA: EMAIL_FROM y EMAIL_PASS no configurados - emails desactivados")
     print()
+
+    # ── Autodraw scheduler (runs under both gunicorn and direct python) ──
+    url_base_startup = os.environ.get("BASE_URL", f"http://{ip}:5000").rstrip("/")
+    autodraw.init(
+        game_obj              = game,
+        game_lock_obj         = game_lock,
+        load_all_cartillas_fn = load_all_cartillas,
+        check_winner_fn       = check_winner,
+        load_sessions_fn      = _load_sessions,
+        save_sessions_fn      = _save_sessions,
+        sessions_lock_obj     = sessions_lock,
+        load_vouchers_fn      = _load_vouchers,
+        vouchers_lock_obj     = vouchers_lock,
+        save_sessions_ref     = _save_sessions,
+        enviar_email_fn       = enviar_email,
+        email_templates       = {"aviso_inicio": _email_aviso_inicio},
+        bingo_types_dict      = BINGO_TYPES,
+        cartillas_dir_path    = CARTILLAS_DIR,
+        save_cartilla_fn      = save_cartilla,
+        generate_grid_fn      = generate_cartilla_grid_75,
+        mark_voucher_fn       = mark_voucher_cartilla,
+        url_base              = url_base_startup,
+    )
+    autodraw.start_scheduler()
 
 # ─── CSRF ────────────────────────────────────────────────────────────────────
 @app.route("/api/csrf-token")
@@ -5390,24 +5416,6 @@ if __name__ == "__main__":
     ip = get_local_ip()
 
     # Inicializar autodraw
-    autodraw.init(
-        game_obj              = game,
-        game_lock_obj         = game_lock,
-        load_all_cartillas_fn = load_all_cartillas,
-        check_winner_fn       = check_winner,
-        load_sessions_fn      = _load_sessions,
-        save_sessions_fn      = _save_sessions,
-        sessions_lock_obj     = sessions_lock,
-        load_vouchers_fn      = _load_vouchers,
-        vouchers_lock_obj     = vouchers_lock,
-        save_sessions_ref     = _save_sessions,
-        enviar_email_fn       = enviar_email,
-        email_templates       = {},
-        bingo_types_dict      = BINGO_TYPES,
-        cartillas_dir_path    = CARTILLAS_DIR,
-    )
-    autodraw.start_scheduler()
-
     print("\n" + "="*62)
     print("  BINGO PRO WEB v9.0  Security + Auto-Draw")
     print("="*62)

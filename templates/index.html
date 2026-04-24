@@ -1799,6 +1799,24 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// Auto-load cartilla when arriving from email link (?code=VOUCHER_CODE)
+(function() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var code   = (params.get('code') || '').trim().toUpperCase();
+    if (!code) return;
+    // Clean the URL so the code doesn't linger in the address bar
+    history.replaceState(null, '', window.location.pathname);
+    document.addEventListener('DOMContentLoaded', function() {
+      var input = document.getElementById('yc-input');
+      if (input) {
+        input.value = code;
+        cargarPorCodigo();
+      }
+    });
+  } catch(e) {}
+})();
+
 </script>
 <script src="/static/js/game_player.js"></script>
 
