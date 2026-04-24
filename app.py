@@ -3004,9 +3004,8 @@ def api_set_bingo_type():
 def api_list_sessions():
     chk = admin_required()
     if chk: return chk
-    with db_session() as db:
-        rows = db.query(BingoSession).order_by(BingoSession.datetime_iso.desc()).all()
-        ss   = [r.to_dict() for r in rows]
+    with sessions_lock:
+        ss = _load_sessions()
     return jsonify({"sessions": ss})
 
 @app.route("/api/sessions/upcoming", methods=["GET"])
