@@ -2363,12 +2363,52 @@ def api_reject_voucher(code):
         v.rejected_reason = data.get("reason", "")
     return jsonify({"status": "ok"})
 
-@app.route("/admin/quick/approve/<code>")
+@app.route("/admin/quick/approve/<code>", methods=["GET", "POST"])
 def quick_approve(code):
     code  = code.strip().upper()
     token = request.args.get("token", "")
     if not _verify_quick_token("approve", code, token):
         return _quick_result("error", "Enlace inválido o expirado.")
+
+    # GET — show confirmation page (prevents WhatsApp link-preview from auto-approving)
+    if request.method == "GET":
+        with db_session() as db:
+            v = db.query(Voucher).filter_by(code=code).first()
+            if not v:
+                return _quick_result("error", f"Voucher {code} no encontrado.")
+            if v.payment_status in ("manual_approved", "approved"):
+                return _quick_result("already", f"El voucher {code} ya estaba aprobado.", code)
+            nombre = v.nombres or ""
+            precio = v.precio
+            bingo  = v.bingo_nombre or ""
+        return f"""<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aprobar pago</title>
+<style>
+  body{{font-family:system-ui,sans-serif;background:#070d14;color:#ddeeff;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box}}
+  .card{{background:#0d1825;border:1px solid #1a3148;border-radius:16px;padding:28px 24px;max-width:420px;width:100%;text-align:center}}
+  h2{{color:#00e5b4;margin:0 0 8px;font-size:1.3rem}}
+  p{{color:#4a6b85;font-size:.87rem;margin:0 0 20px}}
+  .info{{background:#111f2e;border-radius:10px;padding:14px;margin-bottom:20px;text-align:left;font-size:.9rem;line-height:1.8}}
+  button{{width:100%;padding:14px;border:none;border-radius:10px;background:#00e5b4;
+          color:#041015;font-weight:900;font-size:1rem;cursor:pointer}}
+</style></head>
+<body><div class="card">
+  <div style="font-size:2.5rem;margin-bottom:8px">✅</div>
+  <h2>Confirmar aprobación</h2>
+  <div class="info">
+    <div>👤 <strong>{nombre}</strong></div>
+    <div>💰 S/. {precio:.2f} — {bingo}</div>
+    <div>🎫 Código: <strong>{code}</strong></div>
+  </div>
+  <form method="POST">
+    <input type="hidden" name="confirmed" value="1">
+    <button type="submit">✅ Aprobar pago</button>
+  </form>
+</div></body></html>"""
+
+    # POST — perform the actual approval
     v_dict = {}
     with db_session() as db:
         v = db.query(Voucher).filter_by(code=code).first()
@@ -2380,7 +2420,6 @@ def quick_approve(code):
         v.approved_at    = now_peru().isoformat()
         db.flush()
         v_dict = v.to_dict()
-    # Send approval email to player
     email = v_dict.get("email", "")
     if email:
         url_base = request.host_url.rstrip("/")
