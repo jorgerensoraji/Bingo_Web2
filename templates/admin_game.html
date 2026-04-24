@@ -36,7 +36,7 @@
   <div class="stat">Restantes: <strong id="stat-rem">75</strong></div>
   <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
   <div class="stat"><strong id="stat-pct">0%</strong></div>
-  <div class="shortcuts">[Space] Sortear &nbsp;[R] Repetir &nbsp;[A] Auto &nbsp;[Esc] Silenciar &nbsp;[N] Nuevo</div>
+  <div class="shortcuts">[Space] Sortear &nbsp;[A] Auto &nbsp;[Esc] Silenciar</div>
 </div>
 
 <div id="winner-zone" style="display:none"></div>
@@ -81,10 +81,8 @@
         <input class="spinbox" type="number" id="auto-interval" min="3" max="60" value="10"> s
       </div>
       <div class="btn-row" style="margin-bottom:8px;">
-        <button class="btn btn-sm" onclick="repeatLast()">🔁 Repetir [R]</button>
         <button class="btn btn-sm" onclick="stopAudio()">🔇 Silenciar</button>
       </div>
-      <button class="btn btn-new" onclick="newGame()">🔄 Nuevo Juego [N]</button>
 
       <div style="margin-top:10px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
         <div style="font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">⏸ Pausa automática</div>
@@ -176,8 +174,6 @@
 <div id="gameover">
   <h1>🎉 ¡BINGO!</h1>
   <p id="gameover-info">Se sortearon las 75 bolillas.</p>
-  <button class="btn btn-draw" style="max-width:240px;margin:0 auto 8px;"
-          onclick="newGame(); hideGameOver()">🔄 Nueva Partida</button>
   <button class="btn btn-sm" style="max-width:200px;margin:0 auto;" onclick="hideGameOver()">Cerrar</button>
 </div>
 
