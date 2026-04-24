@@ -5249,7 +5249,7 @@ def _startup():
         vouchers_lock_obj     = vouchers_lock,
         save_sessions_ref     = _save_sessions,
         enviar_email_fn       = enviar_email,
-        email_templates       = {"aviso_inicio": _email_aviso_inicio},
+        email_templates       = {"aviso_inicio": _email_aviso_inicio, "ganador": _email_ganador},
         bingo_types_dict      = BINGO_TYPES,
         cartillas_dir_path    = CARTILLAS_DIR,
         save_cartilla_fn      = save_cartilla,

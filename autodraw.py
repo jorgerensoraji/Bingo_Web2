@@ -247,7 +247,7 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
     return new_entries
 
 def _notify_winners(winners: list, session_id: str, url_base: str = ""):
-    """Send winner notification emails in a background thread."""
+    """Send winner notification emails using the proper _email_ganador template."""
     if not winners:
         return
     templates   = _ctx.get("email_templates", {})
@@ -255,6 +255,7 @@ def _notify_winners(winners: list, session_id: str, url_base: str = ""):
     BINGO_TYPES = _ctx.get("BINGO_TYPES", {})
     load_vs     = _ctx.get("load_vouchers")
     vs_lock     = _ctx.get("vouchers_lock")
+    ganador_tmpl = templates.get("ganador")
 
     if not enviar or not load_vs:
         return
@@ -264,8 +265,7 @@ def _notify_winners(winners: list, session_id: str, url_base: str = ""):
             all_vouchers = load_vs()
 
         for w in winners:
-            cid  = w.get("id", "")
-            # Find the voucher for this cartilla
+            cid     = w.get("id", "")
             voucher = next(
                 (v for v in all_vouchers if cid in v.get("cartillas", [])),
                 None,
@@ -274,37 +274,24 @@ def _notify_winners(winners: list, session_id: str, url_base: str = ""):
             if not email:
                 continue
 
-            nombre    = w.get("nombre", "Jugador")
-            prize     = w.get("prize", 0.0)
-            n_winners = w.get("n_winners", 1)
-            split_msg = (
-                f" (compartido entre {n_winners} ganadores)"
-                if n_winners > 1 else ""
-            )
+            btype_id = (voucher or {}).get("bingo_type", "1sol")
+            btype    = BINGO_TYPES.get(btype_id, {})
 
-            body = f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
-<body style="font-family:Arial,sans-serif;background:#070d14;color:#ddeeff;margin:0;padding:0">
-<div style="max-width:520px;margin:0 auto;padding:32px 24px">
-  <div style="text-align:center;margin-bottom:24px">
-    <h1 style="font-size:2.5rem;color:#f6c343;letter-spacing:3px;margin:0">🎉 ¡GANASTE!</h1>
-  </div>
-  <div style="background:#0d1825;border:2px solid #f6c343;border-radius:14px;padding:24px;text-align:center">
-    <p style="font-size:1.1rem;margin:0 0 16px">Hola <strong style="color:#ddeeff">{nombre}</strong>,</p>
-    <p style="color:#ddeeff;margin:0 0 20px">¡Tu cartilla <strong style="color:#00e5b4">{cid}</strong> ganó el BINGO!</p>
-    <div style="background:#111f2e;border:2px solid #00e5b4;border-radius:12px;padding:20px;margin-bottom:16px">
-      <div style="font-size:.75rem;color:#4a6b85;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Tu premio</div>
-      <div style="font-family:'Courier New',monospace;font-size:2.4rem;font-weight:900;color:#00e5b4">
-        S/. {prize:.2f}
-      </div>
-      <div style="font-size:.78rem;color:#4a6b85;margin-top:4px">{split_msg}</div>
-    </div>
-    <p style="color:#4a6b85;font-size:.85rem">El organizador te contactará para coordinar el cobro de tu premio.</p>
-  </div>
-  <p style="text-align:center;color:#1a3148;font-size:.75rem;margin-top:20px">Bingo Pro Web v9.0</p>
-</div></body></html>"""
+            # Build winner dict with full info for the template
+            winner_full = dict(w)
+            winner_full["id"]        = cid
+            winner_full["yape_plin"] = (voucher or {}).get("yape_plin", "")
 
-            enviar(email, "🎉 ¡GANASTE el BINGO! — Bingo Pro", body)
-            _log("winner_email_sent", {"cid": cid, "email": email, "prize": prize})
+            if ganador_tmpl:
+                body   = ganador_tmpl(winner_full, btype, pattern="bingo")
+                asunto = f"🏆 ¡GANASTE el BINGO! S/. {w.get('prize', 0):.2f} — Bingo Pro"
+            else:
+                # Fallback simple email
+                body   = (f"<h2>¡Ganaste!</h2><p>Cartilla {cid} — Premio S/. {w.get('prize',0):.2f}</p>")
+                asunto = "🏆 ¡GANASTE el BINGO! — Bingo Pro"
+
+            enviar(email, asunto, body)
+            _log("winner_email_sent", {"cid": cid, "email": email, "prize": w.get("prize", 0)})
 
     threading.Thread(target=_send, daemon=True).start()
 
