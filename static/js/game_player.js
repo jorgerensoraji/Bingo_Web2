@@ -772,6 +772,8 @@ async function syncState() {
     // Session finished by admin → reset player UI
     if (data.session_finished) {
       handleSessionFinished();
+      // Still update activeSessionId for any upcoming scheduled session
+      if (data.next_session_id) { activeSessionId = data.next_session_id; liveSessionId = null; }
       return;
     }
     // New session started after a finish — allow future finish events to be handled
@@ -1249,8 +1251,8 @@ function removeClaimButtons() {
 }
 
 async function loadAllCartillas() {
-  // Don't load if session is already finished
-  if (sessionFinishedShown) {
+  // Don't load if the last session finished AND there's no new session yet
+  if (sessionFinishedShown && !activeSessionId) {
     showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
     return;
   }

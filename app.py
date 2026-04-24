@@ -3423,6 +3423,11 @@ def api_create_session():
         db.add(s)
         db.flush()
         s_dict = s.to_dict()
+    # Clear session_finished flag so players can see the new session in /api/state
+    with game_lock:
+        if game.session_finished:
+            game.session_finished = False
+            game.save_to_db()
     return jsonify({"status": "ok", "session": s_dict})
 
 @app.route("/api/admin/session/<sid>", methods=["PUT"])
