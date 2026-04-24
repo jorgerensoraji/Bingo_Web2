@@ -5361,7 +5361,7 @@ def api_stats():
         paid_v    = db.query(Voucher).filter(
             Voucher.payment_status.in_(["approved", "manual_approved"])).count()
         pending_v = db.query(Voucher).filter_by(payment_status="pending_review").count()
-        revenue   = sum(v.precio for v in db.query(Voucher).filter(
+        revenue   = sum((v.precio or 0.0) for v in db.query(Voucher).filter(
             Voucher.payment_status.in_(["approved", "manual_approved"])).all())
         total_s   = db.query(BingoSession).count()
         active_s  = db.query(BingoSession).filter_by(status="active").count()
