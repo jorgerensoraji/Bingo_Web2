@@ -2236,7 +2236,7 @@ def api_player_solicitar():
             wa_body = (
                 f"💳 *Nuevo pago recibido*\n"
                 f"👤 {nombres} {apellidos}\n"
-                f"🎱 {btype['nombre']} — S/. {btype['precio']:.2f}\n"
+                f"🎱 {btype['nombre']} x{cantidad_cartillas} — S/. {btype['precio'] * cantidad_cartillas:.2f}\n"
                 f"💰 {metodo_str} | Ref: {ref_str}\n"
                 f"📱 {celular or '—'}\n"
                 f"🎫 Voucher: *{v_dict['code']}*\n\n"
