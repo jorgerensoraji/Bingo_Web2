@@ -720,7 +720,21 @@ async function syncState() {
     const storedCartillas = (function() { try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) { return []; } })();
     const newSid = data.session_id || data.prepare_sid || data.next_session_id;
     if (newSid && newSid !== prevSid && myCartillas.length === 0 && storedCartillas.length > 0) {
-      loadAllCartillas();
+      // Before loading, check if stored cartillas belong to the current session
+      var storedSids = storedCartillas.map(function(e) { return typeof e === 'object' ? (e.session_id || '') : ''; });
+      var allStale   = storedSids.length > 0 && storedSids.every(function(sid) { return sid && sid !== newSid; });
+      if (allStale) {
+        // Silently clear old cartillas and open code panel — no flash
+        localStorage.setItem('my_cartillas', '[]');
+        var ycBody  = document.getElementById('yc-body');
+        var ycArrow = document.getElementById('yc-arrow');
+        if (ycBody && ycBody.style.display === 'none') {
+          ycBody.style.display = 'block';
+          if (ycArrow) ycArrow.textContent = '▲ Ocultar';
+        }
+      } else {
+        loadAllCartillas();
+      }
     }
 
     // Only clear cartillas when a truly live session disappears (not a scheduled one)
