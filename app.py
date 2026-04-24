@@ -2632,14 +2632,15 @@ def _wa_ganadores() -> str:
     return "\n".join(lines)
 
 def _wa_pagar(args: list) -> str:
-    if len(args) < 2:
-        return "Uso: *pagar [nombre] [monto]*\nEj: pagar Boris 33.82"
-    # Last arg is the amount, everything before is the name
+    if len(args) < 3:
+        return "Uso: *pagar [nombre] [monto] [num_operacion]*\nEj: pagar Boris 33.82 98765432"
+    # Last arg = op number, second to last = amount, rest = name
+    op_number = args[-1]
     try:
-        amount = round(float(args[-1].replace(',', '.')), 2)
+        amount = round(float(args[-2].replace(',', '.')), 2)
     except ValueError:
-        return "❌ Monto inválido. Ej: pagar Boris 33.82"
-    nombre_q = " ".join(args[:-1]).lower().strip()
+        return "❌ Monto inválido. Ej: pagar Boris 33.82 98765432"
+    nombre_q = " ".join(args[:-2]).lower().strip()
 
     with db_session() as db:
         rows = (db.query(Winner)
@@ -2660,7 +2661,8 @@ def _wa_pagar(args: list) -> str:
         w.paid         = True
         w.paid_at      = now_peru().isoformat()
         w.paid_method  = "WA bot"
-        w.paid_note    = f"Registrado vía WhatsApp"
+        w.paid_ref     = op_number
+        w.paid_note    = f"Registrado vía WhatsApp · op {op_number}"
         w.prize_amount = amount
         nombre_out = w.nombre or ""
         tipo_out   = w.tipo or "bingo"
@@ -2683,7 +2685,8 @@ def _wa_pagar(args: list) -> str:
     tipo_lbl = {"bingo": "BINGO", "linea": "Letra I", "u": "Letra U", "o": "Letra O"}
     return (f"💸 *Pago registrado*\n"
             f"👤 {nombre_out} — {tipo_lbl.get(tipo_out, tipo_out)}\n"
-            f"💰 S/.{amount:.2f} · cartilla {cid}\n"
+            f"💰 S/.{amount:.2f} · op {op_number}\n"
+            f"🎫 Cartilla {cid}\n"
             f"✅ Guardado")
 
 def _wa_ayuda() -> str:
@@ -2695,7 +2698,7 @@ def _wa_ayuda() -> str:
         "• *aprobar [codigo]* — aprobar por código directo\n"
         "• *rechazar [codigo]* — rechazar pago\n"
         "• *ganadores* — ver premios sin pagar\n"
-        "• *pagar [nombre] [monto]* — registrar pago a ganador\n"
+        "• *pagar [nombre] [monto] [num_op]* — registrar pago a ganador\n"
         "• *ayuda* — esta lista"
     )
 
