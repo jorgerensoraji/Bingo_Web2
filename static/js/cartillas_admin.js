@@ -65,7 +65,7 @@ function renderTable(list) {
     const uPat   = r.u_pattern && !r.bingo;
     const oPat   = r.o_pattern && !r.bingo;
     const marked = r.marked ?? '—';
-    const total  = r.total  ?? 15;
+    const total  = r.total  ?? 24;
     const badge  = bingo
       ? `<span class="badge badge-bingo">🎉 BINGO</span>`
       : linea
