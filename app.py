@@ -113,6 +113,7 @@ if not ADMIN_USER or not ADMIN_PASS:
 app.config["SESSION_PERMANENT"]       = False
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_DOMAIN"]   = ".ganabingoperu.com"  # share cookie across www and non-www
 
 def is_admin() -> bool:
     return bool(session.get("is_admin"))
