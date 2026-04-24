@@ -86,7 +86,6 @@ except ImportError:
 app = Flask(__name__)
 app.after_request(apply_security_headers)
 
-
 # ─── Seguridad ────────────────────────────────────────────────────────────────
 _raw_key = os.environ.get("SECRET_KEY", "")
 if not _raw_key:

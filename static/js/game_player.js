@@ -720,21 +720,7 @@ async function syncState() {
     const storedCartillas = (function() { try { return JSON.parse(localStorage.getItem('my_cartillas') || '[]'); } catch(e) { return []; } })();
     const newSid = data.session_id || data.prepare_sid || data.next_session_id;
     if (newSid && newSid !== prevSid && myCartillas.length === 0 && storedCartillas.length > 0) {
-      // Before loading, check if stored cartillas belong to the current session
-      var storedSids = storedCartillas.map(function(e) { return typeof e === 'object' ? (e.session_id || '') : ''; });
-      var allStale   = storedSids.length > 0 && storedSids.every(function(sid) { return sid && sid !== newSid; });
-      if (allStale) {
-        // Silently clear old cartillas and open code panel — no flash
-        localStorage.setItem('my_cartillas', '[]');
-        var ycBody  = document.getElementById('yc-body');
-        var ycArrow = document.getElementById('yc-arrow');
-        if (ycBody && ycBody.style.display === 'none') {
-          ycBody.style.display = 'block';
-          if (ycArrow) ycArrow.textContent = '▲ Ocultar';
-        }
-      } else {
-        loadAllCartillas();
-      }
+      loadAllCartillas();
     }
 
     // Only clear cartillas when a truly live session disappears (not a scheduled one)
@@ -746,12 +732,16 @@ async function syncState() {
 
     if (activeSessionId && myCartillas.length) {
       var before = myCartillas.length;
+      // When there's an active/preparing session, strictly only keep cartillas for that session
       myCartillas = myCartillas.filter(function(c) {
         return c.session_id === activeSessionId;
       });
       cartillaStates = {};
       if (myCartillas.length < before) {
-        // Remove stale cartillas from localStorage
+        var removed = before - myCartillas.length;
+        showToast('⚠️ ' + removed + ' cartilla(s) son de otro Bingo y fueron desactivadas.', 5000);
+        updateMyCartillaAutoMark(true);
+        // Also update localStorage to remove stale cartillas
         try {
           var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
           stored = stored.filter(function(e) {
@@ -760,15 +750,6 @@ async function syncState() {
           });
           localStorage.setItem('my_cartillas', JSON.stringify(stored));
         } catch(e) {}
-        updateMyCartillaAutoMark(true);
-        // Open code panel so player can enter their code for the current session
-        var ycBody  = document.getElementById('yc-body');
-        var ycArrow = document.getElementById('yc-arrow');
-        if (ycBody && ycBody.style.display === 'none') {
-          ycBody.style.display = 'block';
-          if (ycArrow) ycArrow.textContent = '▲ Ocultar';
-        }
-        showToast('⚠️ Hay un nuevo Bingo activo. Ingresa tu código para participar.', 6000);
       }
     }
 
@@ -1368,49 +1349,16 @@ async function loadAllCartillas() {
   }
 
   if (wrongSession > 0 && !myCartillas.length) {
-    var otherSid = null;
-    for (var _i = 0; _i < all.length; _i++) {
-      if (all[_i].session_id && all[_i].session_id !== liveSessionId) {
-        otherSid = all[_i].session_id; break;
-      }
+    // Open the code-entry panel so the player can enter their code for THIS bingo
+    var ycBody  = document.getElementById('yc-body');
+    var ycArrow = document.getElementById('yc-arrow');
+    var ycInput = document.getElementById('yc-input');
+    if (ycBody && ycBody.style.display === 'none') {
+      ycBody.style.display = 'block';
+      if (ycArrow) ycArrow.textContent = '▲ Ocultar';
     }
-    function _openCodePanel() {
-      var ycBody  = document.getElementById('yc-body');
-      var ycArrow = document.getElementById('yc-arrow');
-      var ycInput = document.getElementById('yc-input');
-      if (ycBody && ycBody.style.display === 'none') {
-        ycBody.style.display = 'block';
-        if (ycArrow) ycArrow.textContent = '▲ Ocultar';
-      }
-      if (ycInput) ycInput.focus();
-    }
-    if (otherSid) {
-      fetch('/api/session/' + otherSid)
-        .then(function(r) { return r.json(); })
-        .then(function(sd) {
-          var status = sd.status || 'finished';
-          if (status === 'scheduled' || status === 'preparing') {
-            // Future session — tell player when to come back
-            var dt   = (sd.datetime_iso || '').replace('T', ' ').slice(0, 16);
-            var hora = dt.slice(11, 16) || '';
-            var msg  = hora
-              ? '⏰ Tus cartillas son para el Bingo que empieza a las ' + hora + '. ¡Vuelve a esa hora!'
-              : '⏰ Tus cartillas son para otro Bingo programado. ¡Vuelve a la hora indicada!';
-            showToast(msg, 8000);
-          } else {
-            // Finished/cancelled session — open panel so player can buy for current session
-            showToast('⚠️ Esas cartillas son de un Bingo ya finalizado. Ingresa tu código para este Bingo.', 6000);
-            _openCodePanel();
-          }
-        })
-        .catch(function() {
-          showToast('⚠️ Esas cartillas son de otro Bingo. Ingresa el código de este Bingo.', 6000);
-          _openCodePanel();
-        });
-    } else {
-      showToast('⚠️ Esas cartillas son de otro Bingo. Ingresa el código de este Bingo.', 6000);
-      _openCodePanel();
-    }
+    if (ycInput) ycInput.focus();
+    showToast('⚠️ Esas cartillas son de otro Bingo. Ingresa el código de este Bingo.', 6000);
     return;
   }
   if (wrongSession > 0) {
