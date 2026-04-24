@@ -2379,8 +2379,12 @@ def quick_approve(code):
                 return _quick_result("error", f"Voucher {code} no encontrado.")
             if v.payment_status in ("manual_approved", "approved"):
                 return _quick_result("already", f"El voucher {code} ya estaba aprobado.", code)
-            nombres = f"{v.nombres} {v.apellidos}".strip()
-            precio  = f"S/. {v.precio:.2f}" if v.precio else ""
+            nombres    = f"{v.nombres} {v.apellidos}".strip()
+            precio     = f"S/. {v.precio:.2f}" if v.precio else "—"
+            metodo     = (v.payment_method or "—").upper()
+            ref        = v.payment_ref or "—"
+            cartillas  = v.max_cartillas or 1
+            bingo_nom  = v.bingo_nombre or "—"
         return f"""<!DOCTYPE html><html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aprobar pago</title>
@@ -2388,15 +2392,23 @@ def quick_approve(code):
   body{{font-family:system-ui,sans-serif;background:#070d14;color:#ddeeff;
        display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box}}
   .card{{background:#0d1825;border:1px solid #1a3148;border-radius:16px;padding:28px 24px;max-width:420px;width:100%}}
-  h2{{color:#00e5b4;margin:0 0 8px;font-size:1.3rem}}
-  p{{color:#4a6b85;font-size:.87rem;margin:0 0 20px}}
-  button{{margin-top:14px;width:100%;padding:13px;border:none;border-radius:10px;
+  h2{{color:#00e5b4;margin:0 0 16px;font-size:1.3rem}}
+  .row{{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a3148;font-size:.9rem}}
+  .row:last-of-type{{border-bottom:none}}
+  .label{{color:#4a6b85}}
+  .value{{color:#ddeeff;font-weight:600;text-align:right}}
+  button{{margin-top:20px;width:100%;padding:13px;border:none;border-radius:10px;
           background:#00e5b4;color:#070d14;font-size:1rem;font-weight:700;cursor:pointer}}
   button:hover{{background:#00c9a0}}
 </style></head>
 <body><div class="card">
   <h2>✅ Aprobar voucher {code}</h2>
-  <p>👤 {nombres}<br>💰 {precio}</p>
+  <div class="row"><span class="label">👤 Nombre</span><span class="value">{nombres}</span></div>
+  <div class="row"><span class="label">🎱 Bingo</span><span class="value">{bingo_nom}</span></div>
+  <div class="row"><span class="label">🎫 Cartillas</span><span class="value">{cartillas}</span></div>
+  <div class="row"><span class="label">💰 Total</span><span class="value">{precio}</span></div>
+  <div class="row"><span class="label">💳 Método</span><span class="value">{metodo}</span></div>
+  <div class="row"><span class="label">🔢 N° Operación</span><span class="value">{ref}</span></div>
   <form method="POST">
     <button type="submit">Confirmar aprobación</button>
   </form>
