@@ -118,6 +118,18 @@
       </div>
       <input type="range" min="0" max="100" value="85" id="vol-slider"
              oninput="document.getElementById('vol-val').textContent=this.value+'%'">
+      <div style="margin-top:10px;display:flex;gap:6px;">
+        <button id="btn-music" onclick="toggleBgMusic()" style="
+          flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;
+          background:var(--card);color:var(--muted);font-size:.8rem;cursor:pointer;">
+          🎵 Música OFF
+        </button>
+        <button id="btn-sfx" onclick="toggleSfx()" style="
+          flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;
+          background:var(--card);color:var(--muted);font-size:.8rem;cursor:pointer;">
+          🔔 Sonidos ON
+        </button>
+      </div>
     </div>
 
     <!-- ══ PANEL SESIÓN ACTIVA ══ -->

@@ -6,6 +6,135 @@
 // IS_ADMIN is injected by Flask in index.html:
 //   <script>const IS_ADMIN = true/false;</script>
 
+// ── SOUND ENGINE ─────────────────────────────────
+const _ac = new (window.AudioContext || window.webkitAudioContext)();
+let _bgInterval  = null;
+let _bgRunning   = false;
+let _sfxEnabled  = true;
+let _bgChordIdx  = 0;
+
+function _resumeAC() { if (_ac.state === 'suspended') _ac.resume(); }
+
+function _tone(freq, start, dur, type = 'sine', vol = 0.3) {
+  const osc = _ac.createOscillator();
+  const g   = _ac.createGain();
+  osc.connect(g); g.connect(_ac.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  g.gain.setValueAtTime(vol, start);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  osc.start(start); osc.stop(start + dur + 0.05);
+}
+
+function soundBallDraw() {
+  if (!_sfxEnabled) return; _resumeAC();
+  const t = _ac.currentTime;
+  _tone(900, t,        0.04, 'sine',     0.12);
+  _tone(500, t + 0.03, 0.07, 'sine',     0.07);
+}
+
+function soundLinea() {
+  if (!_sfxEnabled) return; _resumeAC();
+  const t = _ac.currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => _tone(f, t + i * 0.13, 0.28, 'sine', 0.28));
+}
+
+function soundDoubleLinea() {
+  if (!_sfxEnabled) return; _resumeAC();
+  const t = _ac.currentTime;
+  [523, 659, 784, 988, 1175].forEach((f, i) => _tone(f, t + i * 0.12, 0.3, 'sine', 0.28));
+  [523, 659, 784].forEach(f => _tone(f, t + 0.7, 0.5, 'triangle', 0.18));
+}
+
+function soundUO() {
+  if (!_sfxEnabled) return; _resumeAC();
+  const t = _ac.currentTime;
+  [392, 494, 587, 740, 880, 1109].forEach((f, i) => _tone(f, t + i * 0.11, 0.28, 'sine', 0.27));
+}
+
+function soundBingo() {
+  if (!_sfxEnabled) return; _resumeAC();
+  const t = _ac.currentTime;
+  // Ascending fanfare
+  [523, 659, 784, 1047, 1319].forEach((f, i) => _tone(f, t + i * 0.11, 0.22, 'sine', 0.32));
+  // Second wave
+  [784, 988, 1175, 1568].forEach((f, i) => _tone(f, t + 0.65 + i * 0.1, 0.25, 'triangle', 0.22));
+  // Final big chord
+  [523, 659, 784, 1047].forEach(f => _tone(f, t + 1.15, 1.2, 'sine', 0.22));
+  [1047, 1319, 1568].forEach(f  => _tone(f, t + 1.2,  0.9, 'triangle', 0.12));
+}
+
+function soundGameOver() {
+  if (!_sfxEnabled) return; _resumeAC();
+  const t = _ac.currentTime;
+  [784, 740, 659, 587, 523].forEach((f, i) => _tone(f, t + i * 0.18, 0.35, 'sine', 0.25));
+  [523, 392, 330].forEach((f, i) => _tone(f, t + 1.0 + i * 0.2, 0.5, 'sine', 0.2));
+}
+
+// Background music — festive chord loop (C → Am → F → G)
+const _BG_CHORDS = [
+  [261, 329, 392, 523],  // C maj
+  [220, 277, 329, 440],  // Am
+  [174, 220, 261, 349],  // F maj
+  [196, 247, 294, 392],  // G maj
+];
+
+function _playBgChord() {
+  if (!_bgRunning) return;
+  _resumeAC();
+  const chord = _BG_CHORDS[_bgChordIdx % _BG_CHORDS.length];
+  chord.forEach((f, i) => {
+    const osc = _ac.createOscillator();
+    const g   = _ac.createGain();
+    osc.connect(g); g.connect(_ac.destination);
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    g.gain.setValueAtTime(0.001, _ac.currentTime);
+    g.gain.linearRampToValueAtTime(0.04, _ac.currentTime + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.001, _ac.currentTime + 1.7);
+    osc.start(_ac.currentTime); osc.stop(_ac.currentTime + 2);
+  });
+  _bgChordIdx++;
+}
+
+function startBgMusic() {
+  if (_bgRunning) return;
+  _bgRunning = true; _bgChordIdx = 0;
+  _playBgChord();
+  _bgInterval = setInterval(_playBgChord, 1800);
+  const btn = document.getElementById('btn-music');
+  if (btn) { btn.textContent = '🎵 Música ON'; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; }
+}
+
+function stopBgMusic() {
+  _bgRunning = false;
+  if (_bgInterval) { clearInterval(_bgInterval); _bgInterval = null; }
+  const btn = document.getElementById('btn-music');
+  if (btn) { btn.textContent = '🎵 Música OFF'; btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; }
+}
+
+function toggleBgMusic() {
+  _resumeAC();
+  if (_bgRunning) stopBgMusic(); else startBgMusic();
+}
+
+function toggleSfx() {
+  _sfxEnabled = !_sfxEnabled;
+  const btn = document.getElementById('btn-sfx');
+  if (btn) {
+    btn.textContent  = _sfxEnabled ? '🔔 Sonidos ON' : '🔕 Sonidos OFF';
+    btn.style.color  = _sfxEnabled ? 'var(--accent)' : 'var(--muted)';
+    btn.style.borderColor = _sfxEnabled ? 'var(--accent)' : 'var(--border)';
+  }
+}
+
+function _prizeSoundForBanner(winners, lineaWinners, uWinners, oWinners) {
+  if (winners && winners.length > 0)           soundBingo();
+  else if (uWinners && uWinners.length > 0)    soundUO();
+  else if (oWinners && oWinners.length > 0)    soundUO();
+  else if (lineaWinners && lineaWinners.length > 0) soundLinea();
+}
+
 // ── COLORES ───────────────────────────────────────
 const GROUP_COLORS = [
   { fg:'#5dade2', bg:'#0a1e2e' },  // B  1-15
@@ -181,6 +310,7 @@ async function fetchDraw() {
 
     updateDisplay(num, data.words);
     markCell(num);
+    soundBallDraw();
     updateRecent();
     updateStats(data.count, data.remaining);
     speak(data.phrase);
@@ -445,6 +575,7 @@ function startClock() {
 // ── GAME OVER ─────────────────────────────────────
 function showGameOver() {
   stopAuto();
+  soundGameOver();
   speak('¡Felicidades! Se han sorteado todas las bolillas. ¡Juego completo!');
   const timer = document.getElementById('timer').textContent.replace('⏱ ', '');
   document.getElementById('gameover-info').textContent =
@@ -600,6 +731,7 @@ function startPlayerPolling() {
 // ── PAUSA POR GANADOR ────────────────────────────
 function showPausedBanner(winners, lineaWinners, uWinners, oWinners) {
   stopAuto();
+  _prizeSoundForBanner(winners, lineaWinners, uWinners, oWinners);
 
   const existing = document.getElementById('winner-zone');
   if (!existing) return;
