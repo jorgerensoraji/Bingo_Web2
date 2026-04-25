@@ -5487,6 +5487,36 @@ def api_admin_delete_bingo_type(bid):
     return jsonify({"status": "ok"})
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
+def _whatsapp_keepalive_loop():
+    """Background thread — sends a WhatsApp template to the admin every 20 hours
+    so the Twilio session window never expires and freeform notifications keep working.
+    Admin just needs to reply once to any of these pings to reset the 24-hour window."""
+    import time as _time
+    _time.sleep(60)  # wait 1 min after startup before first ping
+    while True:
+        try:
+            admin_wa = (_load_config().get("whatsapp") or "").strip() or ADMIN_WHATSAPP
+            template_sid = os.environ.get("TWILIO_WA_TEMPLATE_SID", "")
+            if admin_wa and template_sid:
+                ok, err = enviar_whatsapp(
+                    admin_wa,
+                    body=None,
+                    content_sid=template_sid,
+                    content_variables={
+                        "1": "Admin",
+                        "2": "🔔 Responde este mensaje para mantener activas las notificaciones de pago de Bingo Pro.",
+                        "3": "—", "4": "—", "5": "—", "6": "—",
+                    },
+                )
+                if not ok:
+                    print(f"[WA-KEEPALIVE] Fallo al enviar ping: {err}")
+                else:
+                    print("[WA-KEEPALIVE] Ping enviado al admin.")
+        except Exception as e:
+            print(f"[WA-KEEPALIVE] Error: {e}")
+        _time.sleep(20 * 3600)  # wait 20 hours before next ping
+
+
 def _startup():
     init_db()
     _seed_bingo_types()
@@ -5531,6 +5561,10 @@ def _startup():
         send_fin_emails_fn    = _send_fin_bingo_emails_async,
     )
     autodraw.start_scheduler()
+
+    # ── WhatsApp keep-alive (prevents 24h session expiry) ──
+    import threading as _threading
+    _threading.Thread(target=_whatsapp_keepalive_loop, daemon=True, name="wa-keepalive").start()
 
 # ─── CSRF ────────────────────────────────────────────────────────────────────
 @app.route("/api/csrf-token")
