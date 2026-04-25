@@ -5639,6 +5639,7 @@ def api_session_auto_start(sid):
 # Ejecutar al importar (gunicorn) y también al correr directo
 # ─── WhatsApp incoming webhook (Twilio verification) ─────────────────────────
 @app.route("/api/whatsapp/incoming", methods=["POST", "GET"])
+@app.route("/api/whatsapp/webhook", methods=["POST", "GET"])
 def whatsapp_incoming():
     """Webhook for incoming WhatsApp messages. Returns TwiML so Twilio
     can complete the sandbox verification handshake."""
