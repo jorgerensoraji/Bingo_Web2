@@ -1968,11 +1968,17 @@ async function loadWinnersHistory() {
 }
 
 // ── Check juego iniciado ────────────────────────────────
+// Flag: set true when autoLoadCode() is handling a ?code= redirect
+var _autoCodeHandling = false;
+
 async function checkStarted() {
   try{
     const s=await(await fetch('/api/state')).json();
-    document.getElementById('started-overlay')
-      .classList.toggle('show',(s.drawn||[]).length>0);
+    // Don't block with overlay if autoLoadCode is saving cartillas
+    if (!_autoCodeHandling) {
+      document.getElementById('started-overlay')
+        .classList.toggle('show',(s.drawn||[]).length>0);
+    }
   }catch(e){}
 }
 
@@ -1992,9 +1998,42 @@ setInterval(loadSessions,30000);
   const params = new URLSearchParams(window.location.search);
   const code   = (params.get('code') || '').trim().toUpperCase();
   if (!code) return;
+  // Signal that we're handling a code — suppress overlay
+  _autoCodeHandling = true;
   // Clean URL without reload
   history.replaceState(null, '', window.location.pathname);
   try {
+    // Check if game is already active
+    let gameActive = false;
+    try {
+      const stRes = await fetch('/api/state');
+      const st    = await stRes.json();
+      gameActive  = (st.drawn||[]).length > 0;
+    } catch(e) {}
+
+    if (gameActive) {
+      // Game is running — save cartillas to localStorage then go to game page
+      localStorage.setItem('bingo_access_code', code);
+      try {
+        const r = await fetch('/api/cartillas/by_access', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ code }),
+        });
+        const d = await r.json();
+        const list = d.cartillas || [];
+        if (list.length) {
+          list.forEach(c => saveMyCartilla(c.id, c.session_id || ''));
+          showToast('✅ ' + list.length + ' cartilla(s) cargadas. Redirigiendo al juego…');
+        } else {
+          showToast('⚠️ No se encontraron cartillas para este código');
+        }
+      } catch(e) {
+        showToast('⚠️ Error cargando cartillas');
+      }
+      setTimeout(function(){ window.location.href = '/'; }, 2000);
+      return;
+    }
+
     const res  = await fetch('/api/voucher/status', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ code }),

@@ -703,6 +703,25 @@ async function loadExistingState() {
       showToast('⏸ Juego pausado — hay ganador(es)');
     } else {
       showToast('✅ Juego en curso: ' + drawn.length + ' bolillas ya sorteadas');
+      // If autodraw is running server-side, mark autoRunning so UI reflects it
+      // and start background music on first user interaction
+      if (IS_ADMIN && !autoRunning) {
+        autoRunning = true;
+        const btnAuto = document.getElementById('btn-auto');
+        if (btnAuto) {
+          btnAuto.textContent = '⏹ Detener [A]';
+          btnAuto.classList.add('active');
+        }
+        // Schedule music to start on first click/touch (browser requires interaction)
+        function _startMusicOnInteract() {
+          _resumeAC();
+          if (!_bgRunning) startBgMusic();
+          document.removeEventListener('click',      _startMusicOnInteract);
+          document.removeEventListener('touchstart', _startMusicOnInteract);
+        }
+        document.addEventListener('click',      _startMusicOnInteract, { passive: true });
+        document.addEventListener('touchstart', _startMusicOnInteract, { passive: true });
+      }
     }
   } catch(e) {
     console.error('Error al cargar estado previo:', e);

@@ -395,8 +395,71 @@ function _unlockAudio() {
     src.buffer = buf; src.connect(ctx.destination); src.start(0);
   } catch(e) {}
 }
-document.addEventListener('touchstart', _unlockAudio, { once: true, passive: true });
-document.addEventListener('click',      _unlockAudio, { once: true, passive: true });
+function _unlockAndStartMusic() {
+  _unlockAudio();
+  if (!_playerBgRunning) startPlayerBgMusic();
+}
+document.addEventListener('touchstart', _unlockAndStartMusic, { once: true, passive: true });
+document.addEventListener('click',      _unlockAndStartMusic, { once: true, passive: true });
+
+// ── Background music for player page (Web Audio API) ─────────────────────────
+var _playerBgRunning  = false;
+var _playerBgInterval = null;
+var _playerBgChordIdx = 0;
+var _playerMusicEnabled = true; // music ON by default
+
+var _PLAYER_BG_CHORDS = [
+  [261, 329, 392, 523],  // C maj
+  [220, 277, 329, 440],  // Am
+  [174, 220, 261, 349],  // F maj
+  [196, 247, 294, 392],  // G maj
+];
+
+function _playPlayerBgChord() {
+  if (!_playerBgRunning || !_playerMusicEnabled) return;
+  try {
+    var ctx   = _getAudioCtx();
+    var chord = _PLAYER_BG_CHORDS[_playerBgChordIdx % _PLAYER_BG_CHORDS.length];
+    chord.forEach(function(f) {
+      var osc = ctx.createOscillator();
+      var g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      g.gain.setValueAtTime(0, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.7);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 2);
+    });
+    _playerBgChordIdx++;
+  } catch(e) {}
+}
+
+function startPlayerBgMusic() {
+  if (_playerBgRunning || !_playerMusicEnabled) return;
+  _playerBgRunning = true; _playerBgChordIdx = 0;
+  _playPlayerBgChord();
+  _playerBgInterval = setInterval(_playPlayerBgChord, 1800);
+  var btn = document.getElementById('btn-player-music');
+  if (btn) { btn.textContent = '🎵 Música ON'; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; }
+}
+
+function stopPlayerBgMusic() {
+  _playerBgRunning = false;
+  if (_playerBgInterval) { clearInterval(_playerBgInterval); _playerBgInterval = null; }
+  var btn = document.getElementById('btn-player-music');
+  if (btn) { btn.textContent = '🎵 Música OFF'; btn.style.color = ''; btn.style.borderColor = ''; }
+}
+
+function togglePlayerBgMusic() {
+  _playerMusicEnabled = !_playerMusicEnabled;
+  if (_playerMusicEnabled) {
+    _unlockAudio();
+    startPlayerBgMusic();
+  } else {
+    stopPlayerBgMusic();
+  }
+}
 
 // Ball draw tick sound for player page
 function _playerBallDrawSound() {
