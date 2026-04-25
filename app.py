@@ -753,7 +753,7 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                     _log_email_event("ERROR", f"Fallo resumen admin [{sid}] a {admin_notify_email}: {err_adm}")
 
             # WhatsApp to admin
-            admin_wa = ADMIN_WHATSAPP or (_load_config().get("whatsapp") or "").strip()
+            admin_wa = (_load_config().get("whatsapp") or "").strip() or ADMIN_WHATSAPP
             if admin_wa:
                 wa_lines = "\n".join(winners_lines)
                 wa_body  = (
@@ -2256,7 +2256,7 @@ def api_player_solicitar():
             print(f"[WARN] Email no enviado a {email}: {err}")
 
     # Notify admin via WhatsApp with one-click approve/reject links
-    admin_wa = ADMIN_WHATSAPP or (_load_config().get("whatsapp") or "").strip()
+    admin_wa = (_load_config().get("whatsapp") or "").strip() or ADMIN_WHATSAPP
     if admin_wa:
         try:
             url_base   = request.host_url.rstrip("/")
