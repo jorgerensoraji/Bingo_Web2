@@ -173,6 +173,20 @@ let startTime      = null;
 let clockJob       = null;
 let currentAudio   = null;
 let elapsedSeconds = 0;
+const _shownWinners = new Set(); // track already-toasted winners to avoid duplicates
+
+function _showMiniWinners(label, list) {
+  if (!list || !list.length) return;
+  list.forEach(function(w) {
+    const key = label + ':' + w.id;
+    if (_shownWinners.has(key)) return;
+    _shownWinners.add(key);
+    const prize = w.linea_prize || w.u_prize || w.o_prize || '';
+    const prizeStr = prize ? ` — S/. ${prize}` : '';
+    showToast(`🏆 ${label}: ${w.nombre}${prizeStr}`, 5000);
+    _prizeSoundForBanner([], label === 'Línea' ? [w] : [], label === 'U' ? [w] : [], label === 'O' ? [w] : []);
+  });
+}
 
 // ── SEGURIDAD DE ROL ──────────────────────────────
 // Llamada desde index.html DESPUÉS de verificar /api/auth/status
@@ -325,6 +339,11 @@ async function fetchDraw() {
     updateRecent();
     updateStats(data.count, data.remaining);
     speak(data.phrase);
+
+    // Show línea/U/O winners immediately as toasts — game keeps going
+    _showMiniWinners('Línea',  data.linea_winners || []);
+    _showMiniWinners('U',      data.u_winners     || []);
+    _showMiniWinners('O',      data.o_winners     || []);
 
     isDrawing = false;
     setDrawBtnState(true);
