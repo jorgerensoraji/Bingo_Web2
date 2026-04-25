@@ -1307,6 +1307,22 @@ def get_session(sid: str) -> dict | None:
         s = db.query(BingoSession).filter_by(id=sid).first()
         return s.to_dict() if s else None
 
+_DEFAULT_MAX_PLAYERS = 150
+
+def _player_cap(session_id: str) -> int:
+    """Return the approved-player cap for a session (default 150)."""
+    s = get_session(session_id) if session_id else None
+    if s and s.get("max_players") and int(s["max_players"]) > 0:
+        return int(s["max_players"])
+    return _DEFAULT_MAX_PLAYERS
+
+def _approved_count(db, session_id: str) -> int:
+    """Count approved vouchers for a session (= active players)."""
+    return db.query(Voucher).filter(
+        Voucher.session_id == session_id,
+        Voucher.payment_status.in_(["approved", "manual_approved"]),
+    ).count()
+
 # ─── GameState (in-memory, persisted to SQLite game_state row) ────────────────
 class GameState:
     def __init__(self):
@@ -2133,6 +2149,14 @@ def api_player_solicitar():
             return jsonify({"error": "bingo_type_mismatch",
                             "message": f"Esta sesión es de {s.get('bingo_nombre')}. "
                                        f"Selecciona el tipo correcto."}), 400
+        # Cap check — block registration when session is full
+        cap = _player_cap(session_id)
+        with db_session() as db:
+            approved = _approved_count(db, session_id)
+        if approved >= cap:
+            return jsonify({"error": "session_full",
+                            "message": f"Esta sesión está completa ({cap} jugadores). "
+                                       f"Espera la próxima sesión."}), 400
     # Validate referral code if provided
     if referral_code:
         with db_session() as db:
@@ -2268,7 +2292,17 @@ def api_admin_create_voucher():
     bingo_type = data.get("bingo_type", "1sol")
     if bingo_type not in BINGO_TYPES:
         return jsonify({"error": "invalid_bingo_type"}), 400
-    btype  = BINGO_TYPES[bingo_type]
+    btype      = BINGO_TYPES[bingo_type]
+    session_id = (data.get("session_id") or "").strip()
+    # Cap check — admin-created vouchers start as manual_approved, count against cap
+    if session_id:
+        with db_session() as db:
+            cap   = _player_cap(session_id)
+            count = _approved_count(db, session_id)
+        if count >= cap:
+            return jsonify({"error": "session_full",
+                            "message": f"Sesión llena ({count}/{cap} jugadores). "
+                                       f"No se puede crear más vouchers aprobados."}), 400
     v_dict = {}
     with db_session() as db:
         code = _unique_code(db)
@@ -2280,7 +2314,7 @@ def api_admin_create_voucher():
             celular=(data.get("celular")    or "").strip()[:20],
             bingo_type=bingo_type, bingo_nombre=btype["nombre"],
             precio=btype["precio"],
-            session_id=data.get("session_id", ""),
+            session_id=session_id,
             payment_method=data.get("payment_method", "efectivo"),
             payment_status="manual_approved",
             approved_at=now_peru().isoformat(),
@@ -2316,6 +2350,15 @@ def api_approve_voucher(code):
         v = db.query(Voucher).filter_by(code=code).first()
         if not v:
             return jsonify({"error": "not found"}), 404
+        # Cap check — don't approve if session is full
+        sid = v.session_id or ""
+        if sid and v.payment_status not in ("approved", "manual_approved"):
+            cap = _player_cap(sid)
+            count = _approved_count(db, sid)
+            if count >= cap:
+                return jsonify({"error": "session_full",
+                                "message": f"Sesión llena ({count}/{cap} jugadores). "
+                                           f"No se puede aprobar más vouchers."}), 400
         v.payment_status = "manual_approved"
         v.approved_at    = now_peru().isoformat()
         v.approved_note  = data.get("note", "")
@@ -2428,6 +2471,14 @@ def quick_approve(code):
             return _quick_result("error", f"Voucher {code} no encontrado.")
         if v.payment_status in ("manual_approved", "approved"):
             return _quick_result("already", f"El voucher {code} ya estaba aprobado.", code)
+        # Cap check
+        sid = v.session_id or ""
+        if sid:
+            cap   = _player_cap(sid)
+            count = _approved_count(db, sid)
+            if count >= cap:
+                return _quick_result("error",
+                    f"Sesión llena ({count}/{cap} jugadores). No se puede aprobar este voucher.")
         v.payment_status = "manual_approved"
         v.approved_at    = now_peru().isoformat()
         db.flush()
