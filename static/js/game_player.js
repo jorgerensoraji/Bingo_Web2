@@ -382,6 +382,35 @@ function _getAudioCtx() {
   if (_audioCtx.state === 'suspended') _audioCtx.resume();
   return _audioCtx;
 }
+
+// Unlock AudioContext on first user touch (required by all mobile browsers)
+var _audioUnlocked = false;
+function _unlockAudio() {
+  if (_audioUnlocked) return;
+  _audioUnlocked = true;
+  try {
+    var ctx = _getAudioCtx();
+    var buf = ctx.createBuffer(1, 1, 22050);
+    var src = ctx.createBufferSource();
+    src.buffer = buf; src.connect(ctx.destination); src.start(0);
+  } catch(e) {}
+}
+document.addEventListener('touchstart', _unlockAudio, { once: true, passive: true });
+document.addEventListener('click',      _unlockAudio, { once: true, passive: true });
+
+// Ball draw tick sound for player page
+function _playerBallDrawSound() {
+  if (!soundEnabled) return;
+  try {
+    var ctx = _getAudioCtx(), t = ctx.currentTime;
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = 880;
+    g.gain.setValueAtTime(0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    osc.start(t); osc.stop(t + 0.1);
+  } catch(e) {}
+}
 function _note(ctx, freq, start, dur, vol, type) {
   var osc = ctx.createOscillator();
   var g   = ctx.createGain();
@@ -832,6 +861,7 @@ async function syncState() {
       const latest = newNums[newNums.length - 1];
       markCell(latest, true);
       updateDisplay(latest);
+      _playerBallDrawSound();
       updateStatusMsg(serverDrawn.length, data.remaining);
 
       const phrase = data.last_phrase;
@@ -1982,11 +2012,39 @@ document.addEventListener('DOMContentLoaded', function() {
   initMyCartillaUI();
   initDrum();
 
-  syncState();
-  setInterval(syncState, 1500);
-
-  updateGameStats();
-  setInterval(updateGameStats, 10000);
+  // Fetch live state FIRST before loading anything from localStorage.
+  // This ensures activeSessionId is known so stale cartillas are filtered
+  // before they are ever displayed (fixes mixed/old cartilla bug on mobile).
+  fetch('/api/state')
+    .then(function(r) { return r.json(); })
+    .then(function(sd) {
+      if (sd.session_finished) {
+        sessionFinishedShown = true;
+      } else {
+        if (sd.session_id)        { activeSessionId = sd.session_id; liveSessionId = sd.session_id; }
+        else if (sd.prepare_sid)  { activeSessionId = sd.prepare_sid; }
+        else if (sd.next_session_id) { activeSessionId = sd.next_session_id; }
+      }
+      // Purge localStorage of cartillas that don't belong to the current session
+      if (activeSessionId) {
+        try {
+          var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
+          var cleaned = stored.filter(function(e) {
+            var sid = (typeof e === 'object' && e !== null) ? (e.session_id || '') : '';
+            return !sid || sid === activeSessionId;
+          });
+          if (cleaned.length !== stored.length)
+            localStorage.setItem('my_cartillas', JSON.stringify(cleaned));
+        } catch(e) {}
+      }
+    })
+    .catch(function() {})
+    .finally(function() {
+      syncState();
+      setInterval(syncState, 1500);
+      updateGameStats();
+      setInterval(updateGameStats, 10000);
+    });
 
   initChat();
 });

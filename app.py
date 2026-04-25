@@ -86,6 +86,13 @@ except ImportError:
 app = Flask(__name__)
 app.after_request(apply_security_headers)
 
+@app.after_request
+def no_cache_api(response):
+    if request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+    return response
+
 # ─── Seguridad ────────────────────────────────────────────────────────────────
 _raw_key = os.environ.get("SECRET_KEY", "")
 if not _raw_key:

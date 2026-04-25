@@ -8,6 +8,17 @@
 
 // ── SOUND ENGINE ─────────────────────────────────
 const _ac = new (window.AudioContext || window.webkitAudioContext)();
+
+// Unlock AudioContext on first touch (required by mobile browsers)
+(function() {
+  function _unlock() {
+    if (_ac.state === 'suspended') _ac.resume();
+    document.removeEventListener('touchstart', _unlock);
+    document.removeEventListener('click', _unlock);
+  }
+  document.addEventListener('touchstart', _unlock, { passive: true });
+  document.addEventListener('click', _unlock, { passive: true });
+})();
 let _bgInterval  = null;
 let _bgRunning   = false;
 let _sfxEnabled  = true;
@@ -467,6 +478,9 @@ function startAuto() {
   autoCountdown = parseInt(document.getElementById('auto-interval').value) || 10;
   document.getElementById('btn-auto').textContent = '⏹ Detener [A]';
   document.getElementById('btn-auto').classList.add('active');
+  // Auto-enable sounds when autoplay starts
+  _resumeAC();
+  if (!_bgRunning) startBgMusic();
 
   // FIX: use correct IDs (auto-bar-wrap / auto-bar, not auto-bar-wrap2)
   const wrap = document.getElementById('auto-bar-wrap');

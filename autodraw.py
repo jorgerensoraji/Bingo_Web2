@@ -567,6 +567,7 @@ def _tick_auto_start():
                     "u_amount":      round(gross * btype.get("u_pct",    0.13), 2),
                     "o_amount":      round(gross * btype.get("o_pct",    0.15), 2),
                 }
+            paid_count = pools.get("total_players", 0)
             prize_pool = pools["prize_amount"]
             linea_pool = pools["linea_amount"]
             u_pool     = pools["u_amount"]
@@ -606,7 +607,7 @@ def _tick_auto_start():
                 auto_finish   = auto_cfg.get("auto_finish", True),
                 winners_limit = auto_cfg.get("winners_limit", 1),
             )
-            _log("session_auto_started", {"session_id": sid, "players": len(paid)})
+            _log("session_auto_started", {"session_id": sid, "players": paid_count})
 
         # Also handle preparing → active when the countdown has finished
         for s in ss:
@@ -641,6 +642,7 @@ def _tick_auto_start():
                     "u_amount":      round(gross * btype.get("u_pct",    0.13), 2),
                     "o_amount":      round(gross * btype.get("o_pct",    0.15), 2),
                 }
+            paid_count = pools.get("total_players", 0)
             prize_pool = pools["prize_amount"]
             linea_pool = pools["linea_amount"]
             u_pool     = pools["u_amount"]
@@ -678,7 +680,7 @@ def _tick_auto_start():
                 auto_finish   = auto_cfg.get("auto_finish", True),
                 winners_limit = auto_cfg.get("winners_limit", 1),
             )
-            _log("session_auto_started_from_prepare", {"session_id": sid, "players": len(paid)})
+            _log("session_auto_started_from_prepare", {"session_id": sid, "players": paid_count})
 
         if changed:
             save_ss(ss)
