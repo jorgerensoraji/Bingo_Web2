@@ -1235,8 +1235,11 @@ async function enviarSolicitud() {
         bingo_type_mismatch: '⚠️ ' + (data.message || 'El tipo de bingo no coincide con el bingo seleccionado.'),
         rate_limited:        '⏳ Demasiados intentos. Espera un momento.',
         duplicate_email:     '⚠️ Ya tienes una solicitud registrada para este bingo.',
+        duplicate_phone:     '⚠️ Ya tienes una solicitud registrada con ese número de celular.',
+        session_started:     '🔒 Las inscripciones están cerradas. Este bingo ya comenzó. ¡Participa en el próximo!',
+        session_full:        '🔒 Este bingo está completo. ¡Participa en el próximo!',
       };
-      showToast(msgs[data.error] || '❌ ' + data.error);
+      showToast(msgs[data.error] || '❌ ' + (data.message || data.error));
       btn.disabled    = false;
       btn.textContent = '📤 Enviar solicitud de participación';
       return;
