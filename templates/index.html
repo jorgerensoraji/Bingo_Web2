@@ -1737,6 +1737,8 @@ async function cargarPorCodigo() {
     const r2 = await fetch('/api/voucher/' + encodeURIComponent(code) + '/cartillas');
     if (r2.ok) {
       const d2 = await r2.json();
+      // Save voucher code so we can auto-refresh from server on every future reload
+      localStorage.setItem('bingo_access_code', code);
       if (d2.cartillas && d2.cartillas.length > 0) {
         // Already has cartillas — load them directly (works even after game starts)
         saveAndLoad(d2.cartillas.map(id => ({ id: id, session_id: d2.session_id || '' })));

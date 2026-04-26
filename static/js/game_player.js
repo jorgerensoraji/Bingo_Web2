@@ -691,28 +691,8 @@ function handleSessionFinished() {
   if (sessionFinishedShown) return;
   sessionFinishedShown = true;
 
-  // ── Remove finished-session cartillas from localStorage ──
-  // Use activeSessionId + loaded myCartillas to identify which IDs to purge.
-  var finishedSid = activeSessionId;
-  if (finishedSid) {
-    // IDs we know belong to this session (already fetched from server)
-    var toRemove = new Set();
-    myCartillas.forEach(function(c) {
-      if (c.session_id === finishedSid) toRemove.add(c.id);
-    });
-    try {
-      var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-      var remaining = stored.filter(function(e) {
-        var cid = (typeof e === 'object' && e !== null) ? e.id : e;
-        var sid = (typeof e === 'object' && e !== null) ? (e.session_id || '') : '';
-        if (toRemove.has(cid)) return false;   // known from loaded data
-        if (sid === finishedSid) return false;  // matches finished session
-        if (!sid) return false;                 // no session_id = unidentified, remove too
-        return true;
-      });
-      localStorage.setItem('my_cartillas', JSON.stringify(remaining));
-    } catch(err) {}
-  }
+  // Keep localStorage intact — cartillas are kept as cache for the next session start.
+  // The voucher code (bingo_access_code) also stays so auto-refresh works on next reload.
 
   // Stop clock and audio
   if (clockJob) { clearInterval(clockJob); clockJob = null; }
@@ -815,33 +795,15 @@ async function syncState() {
       loadAllCartillas();
     }
 
-    // Only clear cartillas when a truly live session disappears (not a scheduled one)
-    if (prevLiveSid && !data.session_id && myCartillas.length) {
-      myCartillas = [];
-      cartillaStates = {};
-      updateMyCartillaAutoMark(true);
-    }
-
+    // Filter display to active session only — never delete from localStorage
     if (activeSessionId && myCartillas.length) {
       var before = myCartillas.length;
-      // When there's an active/preparing session, strictly only keep cartillas for that session
       myCartillas = myCartillas.filter(function(c) {
         return c.session_id === activeSessionId;
       });
-      cartillaStates = {};
       if (myCartillas.length < before) {
-        var removed = before - myCartillas.length;
-        showToast('⚠️ ' + removed + ' cartilla(s) son de otro Bingo y fueron desactivadas.', 5000);
+        cartillaStates = {};
         updateMyCartillaAutoMark(true);
-        // Also update localStorage to remove stale cartillas
-        try {
-          var stored = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-          stored = stored.filter(function(e) {
-            var sid = typeof e === 'object' ? (e.session_id || '') : '';
-            return sid === activeSessionId;
-          });
-          localStorage.setItem('my_cartillas', JSON.stringify(stored));
-        } catch(e) {}
       }
     }
 
@@ -1425,21 +1387,7 @@ async function loadAllCartillas() {
 
   cartillaStates = {};
 
-  // Always clean wrong-session cartillas from localStorage when a live game is running,
-  // whether or not the player has valid ones too — prevents them showing on /cartillas page.
-  if (wrongSession > 0 && liveSessionId) {
-    try {
-      var _stored   = JSON.parse(localStorage.getItem('my_cartillas') || '[]');
-      var _validIds = new Set(myCartillas.map(function(c){ return c.id; }));
-      var _allIds   = new Set(all.map(function(c){ return c.id; }));
-      var _cleaned  = _stored.filter(function(e){
-        var cid = (typeof e === 'object' && e !== null) ? e.id : e;
-        // Keep: not fetched from server (network issue) OR belongs to current session
-        return !_allIds.has(cid) || _validIds.has(cid);
-      });
-      localStorage.setItem('my_cartillas', JSON.stringify(_cleaned));
-    } catch(e) {}
-  }
+  // Wrong-session cartillas are hidden from display but kept in localStorage as cache.
 
   if (wrongSession > 0 && !myCartillas.length) {
     // Open the code-entry panel so the player can enter their code for THIS bingo
@@ -1722,15 +1670,15 @@ async function initMyCartillaUI() {
 
   showPlayerSessionBanner();
 
-  const existing = getMyCartillasFromStorage();
-
-  if (existing.length) {
-    setTimeout(loadAllCartillas, 800);
-    return;
+  // Always try server refresh first — voucher code is source of truth across devices/reloads
+  const refreshed = await autoLoadByAccessCode();
+  if (!refreshed) {
+    // No voucher code saved — fall back to localStorage cache
+    const existing = getMyCartillasFromStorage();
+    if (existing.length) {
+      setTimeout(loadAllCartillas, 800);
+    }
   }
-
-  // ✅ AUTO LOAD FROM VOUCHER CODE
-  await autoLoadByAccessCode();
 }
 
 // ── Auto-reclamar BINGO ───────────────────────────────
