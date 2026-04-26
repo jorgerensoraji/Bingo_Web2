@@ -5487,6 +5487,20 @@ def api_admin_delete_bingo_type(bid):
     return jsonify({"status": "ok"})
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
+import backup as _backup
+
+def _backup_loop():
+    """Background thread — backs up bingo.db every hour."""
+    import time as _time
+    _time.sleep(30)          # short delay so DB is fully ready after startup
+    while True:
+        try:
+            _backup.run_backup()
+        except Exception as e:
+            print(f"[BACKUP] Error: {e}")
+        _time.sleep(3600)    # every hour
+
+
 def _whatsapp_keepalive_loop():
     """Background thread — sends a WhatsApp template to the admin every 20 hours
     so the Twilio session window never expires and freeform notifications keep working.
@@ -5562,8 +5576,11 @@ def _startup():
     )
     autodraw.start_scheduler()
 
-    # ── WhatsApp keep-alive (prevents 24h session expiry) ──
+    # ── Hourly DB backup ──
     import threading as _threading
+    _threading.Thread(target=_backup_loop, daemon=True, name="db-backup").start()
+
+    # ── WhatsApp keep-alive (prevents 24h session expiry) ──
     _threading.Thread(target=_whatsapp_keepalive_loop, daemon=True, name="wa-keepalive").start()
 
 # ─── CSRF ────────────────────────────────────────────────────────────────────
@@ -5737,6 +5754,33 @@ def api_admin_email_log():
     with _email_log_lock:
         entries = list(reversed(_email_log))
     return jsonify({"log": entries})
+
+# ─── Backup endpoints ─────────────────────────────────────────────────────────
+@app.route("/api/admin/backup/list")
+def api_backup_list():
+    chk = admin_required()
+    if chk: return chk
+    return jsonify({"backups": _backup.list_backups()})
+
+@app.route("/api/admin/backup/now", methods=["POST"])
+def api_backup_now():
+    chk = admin_required()
+    if chk: return chk
+    try:
+        path = _backup.run_backup()
+        return jsonify({"status": "ok", "file": path.name})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/admin/backup/download")
+def api_backup_download():
+    chk = admin_required()
+    if chk: return chk
+    from flask import send_file
+    path = _backup.latest_backup()
+    if not path:
+        return jsonify({"error": "No hay backups disponibles. Espera 30 segundos después de iniciar el servidor."}), 404
+    return send_file(path, as_attachment=True, download_name=path.name)
 
 _startup()
 
