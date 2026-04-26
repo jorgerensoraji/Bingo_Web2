@@ -2921,12 +2921,12 @@ def api_draw():
                     new_linea.append((c, _entry("linea", {"linea_row": chk.get("linea_row")})))
 
                 # U pattern
-                if (chk.get("u") and cid not in already_u
+                if (chk.get("u_pattern") and cid not in already_u
                         and (u_drawn_at is None or drawn_count == u_drawn_at)):
                     new_u.append((c, _entry("u")))
 
                 # O pattern
-                if (chk.get("o") and cid not in already_o
+                if (chk.get("o_pattern") and cid not in already_o
                         and (o_drawn_at is None or drawn_count == o_drawn_at)):
                     new_o.append((c, _entry("o")))
 

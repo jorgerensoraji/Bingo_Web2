@@ -190,60 +190,137 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
 
     with game_lock:
         already_claimed = set(game.claimed_winners)
+        already_linea   = set(game.linea_claimed)
+        already_u       = set(game.u_claimed)
+        already_o       = set(game.o_claimed)
         n_winners       = len(already_claimed)
         prize_pool      = game.prize_pool
         winners_limit   = game.winners_limit
+        linea_drawn_at  = game.linea_drawn_at
+        u_drawn_at      = game.u_drawn_at
+        o_drawn_at      = game.o_drawn_at
 
-    drawn_set = set(drawn)
+    drawn_count = len(drawn)
+    new_linea   = []
+    new_u       = []
+    new_o       = []
 
     for c in cartillas:
         cid = c.get("id", "")
-        if cid in already_claimed:
-            continue
         result = check_fn(c.get("grid", []), drawn)
-        if result.get("bingo"):
+
+        if result.get("bingo") and cid not in already_claimed:
             winners.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
 
-    if not winners:
+        if (result.get("linea") and cid not in already_linea
+                and (linea_drawn_at is None or drawn_count == linea_drawn_at)):
+            new_linea.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+
+        if (result.get("u_pattern") and cid not in already_u
+                and (u_drawn_at is None or drawn_count == u_drawn_at)):
+            new_u.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+
+        if (result.get("o_pattern") and cid not in already_o
+                and (o_drawn_at is None or drawn_count == o_drawn_at)):
+            new_o.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+
+    if not winners and not new_linea and not new_u and not new_o:
         return []
+
+    now_str  = now_peru().isoformat()
+    new_entries = []
 
     # Register all new winners atomically
     with game_lock:
         if game.session_id != session_id:
             return []
-        for w in winners:
-            game.claimed_winners.add(w["id"])
 
-        total_winners = len(game.claimed_winners)
-        prize_each    = round(prize_pool / total_winners, 2) if total_winners else 0.0
+        # ── Línea winners ──
+        if new_linea and (game.linea_drawn_at is None or drawn_count == game.linea_drawn_at):
+            if game.linea_drawn_at is None:
+                game.linea_drawn_at = drawn_count
+            n_linea    = len(game.linea_claimed) + len(new_linea)
+            linea_each = round(game.linea_pool / max(1, n_linea), 2)
+            for prev in game.linea_winners_log:
+                prev["linea_prize"] = linea_each; prev["n_winners"] = n_linea; prev["split"] = n_linea > 1
+            for w in new_linea:
+                if w["id"] not in game.linea_claimed:
+                    game.linea_claimed.add(w["id"])
+                    entry = {
+                        "id": w["id"], "nombre": w["nombre"],
+                        "claimed_at": now_str, "drawn_count": drawn_count,
+                        "game_id": game.game_id, "linea_prize": linea_each,
+                        "n_winners": n_linea, "split": n_linea > 1,
+                        "auto_detected": True, "tipo": "linea",
+                    }
+                    game.linea_winners_log.append(entry)
+                    new_entries.append(entry)
 
-        # Recompute existing winners' prizes (split)
-        for prev in game.winners_log:
-            prev["prize"]     = prize_each
-            prev["n_winners"] = total_winners
-            prev["split"]     = total_winners > 1
+        # ── U winners ──
+        if new_u and (game.u_drawn_at is None or drawn_count == game.u_drawn_at):
+            if game.u_drawn_at is None:
+                game.u_drawn_at = drawn_count
+            n_u    = len(game.u_claimed) + len(new_u)
+            u_each = round(game.u_pool / max(1, n_u), 2)
+            for prev in game.u_winners_log:
+                prev["u_prize"] = u_each; prev["n_winners"] = n_u; prev["split"] = n_u > 1
+            for w in new_u:
+                if w["id"] not in game.u_claimed:
+                    game.u_claimed.add(w["id"])
+                    entry = {
+                        "id": w["id"], "nombre": w["nombre"],
+                        "claimed_at": now_str, "drawn_count": drawn_count,
+                        "game_id": game.game_id, "u_prize": u_each,
+                        "n_winners": n_u, "split": n_u > 1,
+                        "auto_detected": True, "tipo": "u",
+                    }
+                    game.u_winners_log.append(entry)
+                    new_entries.append(entry)
 
-        new_entries = []
-        for w in winners:
-            entry = {
-                "id":           w["id"],
-                "nombre":       w["nombre"],
-                "claimed_at":   now_peru().isoformat(),
-                "drawn_count":  len(game.drawn),
-                "game_id":      game.game_id,
-                "prize":        prize_each,
-                "n_winners":    total_winners,
-                "split":        total_winners > 1,
-                "auto_detected": True,
-            }
-            game.winners_log.append(entry)
-            new_entries.append(entry)
+        # ── O winners ──
+        if new_o and (game.o_drawn_at is None or drawn_count == game.o_drawn_at):
+            if game.o_drawn_at is None:
+                game.o_drawn_at = drawn_count
+            n_o    = len(game.o_claimed) + len(new_o)
+            o_each = round(game.o_pool / max(1, n_o), 2)
+            for prev in game.o_winners_log:
+                prev["o_prize"] = o_each; prev["n_winners"] = n_o; prev["split"] = n_o > 1
+            for w in new_o:
+                if w["id"] not in game.o_claimed:
+                    game.o_claimed.add(w["id"])
+                    entry = {
+                        "id": w["id"], "nombre": w["nombre"],
+                        "claimed_at": now_str, "drawn_count": drawn_count,
+                        "game_id": game.game_id, "o_prize": o_each,
+                        "n_winners": n_o, "split": n_o > 1,
+                        "auto_detected": True, "tipo": "o",
+                    }
+                    game.o_winners_log.append(entry)
+                    new_entries.append(entry)
 
-        # Always pause when any new bingo/apagón winner is detected
-        game.paused = True
-        _log("game_paused", {"session_id": session_id, "winners": total_winners})
+        # ── Bingo winners ──
+        if winners and not game.paused:
+            total_winners = len(game.claimed_winners) + len(winners)
+            prize_each    = round(prize_pool / max(1, total_winners), 2)
+            for prev in game.winners_log:
+                prev["prize"] = prize_each; prev["n_winners"] = total_winners; prev["split"] = total_winners > 1
+            for w in winners:
+                if w["id"] not in game.claimed_winners:
+                    game.claimed_winners.add(w["id"])
+                    entry = {
+                        "id": w["id"], "nombre": w["nombre"],
+                        "claimed_at": now_str, "drawn_count": drawn_count,
+                        "game_id": game.game_id, "prize": prize_each,
+                        "n_winners": total_winners, "split": total_winners > 1,
+                        "auto_detected": True,
+                    }
+                    game.winners_log.append(entry)
+                    new_entries.append(entry)
+            game.paused = True
+            _log("game_paused", {"session_id": session_id, "winners": total_winners})
 
-        game.save_to_disk()
+        if new_entries:
+            game.save_to_disk()
 
     return new_entries
 
