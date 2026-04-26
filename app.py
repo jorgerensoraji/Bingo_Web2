@@ -2149,6 +2149,10 @@ def api_player_solicitar():
             return jsonify({"error": "bingo_type_mismatch",
                             "message": f"Esta sesión es de {s.get('bingo_nombre')}. "
                                        f"Selecciona el tipo correcto."}), 400
+        # Block registration once the session is in countdown or already running
+        if s.get("status") in ("preparing", "active"):
+            return jsonify({"error": "session_started",
+                            "message": "Esta sesión ya comenzó. Las inscripciones están cerradas. ¡Participa en la próxima!"}), 400
         # Cap check — block registration when session is full
         cap = _player_cap(session_id)
         with db_session() as db:
