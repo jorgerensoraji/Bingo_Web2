@@ -173,64 +173,97 @@ def _auto_draw_one(session_id: str) -> dict | None:
 
 def _check_all_winners(session_id: str, drawn: list) -> list:
     """
-    Check all cartillas for BINGO after a draw.
-    Returns list of winner dicts (may be empty).
+    Check all cartillas for winners (bingo, linea, U, O) after a draw.
+    Mirrors the manual draw logic in app.py exactly.
+    Returns list of new winner dicts (may be empty).
     """
     check_fn   = _ctx["check_winner"]
     load_carts = _ctx["load_cartillas"]
+    load_vs    = _ctx.get("load_vouchers")
+    vs_lock    = _ctx.get("vouchers_lock")
 
     try:
         cartillas = load_carts(session_id)
     except Exception:
         return []
 
+    # Build voucher_map by cartilla id — same as manual draw
+    voucher_map = {}
+    if load_vs and vs_lock:
+        with vs_lock:
+            all_vouchers = load_vs()
+        for v in all_vouchers:
+            for cid in v.get("cartillas", []):
+                voucher_map[cid] = {
+                    "yape_plin": v.get("yape_plin", ""),
+                    "email":     v.get("email", ""),
+                    "celular":   v.get("celular", ""),
+                    "apellidos": v.get("apellidos", ""),
+                }
+
     game      = _ctx["game"]
     game_lock = _ctx["game_lock"]
-    winners   = []
 
     with game_lock:
         already_claimed = set(game.claimed_winners)
         already_linea   = set(game.linea_claimed)
         already_u       = set(game.u_claimed)
         already_o       = set(game.o_claimed)
-        n_winners       = len(already_claimed)
-        prize_pool      = game.prize_pool
-        winners_limit   = game.winners_limit
         linea_drawn_at  = game.linea_drawn_at
         u_drawn_at      = game.u_drawn_at
         o_drawn_at      = game.o_drawn_at
+        cur_paused      = game.paused
+        gid             = game.game_id
 
     drawn_count = len(drawn)
+    now_str     = now_peru().isoformat()
+    new_bingo   = []
     new_linea   = []
     new_u       = []
     new_o       = []
 
     for c in cartillas:
         cid = c.get("id", "")
-        result = check_fn(c.get("grid", []), drawn)
+        chk = check_fn(c.get("grid", []), drawn)
+        vd  = voucher_map.get(cid, {})
 
-        if result.get("bingo") and cid not in already_claimed:
-            winners.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+        def _entry(extra=None):
+            e = {
+                "id":            cid,
+                "nombre":        c.get("nombre", ""),
+                "apellidos":     vd.get("apellidos", ""),
+                "yape_plin":     vd.get("yape_plin", ""),
+                "email":         vd.get("email", ""),
+                "celular":       vd.get("celular", ""),
+                "claimed_at":    now_str,
+                "drawn_count":   drawn_count,
+                "game_id":       gid,
+                "auto_detected": True,
+            }
+            if extra:
+                e.update(extra)
+            return e
 
-        if (result.get("linea") and cid not in already_linea
+        if chk.get("bingo") and cid not in already_claimed and not cur_paused:
+            new_bingo.append(_entry())
+
+        if (chk.get("linea") and cid not in already_linea
                 and (linea_drawn_at is None or drawn_count == linea_drawn_at)):
-            new_linea.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+            new_linea.append(_entry({"linea_row": chk.get("linea_row")}))
 
-        if (result.get("u_pattern") and cid not in already_u
+        if (chk.get("u_pattern") and cid not in already_u
                 and (u_drawn_at is None or drawn_count == u_drawn_at)):
-            new_u.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+            new_u.append(_entry())
 
-        if (result.get("o_pattern") and cid not in already_o
+        if (chk.get("o_pattern") and cid not in already_o
                 and (o_drawn_at is None or drawn_count == o_drawn_at)):
-            new_o.append({"id": cid, "nombre": c.get("nombre", ""), "cartilla": c})
+            new_o.append(_entry())
 
-    if not winners and not new_linea and not new_u and not new_o:
+    if not new_bingo and not new_linea and not new_u and not new_o:
         return []
 
-    now_str  = now_peru().isoformat()
     new_entries = []
 
-    # Register all new winners atomically
     with game_lock:
         if game.session_id != session_id:
             return []
@@ -242,17 +275,14 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
             n_linea    = len(game.linea_claimed) + len(new_linea)
             linea_each = round(game.linea_pool / max(1, n_linea), 2)
             for prev in game.linea_winners_log:
-                prev["linea_prize"] = linea_each; prev["n_winners"] = n_linea; prev["split"] = n_linea > 1
-            for w in new_linea:
-                if w["id"] not in game.linea_claimed:
-                    game.linea_claimed.add(w["id"])
-                    entry = {
-                        "id": w["id"], "nombre": w["nombre"],
-                        "claimed_at": now_str, "drawn_count": drawn_count,
-                        "game_id": game.game_id, "linea_prize": linea_each,
-                        "n_winners": n_linea, "split": n_linea > 1,
-                        "auto_detected": True, "tipo": "linea",
-                    }
+                if prev.get("game_id") == gid:
+                    prev["linea_prize"] = linea_each; prev["n_winners"] = n_linea; prev["split"] = n_linea > 1
+            for entry in new_linea:
+                if entry["id"] not in game.linea_claimed:
+                    game.linea_claimed.add(entry["id"])
+                    entry["linea_prize"] = linea_each
+                    entry["n_winners"]   = n_linea
+                    entry["split"]       = n_linea > 1
                     game.linea_winners_log.append(entry)
                     new_entries.append(entry)
 
@@ -263,17 +293,14 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
             n_u    = len(game.u_claimed) + len(new_u)
             u_each = round(game.u_pool / max(1, n_u), 2)
             for prev in game.u_winners_log:
-                prev["u_prize"] = u_each; prev["n_winners"] = n_u; prev["split"] = n_u > 1
-            for w in new_u:
-                if w["id"] not in game.u_claimed:
-                    game.u_claimed.add(w["id"])
-                    entry = {
-                        "id": w["id"], "nombre": w["nombre"],
-                        "claimed_at": now_str, "drawn_count": drawn_count,
-                        "game_id": game.game_id, "u_prize": u_each,
-                        "n_winners": n_u, "split": n_u > 1,
-                        "auto_detected": True, "tipo": "u",
-                    }
+                if prev.get("game_id") == gid:
+                    prev["u_prize"] = u_each; prev["n_winners"] = n_u; prev["split"] = n_u > 1
+            for entry in new_u:
+                if entry["id"] not in game.u_claimed:
+                    game.u_claimed.add(entry["id"])
+                    entry["u_prize"]   = u_each
+                    entry["n_winners"] = n_u
+                    entry["split"]     = n_u > 1
                     game.u_winners_log.append(entry)
                     new_entries.append(entry)
 
@@ -284,40 +311,51 @@ def _check_all_winners(session_id: str, drawn: list) -> list:
             n_o    = len(game.o_claimed) + len(new_o)
             o_each = round(game.o_pool / max(1, n_o), 2)
             for prev in game.o_winners_log:
-                prev["o_prize"] = o_each; prev["n_winners"] = n_o; prev["split"] = n_o > 1
-            for w in new_o:
-                if w["id"] not in game.o_claimed:
-                    game.o_claimed.add(w["id"])
-                    entry = {
-                        "id": w["id"], "nombre": w["nombre"],
-                        "claimed_at": now_str, "drawn_count": drawn_count,
-                        "game_id": game.game_id, "o_prize": o_each,
-                        "n_winners": n_o, "split": n_o > 1,
-                        "auto_detected": True, "tipo": "o",
-                    }
+                if prev.get("game_id") == gid:
+                    prev["o_prize"] = o_each; prev["n_winners"] = n_o; prev["split"] = n_o > 1
+            for entry in new_o:
+                if entry["id"] not in game.o_claimed:
+                    game.o_claimed.add(entry["id"])
+                    entry["o_prize"]   = o_each
+                    entry["n_winners"] = n_o
+                    entry["split"]     = n_o > 1
                     game.o_winners_log.append(entry)
                     new_entries.append(entry)
 
         # ── Bingo winners ──
-        if winners and not game.paused:
-            total_winners = len(game.claimed_winners) + len(winners)
-            prize_each    = round(prize_pool / max(1, total_winners), 2)
-            for prev in game.winners_log:
-                prev["prize"] = prize_each; prev["n_winners"] = total_winners; prev["split"] = total_winners > 1
-            for w in winners:
-                if w["id"] not in game.claimed_winners:
-                    game.claimed_winners.add(w["id"])
-                    entry = {
-                        "id": w["id"], "nombre": w["nombre"],
-                        "claimed_at": now_str, "drawn_count": drawn_count,
-                        "game_id": game.game_id, "prize": prize_each,
-                        "n_winners": total_winners, "split": total_winners > 1,
-                        "auto_detected": True,
-                    }
+        if new_bingo and not game.paused:
+            prev_bingo_count = len(game.claimed_winners)
+            n_new = 0
+            for entry in new_bingo:
+                if entry["id"] not in game.claimed_winners:
+                    game.claimed_winners.add(entry["id"])
+                    n_new += 1
                     game.winners_log.append(entry)
                     new_entries.append(entry)
-            game.paused = True
-            _log("game_paused", {"session_id": session_id, "winners": total_winners})
+            if n_new:
+                merged_o = merged_u = 0.0
+                if prev_bingo_count == 0:  # first bingo winners — merge unclaimed U/O pools
+                    if not game.o_claimed and game.o_pool > 0:
+                        merged_o = game.o_pool
+                        game.prize_pool += game.o_pool
+                        game.o_pool = 0.0
+                    if not game.u_claimed and game.u_pool > 0:
+                        merged_u = game.u_pool
+                        game.prize_pool += game.u_pool
+                        game.u_pool = 0.0
+                n_total    = len(game.claimed_winners)
+                prize_each = round(game.prize_pool / max(1, n_total), 2)
+                first = True
+                for prev in game.winners_log:
+                    if prev.get("game_id") == gid:
+                        prev["prize"]     = prize_each
+                        prev["n_winners"] = n_total
+                        prev["split"]     = n_total > 1
+                        if first and merged_o: prev["merged_o"] = merged_o
+                        if first and merged_u: prev["merged_u"] = merged_u
+                        first = False
+                game.paused = True
+                _log("game_paused", {"session_id": session_id, "winners": n_total})
 
         if new_entries:
             game.save_to_disk()
@@ -338,38 +376,41 @@ def _notify_winners(winners: list, session_id: str, url_base: str = ""):
     if not enviar or not load_vs:
         return
 
-    def _send():
-        with vs_lock:
-            all_vouchers = load_vs()
+    _prize_key = {"bingo": "prize", "linea": "linea_prize", "u": "u_prize", "o": "o_prize"}
+    _subject   = {
+        "bingo": "🏆 ¡GANASTE el BINGO!",
+        "linea": "⭐ ¡Ganaste la Letra I!",
+        "u":     "🔷 ¡Ganaste la Letra U!",
+        "o":     "⭕ ¡Ganaste la Letra O!",
+    }
 
+    def _send():
         for w in winners:
-            cid     = w.get("id", "")
-            voucher = next(
-                (v for v in all_vouchers if cid in v.get("cartillas", [])),
-                None,
-            )
-            email = (voucher or {}).get("email", "")
+            cid    = w.get("id", "")
+            email  = w.get("email", "")
             if not email:
                 continue
+            tipo   = w.get("tipo", "bingo") if "linea_prize" not in w and "u_prize" not in w and "o_prize" not in w else (
+                "linea" if "linea_prize" in w else ("u" if "u_prize" in w else "o")
+            )
+            # infer tipo from entry keys for robustness
+            if "linea_prize" in w:   tipo = "linea"
+            elif "u_prize"   in w:   tipo = "u"
+            elif "o_prize"   in w:   tipo = "o"
+            else:                    tipo = "bingo"
 
-            btype_id = (voucher or {}).get("bingo_type", "1sol")
-            btype    = BINGO_TYPES.get(btype_id, {})
-
-            # Build winner dict with full info for the template
-            winner_full = dict(w)
-            winner_full["id"]        = cid
-            winner_full["yape_plin"] = (voucher or {}).get("yape_plin", "")
+            prize_amt = w.get(_prize_key.get(tipo, "prize"), 0)
+            btype_id  = w.get("bingo_type", "1sol")
+            btype     = BINGO_TYPES.get(btype_id, {})
+            subj      = f"{_subject.get(tipo, '🏆 ¡GANASTE!')} S/. {prize_amt:.2f} — {btype.get('nombre', 'Bingo Pro')}"
 
             if ganador_tmpl:
-                body   = ganador_tmpl(winner_full, btype, pattern="bingo")
-                asunto = f"🏆 ¡GANASTE el BINGO! S/. {w.get('prize', 0):.2f} — Bingo Pro"
+                body = ganador_tmpl(w, btype, pattern=tipo)
             else:
-                # Fallback simple email
-                body   = (f"<h2>¡Ganaste!</h2><p>Cartilla {cid} — Premio S/. {w.get('prize',0):.2f}</p>")
-                asunto = "🏆 ¡GANASTE el BINGO! — Bingo Pro"
+                body = f"<h2>¡Ganaste!</h2><p>Cartilla {cid} — Premio S/. {prize_amt:.2f}</p>"
 
-            enviar(email, asunto, body)
-            _log("winner_email_sent", {"cid": cid, "email": email, "prize": w.get("prize", 0)})
+            enviar(email, subj, body)
+            _log("winner_email_sent", {"cid": cid, "email": email, "tipo": tipo, "prize": prize_amt})
 
     threading.Thread(target=_send, daemon=True).start()
 
