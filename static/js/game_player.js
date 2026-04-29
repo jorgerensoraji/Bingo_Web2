@@ -1301,11 +1301,6 @@ function removeClaimButtons() {
 }
 
 async function loadAllCartillas() {
-  // Don't load if session is already finished
-  if (sessionFinishedShown) {
-    showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
-    return;
-  }
   const ids = getMyCartillasFromStorage();
   if (!ids.length) {
     // Open the code-entry panel and focus it instead of dead-end toast
@@ -1317,24 +1312,26 @@ async function loadAllCartillas() {
       if (ycArrow) ycArrow.textContent = '▲ Ocultar';
     }
     if (ycInput) ycInput.focus();
-    showToast('🔑 Ingresa el ID de tu cartilla o código de voucher');
+    showToast('🔑 Ingresa el código de voucher enviado a tu correo');
     return;
   }
 
-  // Ensure activeSessionId is known before filtering (avoid race on page load)
+  // Ensure activeSessionId is known before filtering (avoid race on page load).
+  // Always check next_session_id BEFORE giving up on session_finished — a player
+  // who bought cartillas for the NEXT session must be able to load them even while
+  // the previous game's session_finished flag is still set on the server.
   if (activeSessionId === null) {
     try {
       const st = await fetch('/api/state');
       const sd = await st.json();
-      if (sd.session_finished) {
-        sessionFinishedShown = true;
+      if (sd.session_id)           activeSessionId = sd.session_id;
+      else if (sd.prepare_sid)     activeSessionId = sd.prepare_sid;
+      else if (sd.next_session_id) activeSessionId = sd.next_session_id;
+      else if (sd.session_finished) {
+        // No upcoming session — truly nothing to play
         showToast('ℹ️ El Bingo ya finalizó. Las cartillas no están disponibles.', 4000);
         return;
       }
-      // Use session_id, or prepare_sid during countdown, or next scheduled session
-      if (sd.session_id) activeSessionId = sd.session_id;
-      else if (sd.prepare_sid) activeSessionId = sd.prepare_sid;
-      else if (sd.next_session_id) activeSessionId = sd.next_session_id;
     } catch(e) {}
   }
 
