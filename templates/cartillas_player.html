@@ -354,12 +354,11 @@
         <!-- Recuperar cartilla por ID o código de voucher -->
         <div id="recover-panel" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">
-            ¿Ya tienes tu cartilla pero no aparece aquí?<br>
-            Ingresa el <strong style="color:var(--text)">ID de cartilla</strong> (del correo) o tu
-            <strong style="color:var(--text)">código de voucher</strong>:
+            ¿Tus cartillas no aparecen aquí?<br>
+            Ingresa tu <strong style="color:var(--text)">código de voucher</strong> para cargarlas todas.
           </div>
           <div style="display:flex;gap:6px">
-            <input id="recover-input" type="text" placeholder="ID o código" maxlength="8"
+            <input id="recover-input" type="text" placeholder="Código de voucher" maxlength="8"
                    oninput="this.value=this.value.toUpperCase()"
                    onkeydown="if(event.key==='Enter') recoverCartilla()"
                    style="flex:1;background:var(--sub);border:1px solid var(--border);border-radius:8px;
