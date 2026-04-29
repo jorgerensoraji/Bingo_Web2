@@ -1725,7 +1725,10 @@ async function showSuccessPanel(cartillas, remaining) {
          ⚠️ Aún te quedan <strong>${remaining}</strong> cartilla${remaining>1?'s':''} por generar con tu código.
        </div>
        <button id="close-success-panel" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">✋ Generar siguiente cartilla</button>`
-    : `<a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
+    : `<div style="background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.25);border-radius:10px;padding:10px 14px;margin:12px 0;font-size:.8rem;color:var(--muted);text-align:left">
+         💡 <strong style="color:var(--accent)">¿Usarás otro dispositivo?</strong> Ve a <a href="/cartillas" style="color:var(--accent);font-weight:700">/cartillas</a> e ingresa tu <strong style="color:var(--text)">código de voucher</strong> para cargar tus cartillas ahí también.
+       </div>
+       <a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
        <button id="close-success-panel" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">Cerrar</button>`;
 
   const overlay = document.createElement('div');
