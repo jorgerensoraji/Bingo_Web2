@@ -1057,10 +1057,10 @@
         </div>
         <div id="yc-body" style="display:none;padding:0 12px 12px">
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">
-            Ingresa el ID de tu cartilla o tu código de voucher que recibiste por correo.
+            Ingresa tu código de voucher que recibiste por correo.
           </div>
           <div style="display:flex;gap:6px;width:100%;box-sizing:border-box">
-            <input id="yc-input" type="text" placeholder="ID cartilla o código" maxlength="8"
+            <input id="yc-input" type="text" placeholder="Código de voucher" maxlength="8"
                    oninput="this.value=this.value.toUpperCase()"
                    onkeydown="if(event.key==='Enter'){ var c=(this.value||'').trim().toUpperCase(); if(c) window.location.href='/cartillas?code='+encodeURIComponent(c); }"
                    style="flex:1;min-width:0;background:var(--sub);border:1px solid var(--border);border-radius:8px;
