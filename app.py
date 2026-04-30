@@ -2400,7 +2400,6 @@ def api_reject_voucher(code):
         v.payment_status  = "rejected"
         v.rejected_at     = now_peru().isoformat()
         v.rejected_reason = data.get("reason", "")
-        db.query(Cartilla).filter_by(voucher_code=code).delete()
     return jsonify({"status": "ok"})
 
 @app.route("/admin/quick/approve/<code>", methods=["GET", "POST"])
