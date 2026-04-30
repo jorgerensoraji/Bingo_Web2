@@ -1682,6 +1682,51 @@ async function saveManual() {
   } catch(e) { showToast('❌ Error de conexión'); }
 }
 
+// ── Carousel guía de voucher ──────────────────────────
+function initVoucherCarousel(id, steps) {
+  var el = document.getElementById(id);
+  if (!el) return function(){};
+  var ms=3500, cur=0, t0=null, paused=false, rafId=null;
+  function upd(s) {
+    var n;
+    if((n=document.getElementById(id+'-icon')))  n.textContent=s.icon;
+    if((n=document.getElementById(id+'-step')))  n.textContent=s.step;
+    if((n=document.getElementById(id+'-title'))) n.textContent=s.title;
+    if((n=document.getElementById(id+'-desc')))  n.textContent=s.desc;
+    steps.forEach(function(_,j){
+      var d=document.getElementById(id+'-d'+j);
+      if(d){d.style.width=j===cur?'22px':'7px';d.style.opacity=j===cur?'1':'.3';}
+    });
+  }
+  function go(i,fade){
+    cur=i;
+    var cnt=document.getElementById(id+'-cnt');
+    var bar=document.getElementById(id+'-bar');
+    if(bar){bar.style.transition='none';bar.style.width='0';}
+    if(fade&&cnt){cnt.style.opacity='0';setTimeout(function(){upd(steps[i]);cnt.style.opacity='1';},220);}
+    else upd(steps[i]);
+  }
+  function tick(ts){
+    if(!paused){
+      if(!t0) t0=ts;
+      var pct=Math.min((ts-t0)/ms*100,100);
+      var bar=document.getElementById(id+'-bar');
+      if(bar){bar.style.transition='none';bar.style.width=pct+'%';}
+      if(ts-t0>=ms){go((cur+1)%steps.length,true);t0=ts;}
+    }
+    rafId=requestAnimationFrame(tick);
+  }
+  steps.forEach(function(_,i){
+    var d=document.getElementById(id+'-d'+i);
+    if(d) d.onclick=function(){go(i,true);t0=null;};
+  });
+  el.addEventListener('mouseenter',function(){paused=true;});
+  el.addEventListener('mouseleave',function(){paused=false;t0=null;});
+  go(0,false);
+  rafId=requestAnimationFrame(tick);
+  return function(){cancelAnimationFrame(rafId);};
+}
+
 // ── Panel de éxito post-generación ────────────────────
 async function showSuccessPanel(cartillas, remaining) {
   if (!cartillas || !cartillas.length) return;
@@ -1724,9 +1769,22 @@ async function showSuccessPanel(cartillas, remaining) {
          ⚠️ Aún te quedan <strong>${remaining}</strong> cartilla${remaining>1?'s':''} por generar con tu código.
        </div>
        <button id="close-success-panel" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">✋ Generar siguiente cartilla</button>`
-    : `<div style="background:rgba(0,229,180,.15);border:2px solid rgba(0,229,180,.5);border-radius:12px;padding:14px 18px;margin:14px 0;font-size:.92rem;color:var(--text);text-align:left;line-height:1.5">
-         📲 <strong style="color:var(--accent);font-size:1rem">¿Abrirás el juego en otro dispositivo?</strong><br>
-         Ve a <a href="/cartillas" style="color:var(--accent);font-weight:900;text-decoration:underline">/cartillas</a> e ingresa tu <strong style="color:var(--accent)">código de voucher</strong> para cargar tus cartillas ahí también.
+    : `<div id="vc-sp" style="background:rgba(0,229,180,.12);border:2px solid rgba(0,229,180,.45);border-radius:14px;padding:18px 20px 14px;margin:14px 0;text-align:center;user-select:none;box-sizing:border-box">
+         <div style="font-size:.58rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px">📲 CÓMO CARGAR TUS CARTILLAS EN OTRO DISPOSITIVO</div>
+         <div id="vc-sp-cnt" style="transition:opacity .35s ease;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+           <div id="vc-sp-icon" style="font-size:2rem;margin-bottom:6px"></div>
+           <div id="vc-sp-step" style="font-size:.58rem;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:3px"></div>
+           <div id="vc-sp-title" style="font-size:1rem;font-weight:900;color:#fff;margin-bottom:5px"></div>
+           <div id="vc-sp-desc" style="font-size:.82rem;color:rgba(255,255,255,.65);line-height:1.4;max-width:280px"></div>
+         </div>
+         <div style="display:flex;gap:5px;justify-content:center;margin-top:12px;margin-bottom:8px">
+           <div id="vc-sp-d0" style="height:6px;border-radius:3px;background:var(--accent);cursor:pointer;transition:all .3s"></div>
+           <div id="vc-sp-d1" style="height:6px;border-radius:3px;background:var(--accent);cursor:pointer;transition:all .3s"></div>
+           <div id="vc-sp-d2" style="height:6px;border-radius:3px;background:var(--accent);cursor:pointer;transition:all .3s"></div>
+         </div>
+         <div style="height:2px;background:rgba(0,229,180,.15);border-radius:1px;overflow:hidden">
+           <div id="vc-sp-bar" style="height:100%;background:var(--accent);border-radius:1px;width:0"></div>
+         </div>
        </div>
        <a href="/" class="btn btn-primary btn-full" style="margin-top:8px;font-size:1rem;padding:14px">🎮 Ir al Juego</a>
        <button id="close-success-panel" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px">Cerrar</button>`;
@@ -1744,7 +1802,12 @@ async function showSuccessPanel(cartillas, remaining) {
       ${remainingHtml}
     </div>`;
   document.body.appendChild(overlay);
-  document.getElementById('close-success-panel').onclick = () => overlay.remove();
+  const stopCarousel = initVoucherCarousel('vc-sp', [
+    {icon:'🌐', step:'PASO 1 DE 3', title:'Abre /cartillas', desc:'En el navegador de cualquier celular o PC'},
+    {icon:'🔑', step:'PASO 2 DE 3', title:'Ingresa tu código de voucher', desc:'El que recibiste por correo al comprar'},
+    {icon:'🎴', step:'PASO 3 DE 3', title:'¡Tus cartillas aparecen!', desc:'Listas para jugar desde donde estés'},
+  ]);
+  document.getElementById('close-success-panel').onclick = () => { overlay.remove(); stopCarousel(); };
 }
 
 // ── Mis cartillas (localStorage) ───────────────────────
