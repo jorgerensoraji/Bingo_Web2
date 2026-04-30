@@ -665,6 +665,7 @@
     align-items:center; justify-content:center;
     background:rgba(7,13,20,.92); flex-direction:column;
     text-align:center; padding:24px;
+    overflow-y:auto;
   }
   #countdown-banner.show { display:flex; }
   #countdown-banner .cd-title {
@@ -1885,7 +1886,7 @@ function initVoucherCarousel(id, steps) {
 }
 document.addEventListener('DOMContentLoaded', function() {
   initVoucherCarousel('vc-cd', [
-    {icon:'🌐', step:'PASO 1 DE 3', title:'Abre /cartillas', desc:'En el navegador de cualquier celular o PC'},
+    {icon:'🌐', step:'PASO 1 DE 3', title:'Ve a ganabingoperu.com/cartillas', desc:'Ábrelo en cualquier celular o PC'},
     {icon:'🔑', step:'PASO 2 DE 3', title:'Ingresa tu código de voucher', desc:'El que recibiste por correo al comprar'},
     {icon:'🎴', step:'PASO 3 DE 3', title:'¡Tus cartillas aparecen!', desc:'Listas para jugar desde donde estés'},
   ]);
