@@ -387,9 +387,18 @@ async function loadBingoTypes() {
     const data = await res.json();
     (data.bingo_types || []).forEach(bt => { BINGO_TYPES[bt.id] = bt; });
     if (!Object.keys(BINGO_TYPES).length) return;
-    // Default selection = first type
     if (!BINGO_TYPES[selBtype]) selBtype = Object.keys(BINGO_TYPES)[0];
     buildBtypeTabs();
+    // Rebuild f-btype-v dynamically from real type IDs
+    const fbt = document.getElementById('f-btype-v');
+    if (fbt) {
+      const prev = fbt.value;
+      fbt.innerHTML = `<option value="">Todos los tipos</option>` +
+        Object.entries(BINGO_TYPES).map(([k, v]) =>
+          `<option value="${k}">${v.emoji||'🎯'} ${v.nombre}</option>`
+        ).join('');
+      if (prev) fbt.value = prev;
+    }
   } catch(e) {}
 }
 
@@ -504,19 +513,34 @@ async function loadSessions() {
   try {
     const res  = await fetch('/api/admin/sessions');
     const data = await res.json();
-    const ss   = (data.sessions||[]).filter(s =>
-      ['scheduled','active'].includes(s.status));
-    const opts = ss.map(s => {
-      const dt = s.datetime_iso?.replace('T',' ').slice(0,16)||'';
-      const bt = BINGO_TYPES[s.bingo_type]||BINGO_TYPES['1sol'];
-      return `<option value="${s.id}">${bt.emoji} ${dt} — #${s.id}</option>`;
-    }).join('');
-    ['sel-session','f-session'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML =
-        `<option value="">${id==='f-session'?'Todos los bingos':'Sin Bingo específico'}</option>`
-        + opts;
-    });
+    const all  = data.sessions || [];
+
+    // sel-session (crear voucher): solo scheduled/active
+    const forCreate = all.filter(s => ['scheduled','active'].includes(s.status));
+    const selEl = document.getElementById('sel-session');
+    if (selEl) {
+      selEl.innerHTML = `<option value="">Sin Bingo específico</option>` +
+        forCreate.map(s => {
+          const dt = s.datetime_iso?.replace('T',' ').slice(0,16)||'';
+          const bt = BINGO_TYPES[s.bingo_type] || {};
+          return `<option value="${s.id}">${bt.emoji||'🎯'} ${dt} — #${s.id}</option>`;
+        }).join('');
+    }
+
+    // f-session (filtrar vouchers): todas las sesiones, preservar selección actual
+    const fEl = document.getElementById('f-session');
+    if (fEl) {
+      const prev = fEl.value;
+      const stIcon = { active:'🟢 ', scheduled:'📅 ', preparing:'⏳ ', finished:'✅ ', cancelled:'❌ ' };
+      fEl.innerHTML = `<option value="">Todos los bingos</option>` +
+        all.map(s => {
+          const dt = s.datetime_iso?.replace('T',' ').slice(0,16)||'';
+          const bt = BINGO_TYPES[s.bingo_type] || {};
+          const icon = stIcon[s.status] || '';
+          return `<option value="${s.id}">${icon}${bt.emoji||'🎯'} ${dt} — #${s.id}</option>`;
+        }).join('');
+      if (prev) fEl.value = prev;
+    }
   } catch(e) {}
 }
 
