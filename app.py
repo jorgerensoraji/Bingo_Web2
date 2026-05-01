@@ -114,6 +114,10 @@ TWILIO_WA_FROM    = os.environ.get("TWILIO_WHATSAPP_FROM", "")  # e.g. whatsapp:
 TWILIO_COUNTRY    = os.environ.get("TWILIO_DEFAULT_COUNTRY", "+51")  # default country code
 ADMIN_WHATSAPP    = os.environ.get("ADMIN_WHATSAPP", "")  # admin's personal WhatsApp e.g. +51987654321
 
+# Telegram
+TELEGRAM_BOT_TOKEN    = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
+
 if not ADMIN_USER or not ADMIN_PASS:
     print("\nERROR: ADMIN_USER y ADMIN_PASS no configurados.\n")
 
@@ -748,6 +752,19 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                 ok_wa, err_wa = enviar_whatsapp(admin_wa, wa_body)
                 if not ok_wa:
                     _log_email_event("ERROR", f"WhatsApp admin [{sid}] fallo: {err_wa}")
+
+            # Telegram to admin
+            if TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID:
+                wa_lines = "\n".join(winners_lines)
+                tg_text = (
+                    f"🎱 <b>Bingo finalizado</b>: {bingo_nombre_admin}\n"
+                    f"Sesión: {sid} | Bolas: {len(drawn)}\n\n"
+                    f"🏆 <b>Ganadores:</b>\n{wa_lines}\n\n"
+                    f"Jugadores notificados: {sent_count}"
+                )
+                ok_tg, err_tg = _notify_telegram(tg_text)
+                if not ok_tg:
+                    _log_email_event("ERROR", f"Telegram admin [{sid}] fallo: {err_tg}")
 
         except Exception as e:
             import traceback
@@ -2266,6 +2283,32 @@ def api_player_solicitar():
                 print(f"[WARN] WhatsApp admin no enviado: {err_wa}")
         except Exception as e:
             print(f"[WARN] WhatsApp admin error: {e}")
+
+    # Notify admin via Telegram with inline approve/reject buttons
+    if TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID:
+        try:
+            url_base   = request.host_url.rstrip("/")
+            tok_ok     = _quick_token("approve", v_dict["code"])
+            tok_no     = _quick_token("reject",  v_dict["code"])
+            metodo_str = method.upper() if method else "—"
+            ref_str    = ref if ref else "—"
+            tg_text = (
+                f"💳 <b>Nuevo pago recibido</b>\n"
+                f"👤 {nombres} {apellidos}\n"
+                f"🎱 {btype['nombre']} x{cantidad_cartillas} — S/. {btype['precio'] * cantidad_cartillas:.2f}\n"
+                f"💰 {metodo_str} | Ref: {ref_str}\n"
+                f"📱 {celular or '—'}\n"
+                f"🎫 Voucher: <b>{v_dict['code']}</b>"
+            )
+            keyboard = [[
+                {"text": "✅ Aprobar", "url": f"{url_base}/admin/quick/approve/{v_dict['code']}?token={tok_ok}"},
+                {"text": "❌ Rechazar", "url": f"{url_base}/admin/quick/reject/{v_dict['code']}?token={tok_no}"},
+            ]]
+            ok_tg, err_tg = _notify_telegram(tg_text, keyboard)
+            if not ok_tg:
+                print(f"[WARN] Telegram admin no enviado: {err_tg}")
+        except Exception as e:
+            print(f"[WARN] Telegram admin error: {e}")
 
     msg = "Solicitud registrada. Recibirás tu código cuando el admin confirme tu registro."
     return jsonify({"status": "ok", "message": msg, "email": email, "email_sent": email_sent})
@@ -5128,7 +5171,7 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     url_cartillas = f"{url_base}/cartillas"
 
     lines = [
-        f"🎱 *¡NUEVO BINGO DISPONIBLE!*",
+        f"Hola, aquí está la información de tu próxima sesión de Bingo Pro.",
         f"",
         f"{emoji} *{nombre_bingo}*",
         f"📅 *Fecha:* {dt_str}",
@@ -5137,19 +5180,17 @@ def _wa_broadcast_msg(session_dict: dict, btype: dict, url_base: str, extra_info
     if descripcion:
         lines += [f"📝 {descripcion}"]
     if extra_info:
-        lines += [f"", f"🔥 *{extra_info}*"]
+        lines += [f"", f"ℹ️ {extra_info}"]
     lines += [
         f"",
         f"💰 *Distribución de premios:*",
-        f"  🎉 Cartón lleno o Bingo → S/. {prize_amt:.2f}",
-        f"  ⭕ Formar Letra O → S/. {o_amt:.2f}",
-        f"  🔷 Formar Letra U → S/. {u_amt:.2f}",
-        f"  ⭐ LÍNEA → S/. {linea_amt:.2f}",
+        f"  • Bingo completo: S/. {prize_amt:.2f}",
+        f"  • Letra O: S/. {o_amt:.2f}",
+        f"  • Letra U: S/. {u_amt:.2f}",
+        f"  • Línea: S/. {linea_amt:.2f}",
         f"",
-        f"🎴 *Compra tu cartilla aquí:*",
+        f"Tus cartillas están disponibles en:",
         f"{url_cartillas}",
-        f"",
-        f"_¡Asegura tu lugar antes de que se agoten!_ 🙌",
     ]
     if unsub_url:
         lines += [f"", f"_Para cancelar avisos: {unsub_url}_"]
@@ -5179,6 +5220,32 @@ def enviar_whatsapp(to_number: str, body: str, content_sid: str = None, content_
         else:
             client.messages.create(from_=TWILIO_WA_FROM, to=wa_to, body=body)
         return True, ""
+    except Exception as e:
+        return False, str(e)
+
+def _notify_telegram(text: str, inline_keyboard: list = None):
+    """Send a message to the admin via Telegram bot. Returns (ok, error_str).
+    inline_keyboard: list of rows, each row is a list of button dicts.
+    Button dict: {"text": "...", "url": "..."} for URL buttons.
+    """
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_ADMIN_CHAT_ID:
+        return False, "Telegram no configurado"
+    try:
+        payload = {
+            "chat_id": TELEGRAM_ADMIN_CHAT_ID,
+            "text": text,
+            "parse_mode": "HTML",
+        }
+        if inline_keyboard:
+            payload["reply_markup"] = {"inline_keyboard": inline_keyboard}
+        resp = http_requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json=payload,
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return True, ""
+        return False, resp.text
     except Exception as e:
         return False, str(e)
 
@@ -5259,6 +5326,7 @@ def api_whatsapp_broadcast_session(sid):
                     "4": f"{_pool['o_amount']:.2f}",
                     "5": f"{_pool['u_amount']:.2f}",
                     "6": f"{_pool['linea_amount']:.2f}",
+                    "7": url_cartillas,
                 }
             )
         if ok:
@@ -5507,7 +5575,7 @@ def _whatsapp_keepalive_loop():
                     content_variables={
                         "1": "Admin",
                         "2": "🔔 Responde este mensaje para mantener activas las notificaciones de pago de Bingo Pro.",
-                        "3": "—", "4": "—", "5": "—", "6": "—",
+                        "3": "—", "4": "—", "5": "—", "6": "—", "7": "",
                     },
                 )
                 if not ok:
