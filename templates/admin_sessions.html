@@ -1207,7 +1207,7 @@ recalcTHouse();
     <h2 style="margin:0 0 6px;font-size:1.1rem">📢 Anunciar Bingo</h2>
     <p style="color:var(--muted);font-size:.82rem;margin:0 0 16px">
       📧 <strong id="bc-count" style="color:var(--accent)">…</strong> emails ·
-      📱 <strong id="bc-phones" style="color:#25d366">…</strong> WhatsApp en la base de datos.
+      ✈️ <strong style="color:#2ca5e0">Canal de Telegram</strong>
     </p>
 
     <div id="bc-session-info" style="background:var(--card);border:1px solid var(--border);
@@ -1216,9 +1216,9 @@ recalcTHouse();
     <div style="margin-bottom:16px">
       <label style="display:block;font-size:.75rem;color:var(--muted);letter-spacing:1px;
                     text-transform:uppercase;margin-bottom:6px">
-        🎨 Mensaje extra / banner <span style="color:var(--accent);font-size:.7rem">(opcional)</span>
+        🎨 Mensaje extra <span style="color:var(--accent);font-size:.7rem">(opcional)</span>
       </label>
-      <textarea id="bc-extra" rows="3" placeholder="Ej: ¡Gran premio esta semana! No te lo pierdas. Lugares limitados 🔥"
+      <textarea id="bc-extra" rows="3" placeholder="Ej: ¡Gran premio esta semana!"
         style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
                background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
                font-size:.88rem;resize:vertical;outline:none;box-sizing:border-box;
@@ -1226,38 +1226,8 @@ recalcTHouse();
         onfocus="this.style.borderColor='var(--accent)'"
         onblur="this.style.borderColor='var(--border)'"></textarea>
       <div style="font-size:.72rem;color:var(--muted);margin-top:4px">
-        Aparece como banner en el email y como mensaje destacado en WhatsApp.
+        Aparece como banner en el email y como mensaje adicional en Telegram.
       </div>
-    </div>
-
-    <!-- Test phone -->
-    <div style="margin-bottom:16px;background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.25);
-         border-radius:10px;padding:12px 14px">
-      <label style="display:block;font-size:.75rem;color:#25d366;letter-spacing:1px;
-                    text-transform:uppercase;margin-bottom:6px">
-        🧪 Probar WhatsApp — enviar solo a este número
-      </label>
-      <div style="display:flex;gap:8px">
-        <input id="bc-test-phone" type="tel" placeholder="+51999999999"
-          style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(37,211,102,.4);
-                 background:var(--card);color:var(--text);font-family:'Outfit',sans-serif;
-                 font-size:.88rem;outline:none;box-sizing:border-box"/>
-        <button onclick="testWhatsApp()"
-                style="padding:8px 16px;border:none;border-radius:8px;
-                       background:#25d366;color:#fff;font-family:'Outfit',sans-serif;
-                       font-weight:700;font-size:.85rem;cursor:pointer;white-space:nowrap">
-          🧪 Test
-        </button>
-      </div>
-      <div id="bc-test-result" style="font-size:.75rem;margin-top:6px;color:var(--muted)"></div>
-    </div>
-
-    <!-- WhatsApp not configured notice -->
-    <div id="bc-wa-warning" style="display:none;background:rgba(37,211,102,.06);
-         border:1px solid rgba(37,211,102,.25);border-radius:10px;padding:10px 14px;
-         margin-bottom:14px;font-size:.78rem;color:#25d366">
-      ⚠️ WhatsApp no configurado — agrega TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y
-      TWILIO_WHATSAPP_FROM en tu .env para activar envíos automáticos.
     </div>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
@@ -1267,11 +1237,11 @@ recalcTHouse();
                      font-weight:700;font-size:.9rem;cursor:pointer">
         Cancelar
       </button>
-      <button id="bc-wa-btn" onclick="sendWhatsApp()"
+      <button id="bc-tg-btn" onclick="sendTelegram()"
               style="padding:10px 20px;border:none;border-radius:10px;
-                     background:#25d366;color:#fff;font-family:'Outfit',sans-serif;
+                     background:#2ca5e0;color:#fff;font-family:'Outfit',sans-serif;
                      font-weight:900;font-size:.9rem;cursor:pointer">
-        📱 WhatsApp
+        ✈️ Telegram
       </button>
       <button id="bc-send-btn" onclick="sendBroadcast()"
               style="padding:10px 24px;border:none;border-radius:10px;
@@ -1291,15 +1261,12 @@ recalcTHouse();
 
 <script>
 let _bcSid = null;
-let _waConfigured = false;
 
 async function openBroadcast(sid) {
   _bcSid = sid;
   document.getElementById('broadcast-modal').style.display = 'flex';
-  document.getElementById('bc-count').textContent   = '…';
-  document.getElementById('bc-phones').textContent  = '…';
+  document.getElementById('bc-count').textContent = '…';
   document.getElementById('bc-session-info').innerHTML = '<span style="color:var(--muted)">Cargando…</span>';
-  document.getElementById('bc-wa-warning').style.display = 'none';
 
   // Load email count
   try {
@@ -1307,26 +1274,6 @@ async function openBroadcast(sid) {
     const d = await r.json();
     document.getElementById('bc-count').textContent = d.total || 0;
   } catch(e) { document.getElementById('bc-count').textContent = '?'; }
-
-  // Load WhatsApp phone count + config status
-  try {
-    const [rPhones, rWa] = await Promise.all([
-      fetch('/api/admin/phones'),
-      fetch('/api/admin/whatsapp/status'),
-    ]);
-    const dPhones = await rPhones.json();
-    const dWa     = await rWa.json();
-    document.getElementById('bc-phones').textContent = dPhones.total || 0;
-    _waConfigured = dWa.configured;
-    if (!_waConfigured) {
-      document.getElementById('bc-wa-warning').style.display = 'block';
-      document.getElementById('bc-wa-btn').disabled = true;
-      document.getElementById('bc-wa-btn').style.opacity = '0.4';
-    } else {
-      document.getElementById('bc-wa-btn').disabled = false;
-      document.getElementById('bc-wa-btn').style.opacity = '1';
-    }
-  } catch(e) { document.getElementById('bc-phones').textContent = '?'; }
 
   // Load session info
   try {
@@ -1352,27 +1299,31 @@ async function openBroadcast(sid) {
 function closeBroadcast() {
   document.getElementById('broadcast-modal').style.display = 'none';
   document.getElementById('bc-extra').value = '';
-  document.getElementById('bc-test-phone').value = '';
-  document.getElementById('bc-test-result').textContent = '';
   _bcSid = null;
 }
 
-async function testWhatsApp() {
+async function sendTelegram() {
   if (!_bcSid) return;
-  const phone = document.getElementById('bc-test-phone').value.trim();
-  if (!phone) { document.getElementById('bc-test-result').textContent = '⚠️ Ingresa un número'; return; }
-  const result = document.getElementById('bc-test-result');
-  result.textContent = '⏳ Enviando...';
+  const btn       = document.getElementById('bc-tg-btn');
+  const extraInfo = document.getElementById('bc-extra').value.trim();
+  btn.disabled = true; btn.textContent = '⏳ Enviando…';
   try {
     const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ extra_info: document.getElementById('bc-extra').value.trim(), test_phone: phone }),
+      body: JSON.stringify({ extra_info: extraInfo }),
     });
     const data = await res.json();
-    if (data.sent > 0) result.style.color = '#25d366', result.textContent = '✅ Enviado a ' + phone;
-    else result.style.color = '#f87171', result.textContent = '❌ ' + (data.errors?.[0] || 'Error desconocido');
-  } catch(e) { result.style.color = '#f87171'; result.textContent = '❌ Error de red'; }
+    if (data.error) {
+      showToast(`❌ ${data.message || data.error}`, 5000);
+    } else {
+      closeBroadcast();
+      showToast('✅ Mensaje enviado al canal de Telegram', 5000);
+    }
+  } catch(e) {
+    showToast('❌ Error al enviar a Telegram');
+  }
+  btn.disabled = false; btn.textContent = '✈️ Telegram';
 }
 
 async function sendBroadcast() {
@@ -1395,36 +1346,13 @@ async function sendBroadcast() {
   btn.disabled = false; btn.textContent = '📨 Email';
 }
 
-async function sendWhatsApp() {
-  if (!_bcSid || !_waConfigured) return;
-  const btn       = document.getElementById('bc-wa-btn');
-  const extraInfo = document.getElementById('bc-extra').value.trim();
-  btn.disabled = true; btn.textContent = '⏳ Enviando…';
-  try {
-    const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ extra_info: extraInfo }),
-    });
-    const data = await res.json();
-    if (data.error) {
-      showToast(`❌ ${data.message || data.error}`, 5000);
-    } else {
-      closeBroadcast();
-      showToast(`✅ WhatsApp enviado a ${data.sent}${data.failed > 0 ? ` · ${data.failed} fallaron` : ''}`, 5000);
-    }
-  } catch(e) {
-    showToast('❌ Error al enviar WhatsApp');
-  }
-  btn.disabled = false; btn.textContent = '📱 WhatsApp';
-}
-
 async function sendAll() {
   if (!_bcSid) return;
   const btn       = document.getElementById('bc-all-btn');
   const extraInfo = document.getElementById('bc-extra').value.trim();
   btn.disabled = true; btn.textContent = '⏳ Enviando…';
-  let emailResult = '', waResult = '';
+  let emailResult = '', tgResult = '';
+
   try {
     const res  = await fetch(`/api/admin/session/${_bcSid}/broadcast`, {
       method: 'POST',
@@ -1436,25 +1364,18 @@ async function sendAll() {
     if (data.failed > 0) emailResult += ` (${data.failed} fallaron)`;
   } catch(e) { emailResult = '📧 Error'; }
 
-  if (_waConfigured) {
-    try {
-      const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ extra_info: extraInfo }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        waResult = `📱 Error: ${data.message || data.error}`;
-      } else {
-        waResult = `📱 ${data.sent} WhatsApp`;
-        if (data.failed > 0) waResult += ` (${data.failed} fallaron)`;
-      }
-    } catch(e) { waResult = '📱 Error'; }
-  }
+  try {
+    const res  = await fetch(`/api/admin/session/${_bcSid}/whatsapp_broadcast`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ extra_info: extraInfo }),
+    });
+    const data = await res.json();
+    tgResult = data.error ? `✈️ Error: ${data.message || data.error}` : '✈️ Telegram enviado';
+  } catch(e) { tgResult = '✈️ Error'; }
 
   closeBroadcast();
-  showToast(`✅ ${emailResult}${waResult ? ' · ' + waResult : ''}`, 6000);
+  showToast(`✅ ${emailResult} · ${tgResult}`, 6000);
   btn.disabled = false; btn.textContent = '🚀 Enviar Todo';
 }
 
