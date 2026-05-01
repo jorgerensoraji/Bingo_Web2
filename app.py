@@ -115,8 +115,9 @@ TWILIO_COUNTRY    = os.environ.get("TWILIO_DEFAULT_COUNTRY", "+51")  # default c
 ADMIN_WHATSAPP    = os.environ.get("ADMIN_WHATSAPP", "")  # admin's personal WhatsApp e.g. +51987654321
 
 # Telegram
-TELEGRAM_BOT_TOKEN    = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_TOKEN     = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
+TELEGRAM_CHANNEL_ID    = os.environ.get("TELEGRAM_CHANNEL_ID", "")
 
 if not ADMIN_USER or not ADMIN_PASS:
     print("\nERROR: ADMIN_USER y ADMIN_PASS no configurados.\n")
@@ -738,20 +739,6 @@ def _send_fin_bingo_emails_async(sid: str, drawn: list, url_base: str, winners=N
                     _log_email_event("OK", f"Resumen admin [{sid}] enviado a {admin_notify_email}")
                 else:
                     _log_email_event("ERROR", f"Fallo resumen admin [{sid}] a {admin_notify_email}: {err_adm}")
-
-            # WhatsApp to admin
-            admin_wa = (_load_config().get("whatsapp") or "").strip() or ADMIN_WHATSAPP
-            if admin_wa:
-                wa_lines = "\n".join(winners_lines)
-                wa_body  = (
-                    f"🎱 *Bingo finalizado*: {bingo_nombre_admin}\n"
-                    f"Sesión: {sid} | Bolas: {len(drawn)}\n\n"
-                    f"🏆 *Ganadores:*\n{wa_lines}\n\n"
-                    f"Jugadores notificados: {sent_count}"
-                )
-                ok_wa, err_wa = enviar_whatsapp(admin_wa, wa_body)
-                if not ok_wa:
-                    _log_email_event("ERROR", f"WhatsApp admin [{sid}] fallo: {err_wa}")
 
             # Telegram to admin
             if TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID:
@@ -2258,31 +2245,6 @@ def api_player_solicitar():
         email_sent = ok
         if not ok:
             print(f"[WARN] Email no enviado a {email}: {err}")
-
-    # Notify admin via WhatsApp with one-click approve/reject links
-    admin_wa = (_load_config().get("whatsapp") or "").strip() or ADMIN_WHATSAPP
-    if admin_wa:
-        try:
-            url_base   = request.host_url.rstrip("/")
-            tok_ok     = _quick_token("approve", v_dict["code"])
-            tok_no     = _quick_token("reject",  v_dict["code"])
-            metodo_str = method.upper() if method else "—"
-            ref_str    = ref if ref else "—"
-            wa_body = (
-                f"💳 *Nuevo pago recibido*\n"
-                f"👤 {nombres} {apellidos}\n"
-                f"🎱 {btype['nombre']} x{cantidad_cartillas} — S/. {btype['precio'] * cantidad_cartillas:.2f}\n"
-                f"💰 {metodo_str} | Ref: {ref_str}\n"
-                f"📱 {celular or '—'}\n"
-                f"🎫 Voucher: *{v_dict['code']}*\n\n"
-                f"✅ Aprobar:\n{url_base}/admin/quick/approve/{v_dict['code']}?token={tok_ok}\n\n"
-                f"❌ Rechazar:\n{url_base}/admin/quick/reject/{v_dict['code']}?token={tok_no}"
-            )
-            ok_wa, err_wa = enviar_whatsapp(admin_wa, wa_body)
-            if not ok_wa:
-                print(f"[WARN] WhatsApp admin no enviado: {err_wa}")
-        except Exception as e:
-            print(f"[WARN] WhatsApp admin error: {e}")
 
     # Notify admin via Telegram with inline approve/reject buttons
     if TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID:
@@ -5223,16 +5185,17 @@ def enviar_whatsapp(to_number: str, body: str, content_sid: str = None, content_
     except Exception as e:
         return False, str(e)
 
-def _notify_telegram(text: str, inline_keyboard: list = None):
-    """Send a message to the admin via Telegram bot. Returns (ok, error_str).
-    inline_keyboard: list of rows, each row is a list of button dicts.
-    Button dict: {"text": "...", "url": "..."} for URL buttons.
+def _notify_telegram(text: str, inline_keyboard: list = None, chat_id: str = None):
+    """Send a message via Telegram bot. Returns (ok, error_str).
+    chat_id defaults to TELEGRAM_ADMIN_CHAT_ID. Pass TELEGRAM_CHANNEL_ID to post to channel.
+    inline_keyboard: list of rows, each row is a list of {"text": "...", "url": "..."} dicts.
     """
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_ADMIN_CHAT_ID:
+    target = chat_id or TELEGRAM_ADMIN_CHAT_ID
+    if not TELEGRAM_BOT_TOKEN or not target:
         return False, "Telegram no configurado"
     try:
         payload = {
-            "chat_id": TELEGRAM_ADMIN_CHAT_ID,
+            "chat_id": target,
             "text": text,
             "parse_mode": "HTML",
         }
@@ -5251,13 +5214,13 @@ def _notify_telegram(text: str, inline_keyboard: list = None):
 
 @app.route("/api/admin/session/<sid>/whatsapp_broadcast", methods=["POST"])
 def api_whatsapp_broadcast_session(sid):
-    """Envía mensaje de WhatsApp masivo a todos los celulares registrados."""
+    """Envía mensaje al canal de Telegram con info de la sesión."""
     chk = admin_required()
     if chk: return chk
 
-    if not TWILIO_SID or not TWILIO_TOKEN or not TWILIO_WA_FROM:
-        return jsonify({"error": "twilio_not_configured",
-                        "message": "Configura TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y TWILIO_WHATSAPP_FROM en .env"}), 400
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID:
+        return jsonify({"error": "telegram_not_configured",
+                        "message": "Configura TELEGRAM_BOT_TOKEN y TELEGRAM_CHANNEL_ID en .env"}), 400
 
     s = get_session(sid)
     if not s:
@@ -5265,78 +5228,44 @@ def api_whatsapp_broadcast_session(sid):
 
     data_req   = request.get_json() or {}
     extra_info = (data_req.get("extra_info") or "").strip()
-    test_phone = (data_req.get("test_phone") or "").strip()
     btype      = BINGO_TYPES.get(s.get("bingo_type", "1sol"), BINGO_TYPES["1sol"])
     url_base   = request.host_url.rstrip("/")
 
-    # Collect unique subscribed phone numbers with names (players + manual contacts)
-    phone_names = {}  # phone -> first name
-    with db_session() as db:
-        v_rows = db.query(Voucher.celular, Voucher.nombres).filter(
-            Voucher.celular != "", Voucher.celular.isnot(None),
-            Voucher.whatsapp_subscribed != False
-        ).all()
-        c_rows = db.query(Contact.phone, Contact.nombre).filter(
-            Contact.phone != "", Contact.phone.isnot(None),
-            Contact.whatsapp_subscribed != False
-        ).all()
+    dt_raw        = s.get("datetime_iso", "")
+    dt_str        = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
+    url_cartillas = f"{url_base}/cartillas"
+    _pool         = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
+    emoji         = btype.get("emoji", "🎯")
+    nombre_bingo  = btype.get("nombre", "Bingo Pro")
+    precio        = btype.get("precio", 0.0)
+    descripcion   = (s.get("descripcion") or "").strip()
 
-    all_rows = [(r.celular, r.nombres) for r in v_rows] + [(r.phone, r.nombre) for r in c_rows]
-    for raw, name in all_rows:
-        normalized = _normalize_phone(raw or "", TWILIO_COUNTRY)
-        if normalized and len(normalized) >= 8:
-            if normalized not in phone_names:
-                phone_names[normalized] = (name or "").split()[0] if (name or "").strip() else "amigo/a"
-
-    dt_raw  = s.get("datetime_iso", "")
-    dt_str  = dt_raw.replace("T", " ")[:16] if dt_raw else "Por confirmar"
-    url_cartillas = f"{request.host_url.rstrip('/')}/cartillas"
-
-    # Build template variables
-    _pool = compute_prize_pool(s.get("id", ""), s.get("bingo_type", "1sol"))
-    desc  = (s.get("descripcion") or "").strip()
-    var2  = f"{btype.get('nombre','Bingo')} | {dt_str} | Cartilla S/. {btype.get('precio',0.0):.2f}"
-    if desc:
-        var2 += f" | {desc}"
+    lines = [
+        f"{emoji} <b>{nombre_bingo}</b>",
+        f"📅 <b>Fecha:</b> {dt_str}",
+        f"🎫 <b>Precio cartilla:</b> S/. {precio:.2f}",
+    ]
+    if descripcion:
+        lines.append(f"📝 {descripcion}")
     if extra_info:
-        var2 += f" | {extra_info}"
+        lines += ["", f"ℹ️ {extra_info}"]
+    lines += [
+        "",
+        "💰 <b>Distribución de premios:</b>",
+        f"  • Bingo completo: S/. {_pool['prize_amount']:.2f}",
+        f"  • Letra O: S/. {_pool['o_amount']:.2f}",
+        f"  • Letra U: S/. {_pool['u_amount']:.2f}",
+        f"  • Línea: S/. {_pool['linea_amount']:.2f}",
+        "",
+        f"🎴 Tus cartillas: {url_cartillas}",
+    ]
+    text = "\n".join(lines)
 
-    # Test mode: send only to one number
-    if test_phone:
-        normalized = _normalize_phone(test_phone, TWILIO_COUNTRY)
-        phone_names = {normalized: "Test"}
-
-    is_sandbox = "14155238886" in TWILIO_WA_FROM
-
-    sent = 0; failed = 0; errors = []
-    for phone, nombre in phone_names.items():
-        unsub_url = _make_unsub_url(url_base, "wa", phone)
-        body = _wa_broadcast_msg(s, btype, url_base, extra_info=extra_info,
-                                 unsub_url=unsub_url if is_sandbox else "")
-        if is_sandbox:
-            ok, err = enviar_whatsapp(phone, body)
-        else:
-            ok, err = enviar_whatsapp(
-                phone, "",
-                content_sid=TWILIO_WA_TEMPLATE_SID,
-                content_variables={
-                    "1": nombre,
-                    "2": var2,
-                    "3": f"{_pool['prize_amount']:.2f}",
-                    "4": f"{_pool['o_amount']:.2f}",
-                    "5": f"{_pool['u_amount']:.2f}",
-                    "6": f"{_pool['linea_amount']:.2f}",
-                    "7": url_cartillas,
-                }
-            )
-        if ok:
-            sent += 1
-        else:
-            failed += 1
-            if len(errors) < 5:
-                errors.append(f"{phone}: {err}")
-
-    return jsonify({"sent": sent, "failed": failed, "total": len(phone_names), "errors": errors})
+    ok, err = _notify_telegram(text, chat_id=TELEGRAM_CHANNEL_ID)
+    if ok:
+        return jsonify({"sent": 1, "failed": 0, "total": 1, "errors": []})
+    else:
+        return jsonify({"sent": 0, "failed": 1, "total": 1, "errors": [err]})
 
 @app.route("/api/admin/whatsapp/status")
 def api_whatsapp_status():
@@ -5636,8 +5565,7 @@ def _startup():
     import threading as _threading
     _threading.Thread(target=_backup_loop, daemon=True, name="db-backup").start()
 
-    # ── WhatsApp keep-alive (prevents 24h session expiry) ──
-    _threading.Thread(target=_whatsapp_keepalive_loop, daemon=True, name="wa-keepalive").start()
+    # WhatsApp keep-alive disabled — admin notifications moved to Telegram
 
 # ─── CSRF ────────────────────────────────────────────────────────────────────
 @app.route("/api/csrf-token")
